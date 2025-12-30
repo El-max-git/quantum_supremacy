@@ -61,19 +61,26 @@
    - SPA routing support
    - Troubleshooting
 
+9. **[AI_AGENT_SECURITY_GUIDE.md](AI_AGENT_SECURITY_GUIDE.md)** - 🤖 Безопасность для AI агента
+   - Multi-layer .htaccess protection
+   - XSS & CSRF protection classes
+   - Enterprise security patterns
+   - Directory structure security
+   - Security testing & checklist
+
 ### Политики и правила
 
-9. **[CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)** - Кодекс поведения
+10. **[CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)** - Кодекс поведения
    - Стандарты поведения
    - Обязанности участников
    - Применение правил
 
-10. **[SECURITY.md](../SECURITY.md)** - Политика безопасности
+11. **[SECURITY.md](../SECURITY.md)** - Политика безопасности
    - Сообщение об уязвимостях
    - Поддерживаемые версии
    - Процесс раскрытия информации
 
-11. **[LICENSE](../LICENSE)** - MIT лицензия
+12. **[LICENSE](../LICENSE)** - MIT лицензия
 
 ### Изменения
 
