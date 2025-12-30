@@ -1,0 +1,354 @@
+# ========================================
+# Quantum Supremacy - Apache Configuration
+# ========================================
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # ========================================
+    # Security Headers
+    # ========================================
+
+    # Prevent clickjacking
+    Header always set X-Frame-Options "DENY"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Enable XSS protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    
+    # Strict Transport Security (HTTPS only)
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    
+    # Permissions Policy
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+    
+    # Cross-Origin Policies
+    Header always set Cross-Origin-Embedder-Policy "require-corp"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Cross-Origin-Resource-Policy "same-origin"
+
+    # ========================================
+    # Force HTTPS
+    # ========================================
+
+    # Redirect HTTP to HTTPS
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # ========================================
+    # WWW Redirect (choose one)
+    # ========================================
+
+    # Redirect www to non-www (recommended)
+    RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+    RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+    # OR redirect non-www to www (alternative)
+    # RewriteCond %{HTTP_HOST} !^www\. [NC]
+    # RewriteCond %{HTTP_HOST} !^localhost [NC]
+    # RewriteRule ^(.*)$ https://www.%{HTTP_HOST}/$1 [R=301,L]
+
+    # ========================================
+    # SPA Router Support
+    # ========================================
+
+    # Redirect all requests to index.html except for existing files/directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/404.html$
+    RewriteRule ^(.*)$ /index.html [L,QSA]
+
+    # ========================================
+    # Block Access to Protected Directories
+    # ========================================
+
+    # Block access to data directory
+    RewriteRule ^data/ - [F,L]
+    
+    # Block access to pages directory (only accessible via router)
+    RewriteRule ^pages/ - [F,L]
+
+    # ========================================
+    # Block Access to Sensitive Files
+    # ========================================
+
+    # Block access to hidden files and directories
+    RedirectMatch 403 /\..*$
+    
+    # Block access to backup and source files
+    <FilesMatch "\.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|md|md5|sha1|sha256)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    
+    # Block access to Node modules
+    <IfModule mod_alias.c>
+        RedirectMatch 403 /node_modules/
+        RedirectMatch 403 /.git/
+        RedirectMatch 403 /.github/
+    </IfModule>
+
+    # ========================================
+    # Prevent Directory Listing
+    # ========================================
+
+    Options -Indexes
+    
+    # Custom 403 error page
+    ErrorDocument 403 /404.html
+    
+    # Custom 404 error page
+    ErrorDocument 404 /404.html
+
+</IfModule>
+
+# ========================================
+# Compression (Gzip)
+# ========================================
+
+<IfModule mod_deflate.c>
+    # Compress HTML, CSS, JavaScript, Text, XML, fonts
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+    AddOutputFilterByType DEFLATE application/x-font-ttf
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/x-web-app-manifest+json
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE font/opentype
+    AddOutputFilterByType DEFLATE font/otf
+    AddOutputFilterByType DEFLATE font/ttf
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE image/x-icon
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+    
+    # Remove browser bugs (IE)
+    BrowserMatch ^Mozilla/4 gzip-only-text/html
+    BrowserMatch ^Mozilla/4\.0[678] no-gzip
+    BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+    
+    Header append Vary User-Agent
+</IfModule>
+
+# ========================================
+# Browser Caching
+# ========================================
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+    
+    # HTML
+    ExpiresByType text/html "access plus 0 seconds"
+    
+    # CSS
+    ExpiresByType text/css "access plus 1 year"
+    
+    # JavaScript
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    
+    # Images
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Fonts
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    ExpiresByType application/x-font-ttf "access plus 1 year"
+    ExpiresByType font/opentype "access plus 1 year"
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    
+    # Other
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType application/json "access plus 0 seconds"
+    ExpiresByType application/xml "access plus 0 seconds"
+    ExpiresByType text/xml "access plus 0 seconds"
+</IfModule>
+
+# Cache-Control Headers
+<IfModule mod_headers.c>
+    # HTML - no cache
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+    
+    # CSS and JavaScript - 1 year
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Images - 1 year
+    <FilesMatch "\.(jpg|jpeg|png|gif|svg|ico|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Fonts - 1 year
+    <FilesMatch "\.(woff|woff2|ttf|otf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+# ========================================
+# ETags
+# ========================================
+
+# Remove ETags
+<IfModule mod_headers.c>
+    Header unset ETag
+</IfModule>
+
+FileETag None
+
+# ========================================
+# MIME Types
+# ========================================
+
+<IfModule mod_mime.c>
+    # JavaScript
+    AddType application/javascript js
+    AddType application/json json
+    
+    # Images
+    AddType image/svg+xml svg svgz
+    AddType image/webp webp
+    
+    # Fonts
+    AddType application/font-woff woff
+    AddType application/font-woff2 woff2
+    AddType application/vnd.ms-fontobject eot
+    AddType font/ttf ttf
+    AddType font/otf otf
+    
+    # Other
+    AddType application/x-web-app-manifest+json webapp
+    AddType text/cache-manifest appcache manifest
+    
+    # UTF-8 encoding
+    AddDefaultCharset utf-8
+    AddCharset utf-8 .atom .css .js .json .rss .vtt .xml
+</IfModule>
+
+# ========================================
+# Block Bad Bots and User Agents
+# ========================================
+
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (bot|crawler|spider|scraper|wget|curl) [NC]
+    RewriteCond %{HTTP_USER_AGENT} !(googlebot|bingbot|yandex|baiduspider) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+</IfModule>
+
+# ========================================
+# Prevent Hotlinking (Image theft)
+# ========================================
+
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_REFERER} !^$
+    RewriteCond %{HTTP_REFERER} !^https?://(www\.)?el-max-git\.github\.io [NC]
+    RewriteCond %{REQUEST_URI} \.(jpg|jpeg|png|gif|svg|webp)$ [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# ========================================
+# Limit Request Size (10MB)
+# ========================================
+
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+</IfModule>
+
+# ========================================
+# Disable Server Signature
+# ========================================
+
+ServerSignature Off
+
+# ========================================
+# PHP Security (if PHP is used)
+# ========================================
+
+<IfModule mod_php7.c>
+    # Disable dangerous PHP functions
+    php_value disable_functions "exec,passthru,shell_exec,system,proc_open,popen"
+    
+    # Hide PHP version
+    php_flag expose_php Off
+    
+    # Session security
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.use_only_cookies 1
+</IfModule>
+
+# ========================================
+# Cross-Origin Resource Sharing (CORS)
+# ========================================
+
+<IfModule mod_headers.c>
+    # Allow from same origin only
+    Header set Access-Control-Allow-Origin "https://el-max-git.github.io"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type"
+    Header set Access-Control-Max-Age "3600"
+</IfModule>
+
+# ========================================
+# Protection Against XSS, SQL Injection
+# ========================================
+
+<IfModule mod_rewrite.c>
+    # Block common SQL injection patterns
+    RewriteCond %{QUERY_STRING} (\<|%3C).*script.*(\>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2}) [OR]
+    RewriteCond %{QUERY_STRING} (\<|%3C).*iframe.*(\>|%3E) [NC,OR]
+    RewriteCond %{QUERY_STRING} base64_encode.*\(.*\) [NC,OR]
+    RewriteCond %{QUERY_STRING} (\.|%2E)(\.|%2E)(%2F|/) [NC,OR]
+    RewriteCond %{QUERY_STRING} (union|select|insert|cast|set|declare|drop|update|md5|benchmark) [NC]
+    RewriteRule ^(.*)$ - [F,L]
+</IfModule>
+
+# ========================================
+# Rate Limiting (if mod_ratelimit available)
+# ========================================
+
+<IfModule mod_ratelimit.c>
+    <Location />
+        # Limit to 10KB/s per connection
+        SetOutputFilter RATE_LIMIT
+        SetEnv rate-limit 10
+    </Location>
+</IfModule>
+
+# ========================================
+# END OF CONFIGURATION
+# ========================================
+
