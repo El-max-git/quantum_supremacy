@@ -1,5 +1,7 @@
 # Quantum Supremacy
 
+# https://el-max-git.github.io/quantum_supremacy/
+
 🚀 Современный веб-сайт о квантовом превосходстве
 
 ## 📋 Описание
