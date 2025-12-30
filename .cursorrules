@@ -24,10 +24,14 @@
 - Добавлять alt атрибуты к изображениям для доступности
 
 ### Git
-- Коммиты на русском или английском языке
+- **Коммиты ТОЛЬКО на английском языке** (обязательно!)
 - Использовать префиксы: feat:, fix:, docs:, style:, refactor:
 - Создавать feature branches для новых функций
 - Делать pull request перед мержем в main
+- Примеры хороших сообщений:
+  - `feat: add new homepage section`
+  - `fix: correct navigation menu bug`
+  - `docs: update README with setup instructions`
 
 ### Производительность
 - Ленивая загрузка изображений
