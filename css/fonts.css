@@ -1,0 +1,30 @@
+/* ============================================
+   Quantum Supremacy - Fonts
+   Open Sans Condensed from SITE_CMS
+   ============================================ */
+
+/* Open Sans Condensed - Light 300 */
+@font-face {
+    font-family: 'Open Sans Condensed';
+    font-style: normal;
+    font-weight: 300;
+    font-display: swap;
+    src: url('../assets/fonts/OpenSans-Condensed.eot');
+    src: local('Open Sans Cond Light'), 
+         local('OpenSans-CondensedLight'),
+         url('../assets/fonts/OpenSans-Condensed.woff') format('woff');
+}
+
+/* Open Sans Condensed - Light Italic 300 */
+@font-face {
+    font-family: 'Open Sans Condensed';
+    font-style: italic;
+    font-weight: 300;
+    font-display: swap;
+    src: local('Open Sans Cond Light Italic'), 
+         local('OpenSans-CondensedLightItalic'),
+         url('../assets/fonts/OpenSans-CondensedItalic.woff') format('woff');
+}
+
+/* Roboto from Google Fonts (fallback to system) */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
