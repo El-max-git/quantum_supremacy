@@ -1,61 +1,80 @@
 // Quantum Supremacy - Main JavaScript
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
+// ========================================
+// Initialize Page Components
+// ========================================
+
+function initializePageComponents() {
+    initMobileMenu();
+    initContactForm();
+    initScrollAnimations();
+}
+
+// ========================================
+// Mobile Menu Toggle
+// ========================================
+
+function initMobileMenu() {
     const navToggle = document.querySelector('.nav__toggle');
     const navMenu = document.querySelector('.nav__menu');
 
     if (navToggle) {
-        navToggle.addEventListener('click', () => {
+        // Remove old listeners by cloning
+        const newToggle = navToggle.cloneNode(true);
+        navToggle.parentNode.replaceChild(newToggle, navToggle);
+
+        newToggle.addEventListener('click', () => {
             navMenu.classList.toggle('nav__menu--active');
-            navToggle.classList.toggle('nav__toggle--active');
+            newToggle.classList.toggle('nav__toggle--active');
+        });
+
+        // Close menu when clicking nav link
+        document.querySelectorAll('.nav__menu a[data-link]').forEach(link => {
+            link.addEventListener('click', () => {
+                navMenu.classList.remove('nav__menu--active');
+                newToggle.classList.remove('nav__toggle--active');
+            });
         });
     }
+}
 
-    // Smooth scroll for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+// ========================================
+// Contact Form Handler
+// ========================================
 
-                // Close mobile menu if open
-                if (navMenu.classList.contains('nav__menu--active')) {
-                    navMenu.classList.remove('nav__menu--active');
-                    navToggle.classList.remove('nav__toggle--active');
-                }
-            }
-        });
-    });
-
-    // Form submission handler
-    const contactForm = document.querySelector('.contact__form');
+function initContactForm() {
+    const contactForm = document.getElementById('contactForm');
     
     if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
+        // Remove old listeners
+        const newForm = contactForm.cloneNode(true);
+        contactForm.parentNode.replaceChild(newForm, contactForm);
+        
+        newForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const message = document.getElementById('message').value;
+            const name = newForm.querySelector('#name').value;
+            const email = newForm.querySelector('#email').value;
+            const subject = newForm.querySelector('#subject').value;
+            const message = newForm.querySelector('#message').value;
 
-            // Here you would typically send the form data to a server
-            console.log('Form submitted:', { name, email, message });
+            // Log form data (replace with actual API call)
+            console.log('Form submitted:', { name, email, subject, message });
             
-            // Show success message (you can customize this)
+            // Show success message
             alert('Спасибо за ваше сообщение! Мы свяжемся с вами в ближайшее время.');
             
             // Reset form
-            contactForm.reset();
+            newForm.reset();
         });
     }
+}
 
-    // Add scroll animation for cards
+// ========================================
+// Scroll Animations
+// ========================================
+
+function initScrollAnimations() {
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
@@ -71,37 +90,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }, observerOptions);
 
     // Observe all cards
-    document.querySelectorAll('.about__card').forEach(card => {
+    document.querySelectorAll('.about__card, .tech-card, .contact__method').forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(card);
     });
+}
 
-    // Add active state to navigation on scroll
-    window.addEventListener('scroll', () => {
-        let current = '';
-        const sections = document.querySelectorAll('section[id]');
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.clientHeight;
-            
-            if (scrollY >= sectionTop - 200) {
-                current = section.getAttribute('id');
-            }
-        });
+// ========================================
+// Active Navigation State
+// ========================================
 
-        document.querySelectorAll('.nav__menu a').forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
-                link.classList.add('active');
-            }
-        });
+function updateActiveNav() {
+    const currentPath = window.location.pathname;
+    
+    document.querySelectorAll('.nav__menu a').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+        }
     });
-});
+}
 
-// Add fade-in animation on page load
+// ========================================
+// Page Load Animation
+// ========================================
+
 window.addEventListener('load', () => {
     document.body.style.opacity = '0';
     document.body.style.transition = 'opacity 0.5s ease';
@@ -111,3 +126,32 @@ window.addEventListener('load', () => {
     }, 100);
 });
 
+// ========================================
+// Smooth Scroll Enhancement
+// ========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Add smooth scrolling to all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const target = document.querySelector(this.getAttribute('href'));
+            
+            if (target) {
+                e.preventDefault();
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+
+// ========================================
+// Export for use with router
+// ========================================
+
+if (typeof window !== 'undefined') {
+    window.initializePageComponents = initializePageComponents;
+    window.updateActiveNav = updateActiveNav;
+}

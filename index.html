@@ -29,20 +29,22 @@
     
     <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
-
+</head>
 <body>
     <!-- Header -->
     <header class="header">
         <nav class="nav">
             <div class="container">
                 <div class="nav__logo">
-                    <h1>Quantum Supremacy</h1>
+                    <a href="/" data-link>
+                        <h1>Quantum Supremacy</h1>
+                    </a>
                 </div>
                 <ul class="nav__menu">
-                    <li><a href="#home">Главная</a></li>
-                    <li><a href="#about">О проекте</a></li>
-                    <li><a href="#technology">Технологии</a></li>
-                    <li><a href="#contact">Контакты</a></li>
+                    <li><a href="/" data-link>Главная</a></li>
+                    <li><a href="/about" data-link>О проекте</a></li>
+                    <li><a href="/technology" data-link>Технологии</a></li>
+                    <li><a href="/contact" data-link>Контакты</a></li>
                 </ul>
                 <button class="nav__toggle" aria-label="Toggle menu">
                     <span></span>
@@ -53,71 +55,10 @@
         </nav>
     </header>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="container">
-            <div class="hero__content">
-                <h2 class="hero__title">Добро пожаловать в эру квантовых вычислений</h2>
-                <p class="hero__subtitle">Исследуйте границы возможного с квантовым превосходством</p>
-                <button class="btn btn--primary">Узнать больше</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Section -->
-    <section id="about" class="about">
-        <div class="container">
-            <h2 class="section__title">О квантовом превосходстве</h2>
-            <div class="about__grid">
-                <div class="about__card">
-                    <div class="about__icon">⚛️</div>
-                    <h3>Квантовые вычисления</h3>
-                    <p>Использование квантовых битов для решения сложных задач</p>
-                </div>
-                <div class="about__card">
-                    <div class="about__icon">🚀</div>
-                    <h3>Превосходство</h3>
-                    <p>Достижение вычислительных результатов, недоступных классическим компьютерам</p>
-                </div>
-                <div class="about__card">
-                    <div class="about__icon">🔬</div>
-                    <h3>Исследования</h3>
-                    <p>Постоянное развитие и изучение квантовых технологий</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Technology Section -->
-    <section id="technology" class="technology">
-        <div class="container">
-            <h2 class="section__title">Ключевые технологии</h2>
-            <div class="technology__content">
-                <p>Квантовое превосходство представляет собой важную веху в развитии вычислительных технологий. 
-                   Это момент, когда квантовый компьютер может выполнить вычисление, которое практически 
-                   невозможно для самого мощного классического суперкомпьютера.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact Section -->
-    <section id="contact" class="contact">
-        <div class="container">
-            <h2 class="section__title">Свяжитесь с нами</h2>
-            <form class="contact__form">
-                <div class="form__group">
-                    <input type="text" id="name" placeholder="Ваше имя" required>
-                </div>
-                <div class="form__group">
-                    <input type="email" id="email" placeholder="Ваш email" required>
-                </div>
-                <div class="form__group">
-                    <textarea id="message" rows="5" placeholder="Ваше сообщение" required></textarea>
-                </div>
-                <button type="submit" class="btn btn--primary">Отправить</button>
-            </form>
-        </div>
-    </section>
+    <!-- Main App Container -->
+    <main id="app">
+        <!-- Content will be dynamically loaded here -->
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
@@ -129,7 +70,27 @@
         </div>
     </footer>
 
+    <!-- Router Script -->
+    <script src="router.js"></script>
     <script src="js/main.js"></script>
+    
+    <!-- Initialize Router -->
+    <script>
+        // Initialize router
+        const router = new Router();
+
+        // Define routes
+        router.addRoute('/', () => loadPage('pages/home.html'));
+        router.addRoute('/about', () => loadPage('pages/about.html'));
+        router.addRoute('/technology', () => loadPage('pages/technology.html'));
+        router.addRoute('/contact', () => loadPage('pages/contact.html'));
+        router.addRoute('/404', () => loadPage('pages/404.html'));
+
+        // Start router
+        router.start();
+
+        // Make router globally available
+        window.router = router;
+    </script>
 </body>
 </html>
-

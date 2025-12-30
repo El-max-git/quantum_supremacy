@@ -1,0 +1,21 @@
+{
+  "siteConfig": {
+    "title": "Quantum Supremacy",
+    "description": "Исследование мира квантовых вычислений",
+    "version": "1.0.0",
+    "author": "Quantum Supremacy Team"
+  },
+  "api": {
+    "enabled": false,
+    "endpoints": {
+      "contact": "/api/contact",
+      "newsletter": "/api/newsletter"
+    }
+  },
+  "features": {
+    "darkMode": false,
+    "analytics": false,
+    "comments": false
+  }
+}
+

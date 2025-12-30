@@ -1,0 +1,4 @@
+# Protect data directory from direct access
+Order Deny,Allow
+Deny from all
+

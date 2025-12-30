@@ -10,4 +10,6 @@ Sitemap: https://el-max-git.github.io/quantum_supremacy/sitemap.xml
 Disallow: /node_modules/
 Disallow: /.git/
 Disallow: /.github/
+Disallow: /data/
+Disallow: /pages/
 
