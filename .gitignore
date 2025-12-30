@@ -54,3 +54,72 @@ coverage/
 # Site structure documentation (local notes)
 SITE_STRUCTURE.md
 
+# Empty directories (keep structure, ignore content)
+upload/*
+!upload/.gitkeep
+!upload/.htaccess.example
+modules/core/*
+!modules/core/.gitkeep
+
+# Security files (should be configured per deployment)
+.htaccess
+data/.htaccess
+upload/.htaccess
+
+# Backup and temporary files
+*.bak
+*.backup
+*.old
+*.orig
+*~.nib
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Documentation drafts
+docs/drafts/
+*.draft.md
+
+# Local configuration
+config.local.json
+.env.local
+
+# Editor-specific
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Windows specific
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Linux specific
+.directory
+.Trash-*
+.nfs*
