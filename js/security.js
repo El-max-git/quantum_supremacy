@@ -2,11 +2,18 @@
 // Quantum Supremacy - Security Helper (JavaScript)
 // Based on enterprise CMS security patterns
 // Adapted for static sites (GitHub Pages)
+//
+// ⚠️ SECURITY NOTES:
+// - Uses DOMParser instead of regex for HTML parsing (regex can't parse HTML reliably)
+// - Implements whitelist approach (safer than blacklist)
+// - All user input should be escaped via escapeHtml() by default
+// - Use sanitizeHtml() only when HTML input is specifically needed
 // ========================================
 
 class Security {
     /**
      * Check for XSS patterns in user input
+     * Uses DOMParser for reliable HTML detection (not vulnerable regex)
      * @param {string} input - User input to check
      * @returns {boolean} - true if XSS detected, false if safe
      */
@@ -15,33 +22,47 @@ class Security {
             return false;
         }
 
-        // XSS detection patterns
-        const patterns = [
-            // Match script tags
-            /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-            
-            // Match event handlers
+        // List of dangerous patterns (simplified, not relying on regex HTML parsing)
+        const dangerousPatterns = [
+            // Event handlers
             /\bon\w+\s*=/gi,
             
-            // Match javascript: protocol
+            // Dangerous protocols
             /javascript:/gi,
-            
-            // Match data: protocol
             /data:text\/html/gi,
+            /vbscript:/gi,
             
-            // Match dangerous tags
-            /<(iframe|object|embed|applet|meta|link|style|base)/gi,
-            
-            // Match eval and similar
+            // eval and similar
             /\b(eval|expression)\s*\(/gi
         ];
 
-        // Check all patterns
-        for (const pattern of patterns) {
+        // Check simple patterns first
+        for (const pattern of dangerousPatterns) {
             if (pattern.test(input)) {
                 console.warn('XSS pattern detected:', input.substring(0, 100));
                 return true;
             }
+        }
+
+        // Use DOMParser to detect HTML/Script tags (reliable, not regex)
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(input, 'text/html');
+            
+            // Dangerous tags to check
+            const dangerousTags = ['script', 'iframe', 'object', 'embed', 'applet', 
+                                   'link', 'style', 'base', 'meta', 'form'];
+            
+            for (const tag of dangerousTags) {
+                if (doc.getElementsByTagName(tag).length > 0) {
+                    console.warn(`Dangerous tag detected: <${tag}>`, input.substring(0, 100));
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('DOMParser error:', error);
+            // If parsing fails, consider it suspicious
+            return true;
         }
 
         return false;
@@ -88,6 +109,67 @@ class Security {
         };
 
         return str.replace(/[&<>"'\/]/g, (char) => htmlEscapeMap[char]);
+    }
+
+    /**
+     * Sanitize HTML using whitelist approach (DOMParser based)
+     * Only allows safe tags and attributes
+     * @param {string} html - HTML to sanitize
+     * @param {Object} options - Whitelist options
+     * @returns {string} - Sanitized HTML
+     */
+    static sanitizeHtml(html, options = {}) {
+        const allowedTags = options.allowedTags || ['p', 'b', 'i', 'u', 'strong', 'em', 'br', 'span', 'div'];
+        const allowedAttributes = options.allowedAttributes || ['class', 'id'];
+
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Remove all script and dangerous elements
+            const dangerousTags = ['script', 'iframe', 'object', 'embed', 'applet', 
+                                   'link', 'style', 'base', 'meta', 'form'];
+            dangerousTags.forEach(tag => {
+                const elements = doc.getElementsByTagName(tag);
+                while (elements.length > 0) {
+                    elements[0].remove();
+                }
+            });
+
+            // Walk through all elements
+            const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT);
+            const nodesToRemove = [];
+
+            let node;
+            while (node = walker.nextNode()) {
+                const tagName = node.tagName.toLowerCase();
+                
+                // Remove disallowed tags
+                if (!allowedTags.includes(tagName)) {
+                    nodesToRemove.push(node);
+                    continue;
+                }
+
+                // Remove disallowed attributes
+                Array.from(node.attributes).forEach(attr => {
+                    if (!allowedAttributes.includes(attr.name.toLowerCase())) {
+                        node.removeAttribute(attr.name);
+                    }
+                });
+            }
+
+            // Remove marked nodes
+            nodesToRemove.forEach(node => {
+                node.replaceWith(...node.childNodes);
+            });
+
+            return doc.body.innerHTML;
+
+        } catch (error) {
+            console.error('HTML sanitization error:', error);
+            // Fallback: escape everything
+            return this.escapeHtml(html);
+        }
     }
 
     /**
