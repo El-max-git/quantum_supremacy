@@ -7,13 +7,26 @@
     <script>
         // GitHub Pages SPA redirect trick
         // Converts path to query parameter for client-side routing
-        const path = window.location.pathname.slice(1);
+        const basePath = '/quantum_supremacy';
+        let path = window.location.pathname;
+        
+        // Remove base path if present
+        if (path.startsWith(basePath)) {
+            path = path.substring(basePath.length);
+        }
+        
+        // Remove leading slash
+        path = path.slice(1);
+        
         if (path) {
             window.location.replace(
-                window.location.origin + 
+                window.location.origin + basePath +
                 '/?redirect=' + 
                 encodeURIComponent(path)
             );
+        } else {
+            // If no path, redirect to home
+            window.location.replace(window.location.origin + basePath + '/');
         }
     </script>
 </head>

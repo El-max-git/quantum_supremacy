@@ -8,6 +8,11 @@ class Router {
         this.currentRoute = null;
         this.rootElement = document.getElementById('app');
         
+        // Detect base path for GitHub Pages
+        this.basePath = window.location.hostname.includes('github.io') 
+            ? '/quantum_supremacy' 
+            : '';
+        
         // Handle initial redirect from 404.html
         this.handleInitialRedirect();
         
@@ -44,7 +49,11 @@ class Router {
     setupListeners() {
         // Handle browser back/forward buttons
         window.addEventListener('popstate', () => {
-            this.loadRoute(window.location.pathname);
+            let pathname = window.location.pathname;
+            if (this.basePath && pathname.startsWith(this.basePath)) {
+                pathname = pathname.substring(this.basePath.length) || '/';
+            }
+            this.loadRoute(pathname);
         });
 
         // Handle link clicks
@@ -65,10 +74,13 @@ class Router {
      * @param {string} path - Route path
      */
     navigate(path) {
-        // Update browser history
-        window.history.pushState({}, '', path);
+        // Add base path if needed
+        const fullPath = this.basePath + path;
         
-        // Load the route
+        // Update browser history
+        window.history.pushState({}, '', fullPath);
+        
+        // Load the route (without base path)
         this.loadRoute(path);
         
         // Scroll to top
@@ -155,8 +167,14 @@ class Router {
      * Start the router
      */
     start() {
+        // Get current pathname and remove base path if present
+        let pathname = window.location.pathname;
+        if (this.basePath && pathname.startsWith(this.basePath)) {
+            pathname = pathname.substring(this.basePath.length) || '/';
+        }
+        
         // Load initial route
-        this.loadRoute(window.location.pathname);
+        this.loadRoute(pathname);
     }
 }
 
