@@ -1,0 +1,5 @@
+Contact: https://github.com/El-max-git/quantum_supremacy/security/advisories/new
+Preferred-Languages: en, ru
+Canonical: https://el-max-git.github.io/quantum_supremacy/.well-known/security.txt
+Policy: https://github.com/El-max-git/quantum_supremacy/blob/main/SECURITY.md
+
