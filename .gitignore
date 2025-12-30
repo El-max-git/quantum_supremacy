@@ -49,3 +49,6 @@ coverage/
 .cache/
 .parcel-cache/
 
+# Site structure documentation (local notes)
+SITE_STRUCTURE.md
+
