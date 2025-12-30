@@ -1,0 +1,33 @@
+{
+  "name": "quantum-supremacy",
+  "version": "1.0.0",
+  "description": "Современный веб-сайт о квантовом превосходстве",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8000 -o",
+    "dev": "npx live-server --port=8000",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/quantum_supremacy.git"
+  },
+  "keywords": [
+    "quantum",
+    "computing",
+    "quantum-supremacy",
+    "website",
+    "html",
+    "css",
+    "javascript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/quantum_supremacy/issues"
+  },
+  "homepage": "https://github.com/your-username/quantum_supremacy#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}
+

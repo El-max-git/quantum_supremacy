@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Quantum symbol - atom-like structure -->
+  <circle cx="50" cy="50" r="45" fill="url(#grad1)"/>
+  
+  <!-- Electron orbits -->
+  <ellipse cx="50" cy="50" rx="35" ry="15" fill="none" stroke="white" stroke-width="2" opacity="0.8"/>
+  <ellipse cx="50" cy="50" rx="15" ry="35" fill="none" stroke="white" stroke-width="2" opacity="0.8"/>
+  
+  <!-- Nucleus -->
+  <circle cx="50" cy="50" r="8" fill="white"/>
+  
+  <!-- Electrons -->
+  <circle cx="85" cy="50" r="4" fill="white"/>
+  <circle cx="15" cy="50" r="4" fill="white"/>
+  <circle cx="50" cy="15" r="4" fill="white"/>
+  <circle cx="50" cy="85" r="4" fill="white"/>
+</svg>
+

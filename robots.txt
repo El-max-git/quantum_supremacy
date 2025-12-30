@@ -1,0 +1,13 @@
+# robots.txt для Quantum Supremacy
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://your-username.github.io/quantum_supremacy/sitemap.xml
+
+# Disallow crawling of development/test files
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /.github/
+
