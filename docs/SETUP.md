@@ -16,7 +16,7 @@
 
 ```bash
 # Клонируйте репозиторий
-git clone https://github.com/your-username/quantum_supremacy.git
+git clone https://github.com/el-max-git/quantum_supremacy.git
 
 # Перейдите в директорию проекта
 cd quantum_supremacy
@@ -134,7 +134,7 @@ git push origin main
 2. Выберите "Pages" в левом меню
 3. В разделе "Source" выберите "gh-pages" branch (будет создана автоматически через GitHub Actions)
 4. Сохраните изменения
-5. Ваш сайт будет доступен по адресу: `https://your-username.github.io/quantum_supremacy/`
+5. Ваш сайт будет доступен по адресу: `https://el-max-git.github.io/quantum_supremacy/`
 
 ## 🔧 Отладка
 
@@ -163,7 +163,7 @@ git push origin main
 
 Если у вас возникли проблемы:
 
-1. Проверьте [Issues](https://github.com/your-username/quantum_supremacy/issues) на наличие похожих проблем
+1. Проверьте [Issues](https://github.com/el-max-git/quantum_supremacy/issues) на наличие похожих проблем
 2. Создайте новый Issue с подробным описанием проблемы
 3. Прочитайте [CONTRIBUTING.md](../CONTRIBUTING.md) для получения дополнительной информации
 

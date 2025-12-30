@@ -40,7 +40,7 @@ quantum_supremacy/
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/your-username/quantum_supremacy.git
+git clone https://github.com/el-max-git/quantum_supremacy.git
 ```
 
 2. Перейдите в директорию проекта:
@@ -83,7 +83,7 @@ Contributions are welcome! Если вы хотите внести свой вк
 
 **Your Name**
 
-- GitHub: [@your-username](https://github.com/your-username)
+- GitHub: [@el-max-git](https://github.com/el-max-git)
 
 ## 🙏 Благодарности
 

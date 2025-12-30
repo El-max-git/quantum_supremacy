@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/quantum_supremacy.git"
+    "url": "git+https://github.com/el-max-git/quantum_supremacy.git"
   },
   "keywords": [
     "quantum",
@@ -24,9 +24,9 @@
   "author": "Your Name",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/your-username/quantum_supremacy/issues"
+    "url": "https://github.com/el-max-git/quantum_supremacy/issues"
   },
-  "homepage": "https://github.com/your-username/quantum_supremacy#readme",
+  "homepage": "https://github.com/el-max-git/quantum_supremacy#readme",
   "devDependencies": {},
   "dependencies": {}
 }

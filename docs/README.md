@@ -209,8 +209,8 @@ quantum_supremacy/
 
 Нужна помощь? Выберите подходящий канал:
 
-- 🐛 **Баги:** [GitHub Issues](https://github.com/your-username/quantum_supremacy/issues)
-- 💡 **Идеи:** [GitHub Discussions](https://github.com/your-username/quantum_supremacy/discussions)
+- 🐛 **Баги:** [GitHub Issues](https://github.com/el-max-git/quantum_supremacy/issues)
+- 💡 **Идеи:** [GitHub Discussions](https://github.com/el-max-git/quantum_supremacy/discussions)
 - 🔒 **Безопасность:** См. [SECURITY.md](../SECURITY.md)
 - 📖 **Документация:** Эта директория
 

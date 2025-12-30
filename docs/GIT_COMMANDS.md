@@ -710,5 +710,5 @@ my-changes
 
 **Удачи в работе с Git! 🚀**
 
-Если возникли вопросы, создайте [Issue](https://github.com/your-username/quantum_supremacy/issues).
+Если возникли вопросы, создайте [Issue](https://github.com/el-max-git/quantum_supremacy/issues).
 

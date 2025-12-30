@@ -16,7 +16,7 @@
 ```bash
 # Fork репозитория через GitHub
 # Затем клонируйте свой fork
-git clone https://github.com/your-username/quantum_supremacy.git
+git clone https://github.com/el-max-git/quantum_supremacy.git
 cd quantum_supremacy
 ```
 

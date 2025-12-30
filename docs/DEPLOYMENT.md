@@ -324,5 +324,5 @@ sudo certbot --nginx -d your-domain.com
 
 Готово! Ваш сайт развернут! 🎉
 
-Если у вас возникли проблемы, создайте [Issue](https://github.com/your-username/quantum_supremacy/issues).
+Если у вас возникли проблемы, создайте [Issue](https://github.com/el-max-git/quantum_supremacy/issues).
 

@@ -83,7 +83,7 @@ python -m http.server 8000
 Отредактируйте следующие файлы, заменив placeholder информацию:
 
 1. **README.md**
-   - Замените `your-username` на ваше имя пользователя GitHub
+   - Замените `el-max-git` на ваше имя пользователя GitHub
    - Обновите имя автора
 
 2. **package.json**
