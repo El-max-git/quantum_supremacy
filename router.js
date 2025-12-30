@@ -103,13 +103,14 @@ class Router {
         this.currentRoute = path;
 
         try {
-            // Show loading state
-            this.showLoading();
+            // Add loading class to prevent flash
+            this.rootElement.style.opacity = '0';
+            this.rootElement.style.transition = 'opacity 0.2s ease';
 
             // Get content from handler
             const content = await handler();
 
-            // Update content
+            // Update content while hidden
             this.rootElement.innerHTML = content;
 
             // Initialize page scripts
@@ -118,22 +119,16 @@ class Router {
             // Update active nav link
             this.updateActiveNav(path);
 
+            // Show content with fade-in
+            requestAnimationFrame(() => {
+                this.rootElement.style.opacity = '1';
+            });
+
         } catch (error) {
             console.error('Error loading route:', error);
             this.rootElement.innerHTML = '<h1>Error loading page</h1>';
+            this.rootElement.style.opacity = '1';
         }
-    }
-
-    /**
-     * Show loading state
-     */
-    showLoading() {
-        this.rootElement.innerHTML = `
-            <div class="loading">
-                <div class="loading__spinner"></div>
-                <p>Loading...</p>
-            </div>
-        `;
     }
 
     /**
@@ -152,12 +147,12 @@ class Router {
      */
     updateActiveNav(path) {
         // Remove active class from all links
-        document.querySelectorAll('.nav__menu a').forEach(link => {
+        document.querySelectorAll('nav a').forEach(link => {
             link.classList.remove('active');
         });
 
         // Add active class to current link
-        const activeLink = document.querySelector(`.nav__menu a[href="${path}"]`);
+        const activeLink = document.querySelector(`nav a[href="${path}"]`);
         if (activeLink) {
             activeLink.classList.add('active');
         }

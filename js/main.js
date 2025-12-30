@@ -129,12 +129,13 @@ function updateActiveNav() {
 // ========================================
 
 window.addEventListener('load', () => {
+    // Smooth fade-in on initial page load
     document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s ease';
+    document.body.style.transition = 'opacity 0.3s ease';
     
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         document.body.style.opacity = '1';
-    }, 100);
+    });
 });
 
 // ========================================
