@@ -18,8 +18,10 @@
     <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
     <link rel="manifest" href="manifest.json">
     
-    <!-- Theme color for mobile browsers -->
-    <meta name="theme-color" content="#6366f1">
+    <!-- Theme color for mobile browsers (light theme) -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <!-- Theme color for mobile browsers (dark theme) -->
+    <meta name="theme-color" content="#1e293b" media="(prefers-color-scheme: dark)">
     
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -70,7 +72,10 @@
         </div>
     </footer>
 
-    <!-- Security Script (load first) -->
+    <!-- Theme Script (load first for no flash) -->
+    <script src="js/theme.js"></script>
+    
+    <!-- Security Script -->
     <script src="js/security.js"></script>
     
     <!-- Router Script -->
