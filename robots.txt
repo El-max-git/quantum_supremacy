@@ -4,7 +4,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://your-username.github.io/quantum_supremacy/sitemap.xml
+Sitemap: https://el-max-git.github.io/quantum_supremacy/sitemap.xml
 
 # Disallow crawling of development/test files
 Disallow: /node_modules/
