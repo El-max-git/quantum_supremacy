@@ -15,25 +15,33 @@ function initializePageComponents() {
 // ========================================
 
 function initMobileMenu() {
-    const navToggle = document.querySelector('.nav__toggle');
-    const navMenu = document.querySelector('.nav__menu');
+    const navToggle = document.querySelector('.mobile-menu-toggle');
+    const navMenu = document.querySelector('nav ul');
 
-    if (navToggle) {
+    if (navToggle && navMenu) {
         // Remove old listeners by cloning
         const newToggle = navToggle.cloneNode(true);
         navToggle.parentNode.replaceChild(newToggle, navToggle);
 
         newToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('nav__menu--active');
-            newToggle.classList.toggle('nav__toggle--active');
+            navMenu.classList.toggle('active');
+            newToggle.classList.toggle('active');
         });
 
         // Close menu when clicking nav link
-        document.querySelectorAll('.nav__menu a[data-link]').forEach(link => {
+        document.querySelectorAll('nav a[data-link]').forEach(link => {
             link.addEventListener('click', () => {
-                navMenu.classList.remove('nav__menu--active');
-                newToggle.classList.remove('nav__toggle--active');
+                navMenu.classList.remove('active');
+                newToggle.classList.remove('active');
             });
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                navMenu.classList.remove('active');
+                newToggle.classList.remove('active');
+            }
         });
     }
 }
@@ -93,7 +101,7 @@ function initScrollAnimations() {
     }, observerOptions);
 
     // Observe all cards
-    document.querySelectorAll('.about__card, .tech-card, .contact__method').forEach(card => {
+    document.querySelectorAll('.card, .tech-card, .contact-item, .features-item').forEach(card => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
@@ -108,7 +116,7 @@ function initScrollAnimations() {
 function updateActiveNav() {
     const currentPath = window.location.pathname;
     
-    document.querySelectorAll('.nav__menu a').forEach(link => {
+    document.querySelectorAll('nav a').forEach(link => {
         link.classList.remove('active');
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');

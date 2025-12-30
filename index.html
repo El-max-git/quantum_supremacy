@@ -35,27 +35,21 @@
 </head>
 <body>
     <!-- Header -->
-    <header class="header">
-        <nav class="nav">
-            <div class="container">
-                <div class="nav__logo">
-                    <a href="/" data-link>
-                        <h1>Quantum Supremacy</h1>
-                    </a>
-                </div>
-                <ul class="nav__menu">
+    <header class="top-wrapper" style="padding-bottom: 20px;">
+        <div class="container header">
+            <a href="/" class="logo" data-link>Quantum Supremacy</a>
+            
+            <button class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+            
+            <nav>
+                <ul>
                     <li><a href="/" data-link>Главная</a></li>
                     <li><a href="/about" data-link>О проекте</a></li>
                     <li><a href="/technology" data-link>Технологии</a></li>
                     <li><a href="/contact" data-link>Контакты</a></li>
                 </ul>
-                <button class="nav__toggle" aria-label="Toggle menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-            </div>
-        </nav>
+            </nav>
+        </div>
     </header>
 
     <!-- Main App Container -->
@@ -64,12 +58,10 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="footer-wrapper">
         <div class="container">
             <p>&copy; 2025 Quantum Supremacy. Все права защищены.</p>
-            <div class="footer__links">
-                <a href="https://github.com/el-max-git/quantum_supremacy" target="_blank">GitHub</a>
-            </div>
+            <a href="https://github.com/el-max-git/quantum_supremacy" target="_blank">GitHub</a>
         </div>
     </footer>
 
