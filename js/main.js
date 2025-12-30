@@ -50,22 +50,25 @@ function initContactForm() {
         const newForm = contactForm.cloneNode(true);
         contactForm.parentNode.replaceChild(newForm, contactForm);
         
-        newForm.addEventListener('submit', (e) => {
+        newForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const name = newForm.querySelector('#name').value;
-            const email = newForm.querySelector('#email').value;
-            const subject = newForm.querySelector('#subject').value;
-            const message = newForm.querySelector('#message').value;
-
-            // Log form data (replace with actual API call)
-            console.log('Form submitted:', { name, email, subject, message });
-            
-            // Show success message
-            alert('Спасибо за ваше сообщение! Мы свяжемся с вами в ближайшее время.');
-            
-            // Reset form
-            newForm.reset();
+            // Use Security class for secure form handling
+            if (typeof Security !== 'undefined') {
+                await Security.secureFormSubmit(newForm, (data) => {
+                    // Log sanitized data
+                    console.log('Secure form submitted:', data);
+                    
+                    // Show success message
+                    alert('Спасибо за ваше сообщение! Мы свяжемся с вами в ближайшее время.');
+                    
+                    // Reset form
+                    newForm.reset();
+                });
+            } else {
+                // Fallback if Security not loaded
+                alert('Security module not loaded');
+            }
         });
     }
 }
