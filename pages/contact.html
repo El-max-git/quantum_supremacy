@@ -1,66 +1,110 @@
 <!-- Contact Section -->
-<section id="contact" class="contact">
-    <div class="container">
-        <h2 class="section__title">Свяжитесь с нами</h2>
-        
-        <div class="contact__grid">
-            <div class="contact__info">
-                <h3>Контактная информация</h3>
-                <p>Есть вопросы о квантовых вычислениях? Свяжитесь с нами!</p>
-                
-                <div class="contact__methods">
-                    <div class="contact__method">
-                        <span class="icon">📧</span>
-                        <div>
-                            <h4>Email</h4>
-                            <p>Через форму обратной связи</p>
-                        </div>
-                    </div>
-                    
-                    <div class="contact__method">
-                        <span class="icon">💬</span>
-                        <div>
-                            <h4>GitHub</h4>
-                            <p><a href="https://github.com/el-max-git/quantum_supremacy" target="_blank">github.com/el-max-git</a></p>
-                        </div>
-                    </div>
-                    
-                    <div class="contact__method">
-                        <span class="icon">🔒</span>
-                        <div>
-                            <h4>Security</h4>
-                            <p><a href="https://github.com/el-max-git/quantum_supremacy/security" target="_blank">Report vulnerability</a></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="contact__form-wrapper">
-                <form class="contact__form" id="contactForm">
-                    <div class="form__group">
-                        <label for="name">Ваше имя</label>
-                        <input type="text" id="name" name="name" placeholder="Иван Иванов" required>
-                    </div>
-                    
-                    <div class="form__group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="ivan@example.com" required>
-                    </div>
-                    
-                    <div class="form__group">
-                        <label for="subject">Тема</label>
-                        <input type="text" id="subject" name="subject" placeholder="Вопрос о квантовых вычислениях" required>
-                    </div>
-                    
-                    <div class="form__group">
-                        <label for="message">Сообщение</label>
-                        <textarea id="message" name="message" rows="5" placeholder="Ваше сообщение..." required></textarea>
-                    </div>
-                    
-                    <button type="submit" class="btn btn--primary">Отправить</button>
-                </form>
-            </div>
+<section class="container">
+    <h1 class="text-center">Свяжитесь с нами</h1>
+    <p class="text-center text-secondary mb-5">Есть вопросы о квантовых вычислениях? Мы будем рады помочь!</p>
+    
+    <!-- Contact Methods -->
+    <div class="contact-grid">
+        <div class="contact-item">
+            <i>📧</i>
+            <h3>Email</h3>
+            <p>Через форму обратной связи</p>
         </div>
+        
+        <div class="contact-item">
+            <i>💬</i>
+            <h3>GitHub</h3>
+            <p><a href="https://github.com/el-max-git/quantum_supremacy" target="_blank">github.com/el-max-git</a></p>
+        </div>
+        
+        <div class="contact-item">
+            <i>🔒</i>
+            <h3>Security</h3>
+            <p><a href="https://github.com/el-max-git/quantum_supremacy/security" target="_blank">Report vulnerability</a></p>
+        </div>
+    </div>
+
+    <!-- Contact Form -->
+    <div class="card mt-5" style="max-width: 700px; margin-left: auto; margin-right: auto;">
+        <h2 class="text-center mb-4">Форма обратной связи</h2>
+        
+        <form id="contactForm">
+            <div class="form-group">
+                <label for="name">Ваше имя</label>
+                <input type="text" id="name" name="name" placeholder="Иван Иванов" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="ivan@example.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="subject">Тема</label>
+                <input type="text" id="subject" name="subject" placeholder="Вопрос о квантовых вычислениях" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Сообщение</label>
+                <textarea id="message" name="message" rows="6" placeholder="Ваше сообщение..." required></textarea>
+            </div>
+            
+            <button type="submit" class="button" style="width: 100%;">Отправить сообщение</button>
+        </form>
+        
+        <div id="form-message" style="margin-top: 1rem; display: none;"></div>
     </div>
 </section>
 
+<script>
+// Contact form handler
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        // Get form data
+        const formData = new FormData(this);
+        const data = {};
+        
+        for (const [key, value] of formData.entries()) {
+            data[key] = Security.sanitizeInput(value);
+        }
+        
+        // Validate email
+        if (!Security.validateEmail(data.email)) {
+            throw new Error('Некорректный email адрес');
+        }
+        
+        // Check rate limit
+        if (!Security.checkRateLimit('contact_form', 3, 300000)) {
+            throw new Error('Слишком много отправок. Попробуйте позже (5 минут).');
+        }
+        
+        // Show success message
+        const messageDiv = document.getElementById('form-message');
+        messageDiv.className = '';
+        messageDiv.id = 'message';
+        messageDiv.textContent = 'Спасибо! Ваше сообщение принято. (Форма работает в демо-режиме)';
+        messageDiv.style.display = 'block';
+        
+        // Reset form
+        this.reset();
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+        
+    } catch (error) {
+        const messageDiv = document.getElementById('form-message');
+        messageDiv.className = '';
+        messageDiv.id = 'error';
+        messageDiv.textContent = error.message;
+        messageDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+    }
+});
+</script>
