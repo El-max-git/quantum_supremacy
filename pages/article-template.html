@@ -65,25 +65,27 @@
         // Загружаем markdown файл
         const mdText = await fetch(`${window.router?.basePath || ''}/${article.mdFile}`).then(r => r.text());
         
-        // Парсим markdown в HTML
+        // Парсим markdown в HTML (теперь возвращает {html, metadata})
         const parser = new ArticleParser({ 
             basePath: window.router?.basePath || '' 
         });
-        const html = await parser.parse(mdText, article.path);
+        const { html, metadata } = await parser.parse(mdText, article.path);
         
-        // Заполняем метаданные
-        document.getElementById('article-title').textContent = article.title;
-        document.getElementById('article-category').textContent = article.category || 'Статья';
-        document.getElementById('article-author').textContent = article.author || '';
-        document.getElementById('article-date').textContent = article.date || '';
+        // Заполняем метаданные (приоритет: frontmatter > config.json)
+        document.getElementById('article-title').textContent = metadata.title || article.title;
+        document.getElementById('article-category').textContent = metadata.category || article.category || 'Статья';
+        document.getElementById('article-author').textContent = metadata.author || article.author || '';
+        document.getElementById('article-date').textContent = metadata.date || article.date || '';
         
-        if (article.readingTime) {
-            document.getElementById('article-reading-time').textContent = `${article.readingTime} мин чтения`;
+        const readingTime = metadata.readingTime || article.readingTime;
+        if (readingTime) {
+            document.getElementById('article-reading-time').textContent = `${readingTime} мин чтения`;
         }
         
-        // Теги
-        if (article.tags && article.tags.length) {
-            const tagsHtml = article.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+        // Теги (из frontmatter или config)
+        const tags = metadata.tags || article.tags;
+        if (tags && tags.length) {
+            const tagsHtml = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
             document.getElementById('article-tags').innerHTML = tagsHtml;
         }
         

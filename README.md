@@ -18,27 +18,57 @@
 - ♿ Доступность (WCAG 2.1)
 - 🔒 Максимальная безопасность (CSP, Security Headers)
 - 🔀 SPA роутер для плавной навигации
+- 📚 **Система научных статей** с поддержкой Markdown, MathJax и специальных блоков
+- 🔍 **Универсальный просмотрщик статей** - список + детальный просмотр в одном модуле
 
 ## 🛠️ Технологии
 
 - HTML5
-- CSS3 (Grid, Flexbox, Animations)
-- JavaScript (ES6+)
-- [Добавьте другие технологии по мере разработки]
+- CSS3 (Grid, Flexbox, Animations, CSS Variables)
+- JavaScript (ES6+, SPA Router)
+- Markdown (marked.js)
+- MathJax 3.x (для математических формул)
+- YAML Frontmatter (для метаданных статей)
 
 ## 📁 Структура проекта
 
 ```
 quantum_supremacy/
-├── index.html          # Главная страница
-├── css/                # Стили
-│   └── style.css
-├── js/                 # Скрипты
-│   └── main.js
-├── assets/             # Медиа файлы
+├── index.html              # Главная страница с SPA роутером
+├── router.js               # SPA маршрутизатор
+├── css/                    # Стили
+│   ├── style.css           # Основные стили + темы
+│   └── fonts.css           # Шрифты
+├── js/                     # Скрипты
+│   ├── main.js             # Главный скрипт
+│   ├── security.js         # Защита от XSS
+│   ├── theme.js            # Управление темами
+│   ├── navigation.js       # NavUtils - утилиты навигации
+│   ├── article-parser.js   # Парсер Markdown → HTML
+│   ├── article-viewer.js   # Просмотрщик статей
+│   └── table-of-contents.js # Генератор содержания
+├── pages/                  # HTML страницы
+│   ├── home.html
+│   ├── about.html
+│   ├── articles.html       # Список статей + просмотр
+│   └── ...
+├── articles/               # 📚 Научные статьи
+│   ├── README.md           # Гайд по созданию статей
+│   └── test-simple/
+│       ├── article.md      # Markdown + YAML frontmatter
+│       └── images/
+├── assets/                 # Медиа файлы
 │   ├── images/
-│   └── icons/
-└── docs/               # Документация
+│   ├── icons/
+│   └── fonts/
+├── data/                   # Данные
+│   └── config.json         # Конфигурация сайта и статей
+└── docs/                   # Документация
+    ├── ARTICLE_PROTOCOL.md        # Протокол разметки статей
+    ├── ARTICLE_PARSER_GUIDE.md    # Руководство по парсеру
+    ├── ARTICLE_VIEWER_GUIDE.md    # Руководство по просмотрщику
+    ├── ARTICLE_WRITING_GUIDE.md   # Руководство по написанию
+    └── ...
 ```
 
 ## 🚀 Быстрый старт

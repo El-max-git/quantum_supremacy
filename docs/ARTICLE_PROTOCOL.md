@@ -6,6 +6,39 @@
 
 ## Базовая структура статьи
 
+### YAML Frontmatter (обязательно)
+
+Каждая статья должна начинаться с YAML frontmatter, содержащего метаданные:
+
+```markdown
+---
+id: article-id
+title: Название статьи
+author: Имя Автора
+date: 2025-01-01
+category: physics
+tags: [quantum, vacuum, energy]
+description: Краткое описание статьи для превью
+readingTime: 15
+difficulty: intermediate
+prerequisites: [quantum-basics, vacuum-intro]
+---
+```
+
+**Обязательные поля:**
+- `id` - уникальный идентификатор статьи (lowercase с дефисами)
+- `title` - заголовок статьи
+- `author` - автор статьи
+- `date` - дата публикации (YYYY-MM-DD)
+
+**Опциональные поля:**
+- `category` - категория (theory, experiment, application, tutorial)
+- `tags` - массив тегов
+- `description` - краткое описание для превью
+- `readingTime` - время чтения в минутах
+- `difficulty` - сложность (beginner, intermediate, advanced, expert)
+- `prerequisites` - массив ID статей-предпосылок
+
 ### Заголовок статьи
 
 ```markdown

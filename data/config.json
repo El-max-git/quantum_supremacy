@@ -32,6 +32,17 @@
       }
     },
     {
+      "path": "/articles",
+      "page": "articles.html",
+      "title": "Статьи - Quantum Supremacy",
+      "inMenu": true,
+      "order": 4,
+      "meta": {
+        "description": "Научные статьи по квантовой физике, вакуумной энергии и передовым концепциям",
+        "keywords": ["научные статьи", "квантовая физика", "вакуум", "исследования"]
+      }
+    },
+    {
       "path": "/quantum-basics",
       "page": "quantum-basics.html",
       "title": "Этап 1: Квантовая механика - Quantum Supremacy",
@@ -86,14 +97,14 @@
       "page": "technology.html",
       "title": "Технологии - Quantum Supremacy",
       "inMenu": true,
-      "order": 4
+      "order": 5
     },
     {
       "path": "/contact",
       "page": "contact.html",
       "title": "Контакты - Quantum Supremacy",
       "inMenu": true,
-      "order": 5
+      "order": 6
     },
     {
       "path": "/404",

@@ -1,0 +1,367 @@
+/**
+ * Article Viewer Module
+ * Универсальный модуль для отображения списка статей и их просмотра
+ */
+
+class ArticleViewer {
+    constructor(config = {}) {
+        this.config = {
+            basePath: config.basePath || '',
+            listContainerId: config.listContainerId || 'articles-list',
+            viewerContainerId: config.viewerContainerId || 'article-viewer',
+            configPath: config.configPath || '/data/config.json',
+            ...config
+        };
+        
+        this.articles = [];
+        this.currentArticle = null;
+        this.parser = new ArticleParser({ basePath: this.config.basePath });
+    }
+
+    /**
+     * Инициализация модуля
+     */
+    async init() {
+        try {
+            // Загружаем конфигурацию
+            await this.loadArticles();
+            
+            // Отображаем список статей
+            this.renderArticlesList();
+            
+            // Проверяем, есть ли articleId в URL (для прямых ссылок)
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+            
+            if (articleId) {
+                await this.viewArticle(articleId);
+            }
+            
+        } catch (error) {
+            console.error('ArticleViewer initialization error:', error);
+            this.showError('Ошибка загрузки статей: ' + error.message);
+        }
+    }
+
+    /**
+     * Загрузка списка статей из config.json
+     */
+    async loadArticles() {
+        const configUrl = `${this.config.basePath}${this.config.configPath}`;
+        const response = await fetch(configUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const config = await response.json();
+        this.articles = config.articles || [];
+        
+        if (this.articles.length === 0) {
+            console.warn('No articles found in config.json');
+        }
+        
+        return this.articles;
+    }
+
+    /**
+     * Отображение списка статей
+     */
+    renderArticlesList() {
+        const container = document.getElementById(this.config.listContainerId);
+        
+        if (!container) {
+            console.error(`Container #${this.config.listContainerId} not found`);
+            return;
+        }
+        
+        if (this.articles.length === 0) {
+            container.innerHTML = `
+                <div class="no-articles">
+                    <p>📚 Статьи пока не добавлены</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Группируем по категориям
+        const byCategory = this.groupByCategory(this.articles);
+        
+        let html = '<div class="articles-grid">';
+        
+        for (const [category, articles] of Object.entries(byCategory)) {
+            html += `
+                <div class="category-section">
+                    <h3 class="category-title">${category}</h3>
+                    <div class="articles-cards">
+            `;
+            
+            articles.forEach(article => {
+                html += this.renderArticleCard(article);
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        container.innerHTML = html;
+        
+        // Добавляем обработчики кликов
+        this.attachCardListeners();
+    }
+
+    /**
+     * Группировка статей по категориям
+     */
+    groupByCategory(articles) {
+        const grouped = {};
+        
+        articles.forEach(article => {
+            const category = article.category || 'Без категории';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(article);
+        });
+        
+        return grouped;
+    }
+
+    /**
+     * Рендер карточки статьи
+     */
+    renderArticleCard(article) {
+        const tags = article.tags ? article.tags.map(tag => 
+            `<span class="tag">${tag}</span>`
+        ).join('') : '';
+        
+        return `
+            <div class="article-card" data-article-id="${article.id}">
+                <div class="article-card-header">
+                    <h4 class="article-card-title">${article.title}</h4>
+                    ${tags ? `<div class="article-card-tags">${tags}</div>` : ''}
+                </div>
+                <div class="article-card-body">
+                    <p class="article-card-description">${article.description || ''}</p>
+                </div>
+                <div class="article-card-footer">
+                    <span class="article-author">✍️ ${article.author || 'Автор'}</span>
+                    <span class="article-date">📅 ${article.date || ''}</span>
+                    ${article.readingTime ? `<span class="article-reading-time">⏱️ ${article.readingTime} мин</span>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Добавление обработчиков на карточки
+     */
+    attachCardListeners() {
+        const cards = document.querySelectorAll('.article-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('click', async () => {
+                const articleId = card.dataset.articleId;
+                await this.viewArticle(articleId);
+            });
+        });
+    }
+
+    /**
+     * Просмотр статьи
+     */
+    async viewArticle(articleId) {
+        const article = this.articles.find(a => a.id === articleId);
+        
+        if (!article) {
+            this.showError(`Статья с ID "${articleId}" не найдена`);
+            return;
+        }
+        
+        this.currentArticle = article;
+        
+        try {
+            // Показываем контейнер просмотра
+            const viewer = document.getElementById(this.config.viewerContainerId);
+            const list = document.getElementById(this.config.listContainerId);
+            
+            if (viewer) viewer.style.display = 'block';
+            if (list) list.style.display = 'none';
+            
+            // Показываем индикатор загрузки
+            if (viewer) {
+                viewer.innerHTML = `
+                    <div class="loading-indicator">
+                        <div class="spinner"></div>
+                        <p>Загрузка статьи...</p>
+                    </div>
+                `;
+            }
+            
+            // Загружаем markdown
+            const mdUrl = `${this.config.basePath}/${article.mdFile}`;
+            const response = await fetch(mdUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Не удалось загрузить статью: ${response.status}`);
+            }
+            
+            const mdText = await response.text();
+            
+            // Парсим статью
+            const { html, metadata } = await this.parser.parse(mdText, article.path);
+            
+            // Рендерим статью
+            this.renderArticleView(article, metadata, html);
+            
+            // Обновляем URL (без перезагрузки страницы)
+            const newUrl = `${window.location.pathname}?id=${articleId}`;
+            window.history.pushState({ articleId }, '', newUrl);
+            
+            // Скроллим наверх
+            window.scrollTo(0, 0);
+            
+        } catch (error) {
+            console.error('Error loading article:', error);
+            this.showError('Ошибка загрузки статьи: ' + error.message);
+        }
+    }
+
+    /**
+     * Рендер просмотра статьи
+     */
+    renderArticleView(article, metadata, html) {
+        const viewer = document.getElementById(this.config.viewerContainerId);
+        
+        if (!viewer) return;
+        
+        const title = metadata.title || article.title;
+        const author = metadata.author || article.author || '';
+        const date = metadata.date || article.date || '';
+        const category = metadata.category || article.category || 'Статья';
+        const tags = metadata.tags || article.tags || [];
+        const readingTime = metadata.readingTime || article.readingTime;
+        
+        const tagsHtml = tags.length ? tags.map(tag => 
+            `<span class="tag">${tag}</span>`
+        ).join('') : '';
+        
+        viewer.innerHTML = `
+            <div class="article-wrapper">
+                <!-- Back Button -->
+                <button class="back-to-list-btn" id="back-to-list">
+                    ← Назад к списку
+                </button>
+                
+                <!-- Table of Contents -->
+                <aside class="article-toc-sidebar" id="article-toc-sidebar">
+                    <div class="toc-sticky">
+                        <h3 class="toc-title">Содержание</h3>
+                        <div id="article-toc"></div>
+                    </div>
+                </aside>
+                
+                <!-- Article Content -->
+                <article class="article-content">
+                    <!-- Header -->
+                    <header class="article-header">
+                        <div class="article-category">${category}</div>
+                        <h1 class="article-title">${title}</h1>
+                        <div class="article-meta">
+                            ${author ? `<span class="article-author">✍️ ${author}</span>` : ''}
+                            ${date ? `<span class="article-date">📅 ${date}</span>` : ''}
+                            ${readingTime ? `<span class="article-reading-time">⏱️ ${readingTime} мин</span>` : ''}
+                        </div>
+                        ${tagsHtml ? `<div class="article-tags">${tagsHtml}</div>` : ''}
+                    </header>
+                    
+                    <!-- Body -->
+                    <div class="article-body" id="article-body">
+                        ${html}
+                    </div>
+                </article>
+            </div>
+        `;
+        
+        // Генерируем содержание
+        this.generateTOC();
+        
+        // Добавляем обработчик кнопки "Назад"
+        const backBtn = document.getElementById('back-to-list');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.backToList());
+        }
+        
+        // Рендерим математику если есть
+        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+            MathJax.typesetPromise([document.getElementById('article-body')]).catch(err => {
+                console.warn('MathJax rendering error:', err);
+            });
+        }
+    }
+
+    /**
+     * Генерация содержания
+     */
+    generateTOC() {
+        const tocContainer = document.getElementById('article-toc');
+        const articleBody = document.getElementById('article-body');
+        
+        if (!tocContainer || !articleBody) return;
+        
+        const toc = new TableOfContents({ minHeadings: 2 });
+        const tocHtml = toc.generate(articleBody);
+        tocContainer.innerHTML = tocHtml;
+        
+        // Инициализируем отслеживание скролла
+        toc.initScrollTracking();
+    }
+
+    /**
+     * Возврат к списку статей
+     */
+    backToList() {
+        const viewer = document.getElementById(this.config.viewerContainerId);
+        const list = document.getElementById(this.config.listContainerId);
+        
+        if (viewer) viewer.style.display = 'none';
+        if (list) list.style.display = 'block';
+        
+        this.currentArticle = null;
+        
+        // Обновляем URL (убираем ?id=...)
+        window.history.pushState({}, '', window.location.pathname);
+        
+        // Скроллим наверх
+        window.scrollTo(0, 0);
+    }
+
+    /**
+     * Показ ошибки
+     */
+    showError(message) {
+        const viewer = document.getElementById(this.config.viewerContainerId);
+        const list = document.getElementById(this.config.listContainerId);
+        
+        if (viewer) {
+            viewer.style.display = 'block';
+            viewer.innerHTML = `
+                <div class="article-error">
+                    <h2>❌ Ошибка</h2>
+                    <p>${message}</p>
+                    <button class="back-to-list-btn" onclick="articleViewer.backToList()">
+                        ← Назад к списку
+                    </button>
+                </div>
+            `;
+        }
+        
+        if (list) list.style.display = 'none';
+    }
+}
+
+// Глобальная переменная для доступа из HTML
+window.ArticleViewer = ArticleViewer;

@@ -9,12 +9,13 @@
 ```
 articles/
 └── article-id/
-    ├── article.md          # Main markdown content
-    ├── metadata.json       # Article metadata
+    ├── article.md          # Main markdown content with frontmatter metadata
     └── images/             # Article images (optional)
         ├── diagram1.png
         └── formula.svg
 ```
+
+**Важно:** Метаданные теперь встроены в сам файл `article.md` через YAML frontmatter (в начале файла), вместо отдельного `metadata.json`.
 
 ## Создание новой статьи
 
@@ -31,6 +32,19 @@ mkdir -p articles/my-article/images
 Пример:
 
 ```markdown
+---
+id: my-article
+title: Article Title
+author: Author Name
+date: 2025-01-01
+category: theory
+tags: [quantum, physics]
+description: Brief description for preview
+readingTime: 10
+difficulty: intermediate
+prerequisites: [quantum-basics]
+---
+
 # Article Title
 
 > **Description:** Brief description of the article
@@ -60,26 +74,9 @@ $$
 Summary and next steps...
 ```
 
-### Шаг 3: Создать метаданные
+**Важно:** Метаданные указываются в YAML frontmatter между `---` в начале файла.
 
-Создайте `articles/my-article/metadata.json`:
-
-```json
-{
-  "id": "my-article",
-  "title": "Article Title",
-  "author": "Author Name",
-  "date": "2025-01-01",
-  "category": "theory",
-  "tags": ["quantum", "physics"],
-  "description": "Brief description for preview",
-  "readingTime": 10,
-  "difficulty": "intermediate",
-  "prerequisites": ["quantum-basics"]
-}
-```
-
-### Шаг 4: Зарегистрировать в конфигурации
+### Шаг 3: Зарегистрировать в конфигурации
 
 Добавьте в `data/config.json`:
 
@@ -90,17 +87,13 @@ Summary and next steps...
       "id": "my-article",
       "title": "Article Title",
       "path": "/article/my-article",
-      "mdFile": "articles/my-article/article.md",
-      "category": "theory",
-      "author": "Author Name",
-      "date": "2025-01-01",
-      "readingTime": 10,
-      "tags": ["quantum", "physics"],
-      "description": "Brief description"
+      "mdFile": "articles/my-article/article.md"
     }
   ]
 }
 ```
+
+**Примечание:** Большинство метаданных теперь читаются из frontmatter в самом файле статьи. В `config.json` достаточно указать только `id`, `title`, `path` и `mdFile`.
 
 ## Доступные возможности статей
 
@@ -193,10 +186,10 @@ $$
 Для миграции статей из `palantir_w/palantir_w/moduls/VP/`:
 
 1. Скопируйте `.md` файл в `articles/article-id/article.md`
-2. Создайте `metadata.json` с информацией о статье
+2. Добавьте YAML frontmatter в начало файла с метаданными
 3. Переместите изображения в `articles/article-id/images/`
 4. Обновите пути изображений с `./VP/images/` на `./images/`
-5. Зарегистрируйте в `data/config.json`
+5. Зарегистрируйте в `data/config.json` (минимальная конфигурация)
 6. Протестируйте статью в браузере
 
 ## Примечания

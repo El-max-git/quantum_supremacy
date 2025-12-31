@@ -1,223 +1,170 @@
-# 📝 Article Parser System - Implementation Summary
+# 📚 Система статей - Краткая справка
 
-## ✅ Completed Tasks
+## Структура статьи
 
-All tasks from the development plan have been successfully implemented:
+```
+articles/
+└── my-article/
+    ├── article.md      # Markdown с YAML frontmatter
+    └── images/         # Изображения (опционально)
+```
 
-### 1. ✅ Analysis and Protocol Documentation
-- **Created:** `docs/ARTICLE_PROTOCOL.md`
-- **Content:** Comprehensive markup protocol with examples
-- **Features:** Headings, formulas, special blocks, images, links, tables, diagrams
+## Просмотр статей
 
-### 2. ✅ Base Parser Development
-- **Created:** `js/article-parser.js`
-- **Features:**
-  - Markdown → HTML conversion (marked.js integration)
-  - Special blocks preprocessing (⚠️🔑💡📝)
-  - Formula boxes preprocessing (ASCII art)
-  - Image path conversion (relative → absolute)
-  - Internal link conversion (SPA compatibility)
-  - Automatic anchor generation
-  - MathJax initialization and rendering
+### Два способа:
 
-### 3. ✅ Table of Contents Generator
-- **Created:** `js/table-of-contents.js`
-- **Features:**
-  - Automatic TOC generation from headings
-  - Scroll tracking with active link highlighting
-  - Smooth scroll to sections
-  - Sticky sidebar positioning
-  - Configurable heading levels
-  - Responsive design
+1. **Список статей** - `/articles` (универсальный просмотрщик)
+   - Все статьи в одном месте
+   - Группировка по категориям
+   - Клик по карточке → открывает статью
 
-### 4. ✅ Router Integration
-- **Created:** `pages/article-template.html`
-- **Updated:** `index.html` (added parser scripts)
-- **Updated:** `data/config.json` (added articles section)
-- **Features:**
-  - Dynamic article loading from markdown
-  - Metadata display (author, date, category, tags)
-  - Article navigation (prev/next)
-  - Error handling
-  - SPA routing compatibility
+2. **Прямая ссылка** - `/articles?id=article-id`
+   - Прямой доступ к конкретной статье
+   - Работает для шаринга и закладок
 
-### 5. ✅ Styling System
-- **Updated:** `css/style.css` (added ~600 lines of article styles)
-- **Features:**
-  - Two-column layout (TOC + content)
-  - Special block styles (4 types with light/dark themes)
-  - Formula box styling
-  - Math rendering integration
-  - Responsive breakpoints (mobile, tablet, desktop)
-  - Print-friendly styles
-  - Dark/light theme support throughout
+## Формат article.md
 
-### 6. ✅ Documentation
-- **Created:** `docs/ARTICLE_PROTOCOL.md` - Markup standards
-- **Created:** `docs/ARTICLE_PARSER_GUIDE.md` - Technical guide
-- **Created:** `docs/ARTICLE_WRITING_GUIDE.md` - Writing best practices
-- **Created:** `articles/README.md` - Quick start for authors
-- **Updated:** `docs/README.md` - Added article system links
-- **Updated:** `CHANGELOG.md` - Documented all changes
+```markdown
+---
+id: my-article
+title: Название статьи
+author: Имя Автора
+date: 2025-01-01
+category: theory
+tags: [quantum, physics]
+description: Краткое описание
+readingTime: 10
+difficulty: intermediate
+---
 
-### 7. ✅ Test Article
-- **Created:** `articles/test-simple/`
-  - `article.md` - Markdown content with all features
-  - `metadata.json` - Article metadata
-  - `images/` - Image directory
+# Название статьи
 
-### 8. ⚠️ Migration (Cancelled)
-- Migration of VP articles was marked as pending for future work
-- System is ready to accept migrated articles
-- Migration guide included in documentation
+> **Описание:** Краткое описание статьи
 
-## 📦 Deliverables
+## 1. Введение
 
-### New Files Created (15)
-1. `js/article-parser.js` - Core parser (400+ lines)
-2. `js/table-of-contents.js` - TOC generator (400+ lines)
-3. `pages/article-template.html` - Article page template
-4. `docs/ARTICLE_PROTOCOL.md` - Markup protocol (600+ lines)
-5. `docs/ARTICLE_PARSER_GUIDE.md` - Technical guide (500+ lines)
-6. `docs/ARTICLE_WRITING_GUIDE.md` - Writing guide (700+ lines)
-7. `articles/README.md` - Quick start guide
-8. `articles/.gitkeep` - Keep directory in Git
-9. `articles/test-simple/article.md` - Test article
-10. `articles/test-simple/metadata.json` - Test metadata
-11. `articles/test-simple/images/.gitkeep` - Keep images directory
-12. `ARTICLE_SYSTEM_SUMMARY.md` - This file
+Содержание...
 
-### Modified Files (4)
-1. `index.html` - Added parser script imports
-2. `css/style.css` - Added ~600 lines of article styles
-3. `data/config.json` - Added articles configuration
-4. `docs/README.md` - Added article system documentation links
-5. `CHANGELOG.md` - Documented all changes
+### 1.1. Подраздел
 
-## 🎯 Features Implemented
+Содержание подраздела...
 
-### Core Features
-- ✅ Markdown to HTML parsing
-- ✅ Mathematical formulas (inline & block)
-- ✅ Special blocks (4 types)
-- ✅ Automatic table of contents
-- ✅ Image handling (relative & absolute paths)
-- ✅ Internal & external links
-- ✅ ASCII formula boxes
-- ✅ Code blocks & diagrams
-- ✅ Tables support
-- ✅ Heading anchors
+> 💡 **Note:**
+> 
+> Важная информация
 
-### UI/UX Features
-- ✅ Two-column layout (TOC + content)
-- ✅ Sticky TOC with scroll tracking
-- ✅ Active link highlighting
-- ✅ Smooth scroll to sections
-- ✅ Article navigation (prev/next)
-- ✅ Responsive design (3 breakpoints)
-- ✅ Dark/light theme support
-- ✅ Print-friendly styles
+$$
+E = mc^2
+$$
 
-### Developer Features
-- ✅ Modular architecture
-- ✅ Configurable parser options
-- ✅ Easy article creation workflow
-- ✅ Comprehensive documentation
-- ✅ Example article
-- ✅ Error handling
-- ✅ Debug support
+![Диаграмма](./images/diagram.png)
 
-## 🔧 Technical Stack
+## Заключение
 
-### Dependencies
-- **marked.js** v11.1.1 - Markdown parsing
-- **MathJax** 3.x - Math rendering
-- **Browser APIs** - DOM, Fetch, History
+Итоги и выводы...
+```
 
-### Integration
-- ✅ SPA Router compatible
-- ✅ NavUtils compatible
-- ✅ Config.json driven
-- ✅ Security.js compatible
+## Регистрация в config.json
 
-## 📊 Statistics
+```json
+{
+  "articles": [
+    {
+      "id": "my-article",
+      "title": "Название статьи",
+      "path": "/article/my-article",
+      "mdFile": "articles/my-article/article.md"
+    }
+  ]
+}
+```
 
-- **Total Lines of Code:** ~2,500+
-- **JavaScript:** ~800 lines (parser + TOC)
-- **CSS:** ~600 lines (article styles)
-- **HTML:** ~100 lines (template)
-- **Documentation:** ~1,800 lines (3 guides + protocol)
-- **Test Content:** ~200 lines (test article)
+## Основные возможности
 
-## 🚀 Usage Example
+### YAML Frontmatter
+- Метаданные встроены в статью (не нужен отдельный metadata.json)
+- Обязательные: `id`, `title`, `author`, `date`
+- Опциональные: `category`, `tags`, `description`, `readingTime`, `difficulty`, `prerequisites`
 
-### Creating a New Article
+### Специальные блоки
+```markdown
+> ⚠️ **Warning:** Предупреждения
+> 🔑 **Key Idea:** Ключевые концепции
+> 💡 **Note:** Пояснения
+> 📝 **Example:** Примеры
+```
+
+### Математика
+- Inline: `$E = mc^2$`
+- Block: `$$F = ma$$`
+- LaTeX синтаксис
+
+### Изображения
+```markdown
+![Alt](./images/pic.png)          # Относительный путь
+![Alt](https://example.com/i.jpg) # Web URL
+```
+
+### Ссылки
+```markdown
+[Раздел](#anchor)                  # Внутренние якоря
+[Другая статья](/article/other)    # Другие статьи
+[Wikipedia](https://wiki.org)      # Внешние
+```
+
+## Автоматические функции
+
+✅ **Генерация содержания** - из заголовков H2-H4  
+✅ **Подсветка активной секции** - при скролле  
+✅ **Якоря для заголовков** - автоматически из текста  
+✅ **Рендеринг MathJax** - только когда есть формулы  
+✅ **Конвертация путей** - изображения и ссылки  
+✅ **Навигация prev/next** - между статьями  
+✅ **Темная/светлая тема** - все элементы  
+✅ **Адаптивный дизайн** - mobile + desktop  
+
+## Документация
+
+| Файл | Описание |
+|------|----------|
+| `docs/ARTICLE_PROTOCOL.md` | Полный протокол разметки |
+| `docs/ARTICLE_PARSER_GUIDE.md` | Техническое руководство |
+| `docs/ARTICLE_WRITING_GUIDE.md` | Руководство по написанию |
+| `docs/ARTICLE_VIEWER_GUIDE.md` | **Модуль просмотра статей** |
+| `articles/README.md` | Быстрый старт |
+| `articles/test-simple/` | Пример статьи |
+
+## Модули системы
+
+| Модуль | Файл | Назначение |
+|--------|------|------------|
+| **ArticleParser** | `js/article-parser.js` | Парсинг Markdown → HTML |
+| **TableOfContents** | `js/table-of-contents.js` | Генерация содержания |
+| **ArticleViewer** | `js/article-viewer.js` | **Список + просмотр статей** |
+
+## Быстрый старт
 
 ```bash
-# 1. Create structure
+# 1. Создать структуру
 mkdir -p articles/my-article/images
 
-# 2. Write content
-nano articles/my-article/article.md
-
-# 3. Add metadata
-nano articles/my-article/metadata.json
-
-# 4. Register in config
-nano data/config.json
+# 2. Создать article.md с frontmatter + контентом
+# 3. Добавить в data/config.json
+# 4. Протестировать в браузере
 ```
 
-### Accessing Article
+## Чеклист тестирования
 
-```
-https://your-site.com/article/my-article
-```
-
-## 📝 Next Steps (Optional)
-
-### Future Enhancements
-- [ ] Article search functionality
-- [ ] Article categories/tags filtering
-- [ ] Related articles suggestions
-- [ ] Article comments system
-- [ ] Social sharing buttons
-- [ ] Reading progress indicator
-- [ ] Bookmark functionality
-- [ ] Article rating system
-- [ ] Export to PDF
-- [ ] Syntax highlighting for code blocks
-
-### Migration Tasks
-- [ ] Migrate articles from VP folder
-- [ ] Convert image paths
-- [ ] Create metadata for each article
-- [ ] Test all migrated articles
-- [ ] Update internal links
-
-## 🎓 Documentation Links
-
-- **[ARTICLE_PROTOCOL.md](docs/ARTICLE_PROTOCOL.md)** - How to format articles
-- **[ARTICLE_PARSER_GUIDE.md](docs/ARTICLE_PARSER_GUIDE.md)** - Technical details
-- **[ARTICLE_WRITING_GUIDE.md](docs/ARTICLE_WRITING_GUIDE.md)** - Writing tips
-- **[articles/README.md](articles/README.md)** - Quick start
-
-## ✨ Key Achievements
-
-1. **Complete System** - Fully functional article publishing system
-2. **Zero Dependencies** - Only 2 CDN libraries (marked.js, MathJax)
-3. **Modular Design** - Easy to extend and customize
-4. **Comprehensive Docs** - 2,000+ lines of documentation
-5. **Production Ready** - Tested, styled, responsive
-6. **DRY Principle** - No code duplication
-7. **Theme Support** - Dark/light mode throughout
-8. **Mobile First** - Responsive from ground up
-
-## 🎉 Status: COMPLETE
-
-All planned tasks have been successfully implemented. The article parser system is fully functional and ready for use.
+- [ ] Все заголовки отображаются корректно
+- [ ] Содержание сгенерировано
+- [ ] Формулы рендерятся (MathJax)
+- [ ] Изображения загружаются
+- [ ] Ссылки работают
+- [ ] Специальные блоки стилизованы
+- [ ] Темная/светлая тема обе работают
+- [ ] Адаптивность на мобильных
 
 ---
 
-**Implementation Date:** December 31, 2025  
-**Total Implementation Time:** ~3 hours  
-**Status:** ✅ Production Ready
+**Папка для статей:** `articles/`  
+**Преимущество:** Метаданные встроены в статью → проще управлять

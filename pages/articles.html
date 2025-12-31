@@ -1,0 +1,238 @@
+<div class="container" style="padding: 2rem 1rem;">
+    <!-- Page Header -->
+    <header class="page-header" style="text-align: center; margin-bottom: 3rem;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">📚 Научные статьи</h1>
+        <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto;">
+            Коллекция статей по квантовой физике, вакуумной энергии и передовым концепциям современной науки
+        </p>
+    </header>
+
+    <!-- Articles List (initially visible) -->
+    <div id="articles-list">
+        <div class="loading-indicator">
+            <div class="spinner"></div>
+            <p>Загрузка статей...</p>
+        </div>
+    </div>
+
+    <!-- Article Viewer (initially hidden) -->
+    <div id="article-viewer" style="display: none;">
+        <!-- Article content will be dynamically loaded here -->
+    </div>
+</div>
+
+<!-- Styles for Articles Page -->
+<style>
+/* Loading Indicator */
+.loading-indicator {
+    text-align: center;
+    padding: 4rem 1rem;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    margin: 0 auto 1rem;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color, #3b82f6);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Articles Grid */
+.articles-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.category-section {
+    margin-bottom: 3rem;
+}
+
+.category-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.articles-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Article Card */
+.article-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color, #3b82f6);
+}
+
+.article-card-header {
+    margin-bottom: 1rem;
+}
+
+.article-card-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.article-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.article-card-body {
+    margin-bottom: 1rem;
+}
+
+.article-card-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.article-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.article-card-footer span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Back Button */
+.back-to-list-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    transition: all 0.2s ease;
+}
+
+.back-to-list-btn:hover {
+    background: var(--primary-color, #3b82f6);
+    color: white;
+    border-color: var(--primary-color, #3b82f6);
+}
+
+/* No Articles Message */
+.no-articles {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--text-secondary);
+}
+
+.no-articles p {
+    font-size: 1.2rem;
+}
+
+/* Error Message */
+.article-error {
+    text-align: center;
+    padding: 4rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.article-error h2 {
+    color: #dc2626;
+    margin-bottom: 1rem;
+}
+
+.article-error p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .articles-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .page-header p {
+        font-size: 1rem;
+    }
+}
+
+/* Dark Theme Support */
+@media (prefers-color-scheme: dark) {
+    .article-card {
+        background: var(--bg-secondary, #1e293b);
+        border-color: var(--border-color, #334155);
+    }
+    
+    .article-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+}
+</style>
+
+<!-- Initialize Article Viewer -->
+<script>
+(async function() {
+    // Получаем basePath из роутера
+    const basePath = window.router?.basePath || '';
+    
+    // Создаём экземпляр ArticleViewer
+    const viewer = new ArticleViewer({
+        basePath: basePath,
+        listContainerId: 'articles-list',
+        viewerContainerId: 'article-viewer',
+        configPath: '/data/config.json'
+    });
+    
+    // Делаем доступным глобально для кнопок
+    window.articleViewer = viewer;
+    
+    // Инициализируем
+    await viewer.init();
+    
+    // Обработка кнопки "Назад" в браузере
+    window.addEventListener('popstate', (event) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('id');
+        
+        if (articleId) {
+            viewer.viewArticle(articleId);
+        } else {
+            viewer.backToList();
+        }
+    });
+})();
+</script>

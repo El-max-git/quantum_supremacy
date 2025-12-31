@@ -1,3 +1,15 @@
+---
+id: test-simple
+title: Простая тестовая статья
+author: Test System
+date: 2025-01-01
+category: test
+tags: [test, simple, markdown, parser]
+description: Простая тестовая статья с базовыми элементами разметки
+readingTime: 5
+difficulty: beginner
+---
+
 # Простая тестовая статья
 
 > **Описание:** Эта статья демонстрирует базовые элементы разметки: заголовки, параграфы, списки, формулы и специальные блоки.

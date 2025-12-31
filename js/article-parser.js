@@ -22,15 +22,18 @@ class ArticleParser {
      * Главный метод парсинга
      * @param {string} markdownText - Исходный markdown текст
      * @param {string} articlePath - Путь к статье (для относительных ссылок)
-     * @returns {Promise<string>} - HTML строка
+     * @returns {Promise<{html: string, metadata: object}>} - HTML и метаданные
      */
     async parse(markdownText, articlePath = '') {
         this.currentArticlePath = articlePath;
         this.headingIds.clear();
 
         try {
+            // 0. Extract frontmatter (YAML metadata)
+            const { content, metadata } = this.extractFrontmatter(markdownText);
+            
             // 1. Pre-process: специальные блоки
-            let processed = this.preprocessSpecialBlocks(markdownText);
+            let processed = this.preprocessSpecialBlocks(content);
             
             // 2. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
@@ -48,6 +51,91 @@ class ArticleParser {
             if (this.config.autoAnchors) {
                 html = this.generateAnchors(html);
             }
+            
+            // 7. Post-process: обернуть формулы в блоки
+            html = this.wrapFormulaBoxes(html);
+            
+            // 8. Инициализировать MathJax если есть формулы
+            if (html.includes('$') || html.includes('\\(') || html.includes('\\[')) {
+                await this.loadMathJax();
+            }
+            
+            return { html, metadata };
+            
+        } catch (error) {
+            console.error('Article parsing error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Извлекает YAML frontmatter из начала файла
+     * @param {string} text - Markdown текст
+     * @returns {{content: string, metadata: object}}
+     */
+    extractFrontmatter(text) {
+        const frontmatterRegex = /^---\n([\s\S]*?)\n---\n/;
+        const match = text.match(frontmatterRegex);
+        
+        if (!match) {
+            return { content: text, metadata: {} };
+        }
+        
+        const yamlText = match[1];
+        const content = text.substring(match[0].length);
+        
+        try {
+            // Простой YAML парсер для метаданных
+            const metadata = this.parseSimpleYAML(yamlText);
+            return { content, metadata };
+        } catch (error) {
+            console.warn('Failed to parse frontmatter:', error);
+            return { content: text, metadata: {} };
+        }
+    }
+
+    /**
+     * Простой парсер YAML для frontmatter
+     * @param {string} yamlText
+     * @returns {object}
+     */
+    parseSimpleYAML(yamlText) {
+        const metadata = {};
+        const lines = yamlText.split('\n');
+        
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            
+            const colonIndex = trimmed.indexOf(':');
+            if (colonIndex === -1) continue;
+            
+            const key = trimmed.substring(0, colonIndex).trim();
+            let value = trimmed.substring(colonIndex + 1).trim();
+            
+            // Remove quotes
+            if ((value.startsWith('"') && value.endsWith('"')) ||
+                (value.startsWith("'") && value.endsWith("'"))) {
+                value = value.substring(1, value.length - 1);
+            }
+            
+            // Parse arrays [item1, item2]
+            if (value.startsWith('[') && value.endsWith(']')) {
+                value = value.substring(1, value.length - 1)
+                    .split(',')
+                    .map(item => item.trim().replace(/^["']|["']$/g, ''));
+            }
+            
+            // Parse numbers
+            if (/^\d+$/.test(value)) {
+                value = parseInt(value, 10);
+            }
+            
+            metadata[key] = value;
+        }
+        
+        return metadata;
+    }
             
             return html;
         } catch (error) {
