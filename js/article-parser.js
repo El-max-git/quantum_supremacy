@@ -213,6 +213,17 @@ ${cleanContent}
     }
 
     /**
+     * Post-process: обернуть формулы в блоки (если нужно дополнительное форматирование)
+     * @param {string} html - HTML после парсинга markdown
+     * @returns {string} - HTML с обработанными формулами
+     */
+    wrapFormulaBoxes(html) {
+        // Если формулы уже обработаны в preprocessFormulaBoxes, просто возвращаем HTML
+        // Этот метод может быть расширен для дополнительной обработки формул в HTML
+        return html;
+    }
+
+    /**
      * Конвертация markdown в HTML с использованием marked.js
      */
     async convertMarkdownToHtml(markdownText) {
