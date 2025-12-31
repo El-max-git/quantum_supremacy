@@ -44,6 +44,52 @@ class ArticleViewer {
     }
 
     /**
+     * Загружает markdown файл с fallback на GitHub Raw API
+     * @param {string} mdPath - Путь к файлу относительно корня репозитория
+     * @returns {Promise<string>} Содержимое файла
+     */
+    async fetchArticleFile(mdPath) {
+        // Первая попытка: обычный путь через GitHub Pages
+        let mdUrl = `${this.config.basePath}/${mdPath}`;
+        console.log(`Loading article: ${mdUrl}`);
+        
+        try {
+            const response = await fetch(mdUrl);
+            if (response.ok) {
+                const text = await response.text();
+                console.log(`✓ Loaded from GitHub Pages: ${mdPath}`);
+                return text;
+            }
+        } catch (error) {
+            console.warn(`Failed to load from GitHub Pages: ${error.message}`);
+        }
+        
+        // Fallback: GitHub Raw API
+        // Определяем owner/repo из basePath или используем дефолтные значения
+        const basePathMatch = this.config.basePath.match(/\/([^\/]+)$/);
+        const repoName = basePathMatch ? basePathMatch[1] : 'quantum_supremacy';
+        const owner = 'El-max-git'; // Можно сделать конфигурируемым
+        const branch = 'main'; // Можно определить динамически
+        
+        const rawUrl = `https://raw.githubusercontent.com/${owner}/${repoName}/${branch}/${mdPath}`;
+        console.log(`Trying GitHub Raw API: ${rawUrl}`);
+        
+        try {
+            const response = await fetch(rawUrl);
+            if (response.ok) {
+                const text = await response.text();
+                console.log(`✓ Loaded from GitHub Raw: ${mdPath}`);
+                return text;
+            } else {
+                throw new Error(`GitHub Raw API returned ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error(`✗ Failed to load ${mdPath} from both sources:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Автоматическое сканирование папки articles/ и загрузка метаданных из frontmatter
      */
     async loadArticles() {
@@ -93,24 +139,13 @@ class ArticleViewer {
         const articlesWithMetadata = await Promise.all(
             articlesList.map(async (article) => {
                 try {
-                    // Загружаем markdown файл
-                    // Убираем дублирование "articles/" если basePath уже содержит путь
+                    // Загружаем markdown файл с fallback на GitHub Raw API
                     let mdPath = article.mdFile;
                     if (mdPath.startsWith('articles/')) {
                         mdPath = mdPath; // Оставляем как есть
                     }
-                    const mdUrl = `${this.config.basePath}/${mdPath}`;
-                    console.log(`Loading article: ${mdUrl}`);
-                    const mdResponse = await fetch(mdUrl);
                     
-                    if (!mdResponse.ok) {
-                        console.error(`✗ Failed to load ${article.mdFile}: ${mdResponse.status} ${mdResponse.statusText}`);
-                        console.error(`  URL: ${mdUrl}`);
-                        console.error(`  Check if file exists and is committed to Git`);
-                        return null;
-                    }
-                    
-                    const mdText = await mdResponse.text();
+                    const mdText = await this.fetchArticleFile(mdPath);
                     console.log(`Loaded ${article.id}, text length: ${mdText.length}`);
                     
                     // Извлекаем метаданные из frontmatter
@@ -310,15 +345,8 @@ class ArticleViewer {
                 `;
             }
             
-            // Загружаем markdown
-            const mdUrl = `${this.config.basePath}/${article.mdFile}`;
-            const response = await fetch(mdUrl);
-            
-            if (!response.ok) {
-                throw new Error(`Не удалось загрузить статью: ${response.status}`);
-            }
-            
-            const mdText = await response.text();
+            // Загружаем markdown с fallback на GitHub Raw API
+            const mdText = await this.fetchArticleFile(article.mdFile);
             
             // Парсим статью
             const { html, metadata } = await this.parser.parse(mdText, article.path);
