@@ -136,13 +136,6 @@ class ArticleParser {
         
         return metadata;
     }
-            
-            return html;
-        } catch (error) {
-            console.error('Article parsing error:', error);
-            throw new Error(`Failed to parse article: ${error.message}`);
-        }
-    }
 
     /**
      * Предобработка специальных блоков

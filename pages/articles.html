@@ -206,33 +206,64 @@
 <!-- Initialize Article Viewer -->
 <script>
 (async function() {
-    // Получаем basePath из роутера
-    const basePath = window.router?.basePath || '';
-    
-    // Создаём экземпляр ArticleViewer
-    const viewer = new ArticleViewer({
-        basePath: basePath,
-        listContainerId: 'articles-list',
-        viewerContainerId: 'article-viewer',
-        configPath: '/data/config.json'
-    });
-    
-    // Делаем доступным глобально для кнопок
-    window.articleViewer = viewer;
-    
-    // Инициализируем
-    await viewer.init();
-    
-    // Обработка кнопки "Назад" в браузере
-    window.addEventListener('popstate', (event) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const articleId = urlParams.get('id');
-        
-        if (articleId) {
-            viewer.viewArticle(articleId);
-        } else {
-            viewer.backToList();
+    try {
+        // Проверяем что ArticleViewer доступен
+        if (typeof ArticleViewer === 'undefined') {
+            throw new Error('ArticleViewer class not loaded. Check script order in index.html');
         }
-    });
+        
+        // Проверяем что ArticleParser доступен
+        if (typeof ArticleParser === 'undefined') {
+            throw new Error('ArticleParser class not loaded. Check script order in index.html');
+        }
+        
+        // Получаем basePath из роутера
+        const basePath = window.router?.basePath || '';
+        console.log('ArticleViewer: basePath =', basePath);
+        
+        // Создаём экземпляр ArticleViewer
+        const viewer = new ArticleViewer({
+            basePath: basePath,
+            listContainerId: 'articles-list',
+            viewerContainerId: 'article-viewer',
+            configPath: '/data/config.json'
+        });
+        
+        console.log('ArticleViewer instance created');
+        
+        // Делаем доступным глобально для кнопок
+        window.articleViewer = viewer;
+        
+        // Инициализируем
+        console.log('Initializing ArticleViewer...');
+        await viewer.init();
+        console.log('ArticleViewer initialized successfully');
+        
+        // Обработка кнопки "Назад" в браузере
+        window.addEventListener('popstate', (event) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+            
+            if (articleId) {
+                viewer.viewArticle(articleId);
+            } else {
+                viewer.backToList();
+            }
+        });
+    } catch (error) {
+        console.error('Error initializing ArticleViewer:', error);
+        const listContainer = document.getElementById('articles-list');
+        if (listContainer) {
+            listContainer.innerHTML = `
+                <div class="article-error">
+                    <h2>❌ Ошибка инициализации</h2>
+                    <p>${error.message}</p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Проверьте консоль браузера для деталей.
+                    </p>
+                </div>
+            `;
+        }
+    }
 })();
 </script>

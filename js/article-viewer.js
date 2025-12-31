@@ -66,22 +66,31 @@ class ArticleViewer {
         // Загружаем метаданные из frontmatter каждой статьи
         console.log(`Loading metadata for ${articlesList.length} articles...`);
         
+        if (!this.parser) {
+            console.error('ArticleParser not initialized!');
+            this.articles = [];
+            return this.articles;
+        }
+        
         const articlesWithMetadata = await Promise.all(
             articlesList.map(async (article) => {
                 try {
                     // Загружаем markdown файл
                     const mdUrl = `${this.config.basePath}/${article.mdFile}`;
+                    console.log(`Loading article: ${mdUrl}`);
                     const mdResponse = await fetch(mdUrl);
                     
                     if (!mdResponse.ok) {
-                        console.warn(`Failed to load ${article.mdFile}`);
+                        console.warn(`Failed to load ${article.mdFile}: ${mdResponse.status}`);
                         return null;
                     }
                     
                     const mdText = await mdResponse.text();
+                    console.log(`Loaded ${article.id}, text length: ${mdText.length}`);
                     
                     // Извлекаем метаданные из frontmatter
                     const { metadata } = this.parser.extractFrontmatter(mdText);
+                    console.log(`Extracted metadata for ${article.id}:`, metadata);
                     
                     // Объединяем: приоритет у frontmatter, fallback на config.json
                     return {
