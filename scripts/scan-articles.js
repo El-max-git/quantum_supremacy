@@ -12,39 +12,101 @@ const ARTICLES_DIR = path.join(__dirname, '..', 'articles');
 const ARTICLES_LIST_PATH = path.join(__dirname, '..', 'articles', 'articles-list.json');
 
 /**
- * Сканирует директорию articles/ и находит все article.md файлы
+ * Рекурсивно сканирует директорию articles/ и находит все .md файлы статей
+ * @param {string} dir - Директория для сканирования
+ * @param {string} baseDir - Базовая директория (для относительных путей)
+ * @returns {Array} Массив найденных статей
  */
-function scanArticles() {
+function scanArticlesRecursive(dir = ARTICLES_DIR, baseDir = ARTICLES_DIR) {
     const articles = [];
     
-    // Читаем содержимое папки articles
-    const entries = fs.readdirSync(ARTICLES_DIR, { withFileTypes: true });
+    if (!fs.existsSync(dir)) {
+        console.warn(`Directory not found: ${dir}`);
+        return articles;
+    }
+    
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
     
     for (const entry of entries) {
-        // Пропускаем не-директории и README
-        if (!entry.isDirectory() || entry.name === 'README.md') {
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
+        
+        // Пропускаем служебные файлы и папки
+        if (entry.name === 'README.md' || 
+            entry.name === 'articles-list.json' ||
+            entry.name === '.git' ||
+            entry.name === 'images' ||
+            entry.name.startsWith('.')) {
             continue;
         }
         
-        const articleDir = path.join(ARTICLES_DIR, entry.name);
-        const articleFile = path.join(articleDir, 'article.md');
-        
-        // Проверяем наличие article.md
-        if (fs.existsSync(articleFile)) {
-            const relativePath = `articles/${entry.name}/article.md`;
+        if (entry.isDirectory()) {
+            // Рекурсивно сканируем поддиректории
+            const subArticles = scanArticlesRecursive(fullPath, baseDir);
+            articles.push(...subArticles);
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+            // Нашли .md файл - это может быть статья
+            // Проверяем, есть ли в этой же директории article.md (приоритет)
+            const dirPath = path.dirname(fullPath);
+            const dirName = path.basename(dirPath);
+            const articleMdPath = path.join(dirPath, 'article.md');
+            
+            // Если это не article.md, но есть article.md в той же папке - пропускаем
+            if (entry.name !== 'article.md' && fs.existsSync(articleMdPath)) {
+                continue;
+            }
+            
+            // Пытаемся прочитать ID из frontmatter
+            let articleId = null;
+            try {
+                const content = fs.readFileSync(fullPath, 'utf-8');
+                const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
+                if (frontmatterMatch) {
+                    const frontmatter = frontmatterMatch[1];
+                    const idMatch = frontmatter.match(/^id:\s*(.+)$/m);
+                    if (idMatch) {
+                        articleId = idMatch[1].trim();
+                    }
+                }
+            } catch (error) {
+                // Игнорируем ошибки чтения
+            }
+            
+            // Если ID не найден в frontmatter, генерируем из имени
+            if (!articleId) {
+                // Определяем ID статьи из имени директории или файла
+                articleId = dirName;
+                if (dirPath === baseDir) {
+                    // Файл в корне articles/ - используем имя файла без расширения
+                    articleId = path.basename(entry.name, '.md');
+                }
+                
+                // Нормализуем ID (lowercase, дефисы вместо подчеркиваний и пробелов)
+                articleId = articleId.toLowerCase()
+                    .replace(/[_\s]+/g, '-')
+                    .replace(/[^a-z0-9-]/g, '')
+                    .replace(/^-+|-+$/g, ''); // Убираем дефисы в начале и конце
+            }
+            
+            const mdFile = `articles/${relativePath}`;
             
             articles.push({
-                id: entry.name,
-                mdFile: relativePath
+                id: articleId,
+                mdFile: mdFile
             });
             
-            console.log(`✓ Found article: ${entry.name}`);
-        } else {
-            console.warn(`⚠ Skipping ${entry.name}: no article.md found`);
+            console.log(`✓ Found article: ${articleId} (${mdFile})`);
         }
     }
     
     return articles;
+}
+
+/**
+ * Сканирует директорию articles/ и находит все article.md файлы
+ */
+function scanArticles() {
+    return scanArticlesRecursive();
 }
 
 /**

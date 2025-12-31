@@ -92,12 +92,16 @@ class Router {
      * @param {string} path - Route path
      */
     async loadRoute(path) {
+        console.log(`Router.loadRoute() called with path: "${path}"`);
+        
         // Find matching route
         let handler = this.routes[path];
+        console.log(`Router: Handler found: ${handler ? 'YES' : 'NO'}`);
         
         // If no exact match, try 404
         if (!handler) {
             handler = this.routes['/404'] || (() => '<h1>404 - Page Not Found</h1>');
+            console.log('Router: Using 404 handler');
         }
 
         this.currentRoute = path;
@@ -108,12 +112,16 @@ class Router {
             this.rootElement.style.transition = 'opacity 0.2s ease';
 
             // Get content from handler
+            console.log('Router: Calling handler...');
             const content = await handler();
+            console.log(`Router.loadRoute(${path}): Content loaded, length: ${content.length}, type: ${typeof content}`);
 
             // Update content while hidden
             this.rootElement.innerHTML = content;
+            console.log('Router: Content inserted into DOM');
 
             // Execute scripts in the loaded content
+            console.log('Router: Executing scripts...');
             this.executeScripts();
 
             // Initialize page scripts
@@ -138,23 +146,45 @@ class Router {
      * Execute scripts from loaded HTML content
      */
     executeScripts() {
-        const scripts = this.rootElement.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
+        try {
+            const scripts = this.rootElement.querySelectorAll('script');
+            console.log(`Router.executeScripts(): Found ${scripts.length} script(s) to execute`);
             
-            // Copy attributes
-            Array.from(oldScript.attributes).forEach(attr => {
-                newScript.setAttribute(attr.name, attr.value);
-            });
-            
-            // Copy content
-            if (oldScript.textContent) {
-                newScript.textContent = oldScript.textContent;
+            if (scripts.length === 0) {
+                console.log('Router: No scripts found in loaded content');
+                return;
             }
             
-            // Replace old script with new one (this executes it)
-            oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
+            scripts.forEach((oldScript, index) => {
+                try {
+                    console.log(`Router: Executing script ${index + 1}/${scripts.length}...`);
+                    const newScript = document.createElement('script');
+                    
+                    // Copy attributes
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    
+                    // Copy content
+                    if (oldScript.textContent) {
+                        newScript.textContent = oldScript.textContent;
+                        console.log(`Router: Script ${index + 1} content length: ${oldScript.textContent.length} chars`);
+                    }
+                    
+                    // Replace old script with new one (this executes it)
+                    if (oldScript.parentNode) {
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                        console.log(`Router: ✓ Script ${index + 1} executed successfully`);
+                    } else {
+                        console.warn(`Router: Script ${index + 1} has no parent node`);
+                    }
+                } catch (scriptError) {
+                    console.error(`Router: Error executing script ${index + 1}:`, scriptError);
+                }
+            });
+        } catch (error) {
+            console.error('Router.executeScripts() error:', error);
+        }
     }
 
     /**

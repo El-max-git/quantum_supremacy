@@ -1,14 +1,14 @@
 {
   "articles": [
     {
-      "id": "test-simple",
-      "mdFile": "articles/test-simple/article.md"
-    },
-    {
       "id": "expanding-universe-hypersphere",
       "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md"
+    },
+    {
+      "id": "test-simple",
+      "mdFile": "articles/test-simple/article.md"
     }
   ],
-  "lastUpdated": "2025-01-01T00:00:00.000Z",
+  "lastUpdated": "2025-12-31T21:13:16.489Z",
   "count": 2
 }

@@ -94,12 +94,19 @@ class ArticleViewer {
             articlesList.map(async (article) => {
                 try {
                     // Загружаем markdown файл
-                    const mdUrl = `${this.config.basePath}/${article.mdFile}`;
+                    // Убираем дублирование "articles/" если basePath уже содержит путь
+                    let mdPath = article.mdFile;
+                    if (mdPath.startsWith('articles/')) {
+                        mdPath = mdPath; // Оставляем как есть
+                    }
+                    const mdUrl = `${this.config.basePath}/${mdPath}`;
                     console.log(`Loading article: ${mdUrl}`);
                     const mdResponse = await fetch(mdUrl);
                     
                     if (!mdResponse.ok) {
-                        console.warn(`Failed to load ${article.mdFile}: ${mdResponse.status}`);
+                        console.error(`✗ Failed to load ${article.mdFile}: ${mdResponse.status} ${mdResponse.statusText}`);
+                        console.error(`  URL: ${mdUrl}`);
+                        console.error(`  Check if file exists and is committed to Git`);
                         return null;
                     }
                     
@@ -140,6 +147,13 @@ class ArticleViewer {
         this.articles = articlesWithMetadata.filter(a => a !== null);
         
         console.log(`Loaded ${this.articles.length} articles with metadata`);
+        
+        if (this.articles.length === 0 && articlesList.length > 0) {
+            console.error('⚠️ All articles failed to load! Check:');
+            console.error('  1. Files are committed to Git');
+            console.error('  2. Files are deployed to GitHub Pages');
+            console.error('  3. Paths in articles-list.json are correct');
+        }
         
         return this.articles;
     }
