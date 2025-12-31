@@ -54,6 +54,9 @@ coverage/
 # Site structure documentation (local notes)
 SITE_STRUCTURE.md
 
+# Project planning documents (confidential, local only)
+DEVELOPMENT_PLAN.md
+
 # Empty directories (keep structure, ignore content)
 upload/*
 !upload/.gitkeep
