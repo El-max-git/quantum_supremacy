@@ -78,6 +78,16 @@ Summary and next steps...
 
 ### Шаг 3: Зарегистрировать в конфигурации
 
+**Вариант 1: Автоматическое сканирование (рекомендуется)**
+
+```bash
+node scripts/scan-articles.js
+```
+
+Скрипт автоматически найдёт все статьи в `articles/` и обновит `config.json`.
+
+**Вариант 2: Ручное добавление**
+
 Добавьте в `data/config.json`:
 
 ```json
@@ -85,15 +95,13 @@ Summary and next steps...
   "articles": [
     {
       "id": "my-article",
-      "title": "Article Title",
-      "path": "/article/my-article",
       "mdFile": "articles/my-article/article.md"
     }
   ]
 }
 ```
 
-**Примечание:** Большинство метаданных теперь читаются из frontmatter в самом файле статьи. В `config.json` достаточно указать только `id`, `title`, `path` и `mdFile`.
+**Примечание:** Все метаданные (title, author, date, tags, etc.) читаются автоматически из YAML frontmatter статьи. В `config.json` достаточно указать только `id` и `mdFile`.
 
 ## Доступные возможности статей
 

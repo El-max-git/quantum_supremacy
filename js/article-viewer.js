@@ -44,10 +44,10 @@ class ArticleViewer {
     }
 
     /**
-     * Загрузка списка статей из config.json
+     * Загрузка списка статей из config.json и извлечение метаданных из frontmatter
      */
     async loadArticles() {
-        const configUrl = `${this.config.basePath}${this.config.configPath}`;
+        const configUrl = `${this.config.basePath}${this.config.configPath}?v=${Date.now()}`;
         const response = await fetch(configUrl);
         
         if (!response.ok) {
@@ -55,11 +55,59 @@ class ArticleViewer {
         }
         
         const config = await response.json();
-        this.articles = config.articles || [];
+        const articlesList = config.articles || [];
         
-        if (this.articles.length === 0) {
+        if (articlesList.length === 0) {
             console.warn('No articles found in config.json');
+            this.articles = [];
+            return this.articles;
         }
+        
+        // Загружаем метаданные из frontmatter каждой статьи
+        console.log(`Loading metadata for ${articlesList.length} articles...`);
+        
+        const articlesWithMetadata = await Promise.all(
+            articlesList.map(async (article) => {
+                try {
+                    // Загружаем markdown файл
+                    const mdUrl = `${this.config.basePath}/${article.mdFile}`;
+                    const mdResponse = await fetch(mdUrl);
+                    
+                    if (!mdResponse.ok) {
+                        console.warn(`Failed to load ${article.mdFile}`);
+                        return null;
+                    }
+                    
+                    const mdText = await mdResponse.text();
+                    
+                    // Извлекаем метаданные из frontmatter
+                    const { metadata } = this.parser.extractFrontmatter(mdText);
+                    
+                    // Объединяем: приоритет у frontmatter, fallback на config.json
+                    return {
+                        id: metadata.id || article.id,
+                        title: metadata.title || article.title,
+                        author: metadata.author || article.author || 'Автор не указан',
+                        date: metadata.date || article.date || '',
+                        category: metadata.category || article.category || 'Без категории',
+                        tags: metadata.tags || article.tags || [],
+                        description: metadata.description || article.description || '',
+                        readingTime: metadata.readingTime || article.readingTime || null,
+                        difficulty: metadata.difficulty || article.difficulty || null,
+                        path: article.path || `/articles?id=${metadata.id || article.id}`,
+                        mdFile: article.mdFile
+                    };
+                } catch (error) {
+                    console.error(`Error loading metadata for ${article.id}:`, error);
+                    return null;
+                }
+            })
+        );
+        
+        // Фильтруем null (неудачные загрузки)
+        this.articles = articlesWithMetadata.filter(a => a !== null);
+        
+        console.log(`Loaded ${this.articles.length} articles with metadata`);
         
         return this.articles;
     }
