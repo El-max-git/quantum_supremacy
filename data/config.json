@@ -113,6 +113,20 @@
     "darkMode": false,
     "analytics": false,
     "comments": false
-  }
+  },
+  "articles": [
+    {
+      "id": "test-simple",
+      "title": "Тестовая статья (простая)",
+      "path": "/article/test-simple",
+      "mdFile": "articles/test-simple/article.md",
+      "category": "test",
+      "author": "Test Author",
+      "date": "2025-01-01",
+      "readingTime": 5,
+      "tags": ["test", "simple"],
+      "description": "Простая тестовая статья с базовыми элементами разметки"
+    }
+  ]
 }
 

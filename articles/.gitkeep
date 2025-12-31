@@ -1,0 +1,6 @@
+# This file keeps the articles directory in Git
+
+Articles are stored in subdirectories:
+- articles/{article-id}/article.md
+- articles/{article-id}/metadata.json
+- articles/{article-id}/images/
