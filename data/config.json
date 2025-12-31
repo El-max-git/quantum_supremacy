@@ -5,6 +5,38 @@
     "version": "1.0.0",
     "author": "Quantum Supremacy Team"
   },
+  "routes": [
+    {
+      "path": "/",
+      "page": "home.html",
+      "title": "Главная",
+      "inMenu": true
+    },
+    {
+      "path": "/about",
+      "page": "about.html",
+      "title": "О проекте",
+      "inMenu": true
+    },
+    {
+      "path": "/technology",
+      "page": "technology.html",
+      "title": "Технологии",
+      "inMenu": true
+    },
+    {
+      "path": "/contact",
+      "page": "contact.html",
+      "title": "Контакты",
+      "inMenu": true
+    },
+    {
+      "path": "/404",
+      "page": "404.html",
+      "title": "Страница не найдена",
+      "inMenu": false
+    }
+  ],
   "api": {
     "enabled": false,
     "endpoints": {

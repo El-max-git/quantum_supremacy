@@ -78,22 +78,55 @@
     <!-- Initialize Router -->
     <script>
         // Detect base path for GitHub Pages
-        const basePath = window.location.hostname.includes('github.io') 
-            ? '/quantum_supremacy' 
+        const basePath = window.location.hostname.includes('github.io')
+            ? '/quantum_supremacy'
             : '';
-        
+
         // Initialize router
         const router = new Router();
 
-        // Define routes with base path
-        router.addRoute('/', () => loadPage(`${basePath}/pages/home.html`));
-        router.addRoute('/about', () => loadPage(`${basePath}/pages/about.html`));
-        router.addRoute('/technology', () => loadPage(`${basePath}/pages/technology.html`));
-        router.addRoute('/contact', () => loadPage(`${basePath}/pages/contact.html`));
-        router.addRoute('/404', () => loadPage(`${basePath}/pages/404.html`));
+        // Динамическая загрузка маршрутов из config.json
+        async function initializeRoutes() {
+            try {
+                // Загружаем конфигурацию
+                const response = await fetch(`${basePath}/data/config.json`);
+                const config = await response.json();
 
-        // Start router
-        router.start();
+                // Регистрируем маршруты из конфига
+                if (config.routes && Array.isArray(config.routes)) {
+                    config.routes.forEach(route => {
+                        router.addRoute(route.path, () => 
+                            loadPage(`${basePath}/pages/${route.page}`)
+                        );
+                    });
+                } else {
+                    // Fallback: если конфиг не загрузился
+                    console.warn('Routes not found in config, using defaults');
+                    registerDefaultRoutes();
+                }
+
+                // Запускаем роутер после регистрации маршрутов
+                router.start();
+
+            } catch (error) {
+                console.error('Error loading routes config:', error);
+                // Fallback на жестко закодированные маршруты
+                registerDefaultRoutes();
+                router.start();
+            }
+        }
+
+        // Fallback маршруты (на случай если config.json недоступен)
+        function registerDefaultRoutes() {
+            router.addRoute('/', () => loadPage(`${basePath}/pages/home.html`));
+            router.addRoute('/about', () => loadPage(`${basePath}/pages/about.html`));
+            router.addRoute('/technology', () => loadPage(`${basePath}/pages/technology.html`));
+            router.addRoute('/contact', () => loadPage(`${basePath}/pages/contact.html`));
+            router.addRoute('/404', () => loadPage(`${basePath}/pages/404.html`));
+        }
+
+        // Инициализируем маршруты и запускаем роутер
+        initializeRoutes();
 
         // Make router globally available
         window.router = router;
