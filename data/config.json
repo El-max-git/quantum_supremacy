@@ -21,6 +21,17 @@
       "order": 2
     },
     {
+      "path": "/navigation",
+      "page": "navigation.html",
+      "title": "Навигация - Quantum Supremacy",
+      "inMenu": true,
+      "order": 3,
+      "meta": {
+        "description": "Полная карта всех этапов обучения от квантовой механики до прорывных технологий",
+        "keywords": ["навигация", "этапы обучения", "карта сайта", "структура"]
+      }
+    },
+    {
       "path": "/quantum-basics",
       "page": "quantum-basics.html",
       "title": "Этап 1: Квантовая механика - Quantum Supremacy",
@@ -75,14 +86,14 @@
       "page": "technology.html",
       "title": "Технологии - Quantum Supremacy",
       "inMenu": true,
-      "order": 3
+      "order": 4
     },
     {
       "path": "/contact",
       "page": "contact.html",
       "title": "Контакты - Quantum Supremacy",
       "inMenu": true,
-      "order": 4
+      "order": 5
     },
     {
       "path": "/404",
