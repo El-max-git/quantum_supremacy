@@ -1,39 +1,93 @@
 {
   "siteConfig": {
     "title": "Quantum Supremacy",
-    "description": "Исследование мира квантовых вычислений",
-    "version": "1.0.0",
+    "description": "От квантовой механики к манипуляции вакуумом - исследование передовых концепций вакуумной физики",
+    "version": "2.0.0",
     "author": "Quantum Supremacy Team"
   },
   "routes": [
     {
       "path": "/",
       "page": "home.html",
-      "title": "Главная",
-      "inMenu": true
+      "title": "Главная - Quantum Supremacy",
+      "inMenu": true,
+      "order": 1
     },
     {
       "path": "/about",
       "page": "about.html",
-      "title": "О проекте",
-      "inMenu": true
+      "title": "О проекте - Quantum Supremacy",
+      "inMenu": true,
+      "order": 2
+    },
+    {
+      "path": "/quantum-basics",
+      "page": "quantum-basics.html",
+      "title": "Этап 1: Квантовая механика - Quantum Supremacy",
+      "inMenu": false,
+      "meta": {
+        "description": "Основы квантовой механики: кванты, волновая функция, принцип неопределенности, суперпозиция",
+        "keywords": ["квантовая механика", "принцип неопределенности", "волновая функция", "суперпозиция", "кот Шрёдингера"]
+      }
+    },
+    {
+      "path": "/vacuum-physics",
+      "page": "vacuum-physics.html",
+      "title": "Этап 2: Квантовый вакуум - Quantum Supremacy",
+      "inMenu": false,
+      "meta": {
+        "description": "Квантовый вакуум: нулевая энергия, вакуумные флуктуации, виртуальные частицы, измеримые эффекты",
+        "keywords": ["квантовый вакуум", "нулевая энергия", "виртуальные частицы", "вакуумные флуктуации"]
+      }
+    },
+    {
+      "path": "/casimir-effect",
+      "page": "casimir-effect.html",
+      "title": "Этап 3: Эффект Казимира - Quantum Supremacy",
+      "inMenu": false,
+      "meta": {
+        "description": "Эффект Казимира: сила из вакуума, динамический эффект, экспериментальные подтверждения",
+        "keywords": ["эффект Казимира", "динамический эффект Казимира", "вакуумная энергия", "градиент вакуума"]
+      }
+    },
+    {
+      "path": "/gravity-theory",
+      "page": "gravity-theory.html",
+      "title": "Этап 5: Гравитация как эффект Казимира - Quantum Supremacy",
+      "inMenu": false,
+      "meta": {
+        "description": "Революционная теория: гравитация как градиент вакуумной энергии, альтернатива ОТО",
+        "keywords": ["гравитация", "эффект Казимира", "градиент вакуума", "альтернативная теория гравитации"]
+      }
+    },
+    {
+      "path": "/cvl-device",
+      "page": "cvl-device.html",
+      "title": "Этап 7: Когерентный вакуумный левитатор - Quantum Supremacy",
+      "inMenu": false,
+      "meta": {
+        "description": "CVL: концептуальное устройство для создания антигравитации через манипуляцию вакуумными полями",
+        "keywords": ["CVL", "вакуумный левитатор", "антигравитация", "манипуляция вакуумом", "прорывная технология"]
+      }
     },
     {
       "path": "/technology",
       "page": "technology.html",
-      "title": "Технологии",
-      "inMenu": true
+      "title": "Технологии - Quantum Supremacy",
+      "inMenu": true,
+      "order": 3
     },
     {
       "path": "/contact",
       "page": "contact.html",
-      "title": "Контакты",
-      "inMenu": true
+      "title": "Контакты - Quantum Supremacy",
+      "inMenu": true,
+      "order": 4
     },
     {
       "path": "/404",
       "page": "404.html",
-      "title": "Страница не найдена",
+      "title": "Страница не найдена - Quantum Supremacy",
       "inMenu": false
     }
   ],

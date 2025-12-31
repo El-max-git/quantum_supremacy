@@ -42,11 +42,8 @@
             <button class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
             
             <nav>
-                <ul>
-                    <li><a href="/" data-link>Главная</a></li>
-                    <li><a href="/about" data-link>О проекте</a></li>
-                    <li><a href="/technology" data-link>Технологии</a></li>
-                    <li><a href="/contact" data-link>Контакты</a></li>
+                <ul id="main-nav">
+                    <!-- Navigation will be dynamically generated from config.json -->
                 </ul>
             </nav>
         </div>
@@ -85,44 +82,80 @@
         // Initialize router
         const router = new Router();
 
+        // Генерация навигации из config.json
+        function generateNavigation(routes) {
+            const nav = document.getElementById('main-nav');
+            nav.innerHTML = ''; // Очищаем
+            
+            // Фильтруем только маршруты с inMenu: true и сортируем по order
+            const menuRoutes = routes
+                .filter(route => route.inMenu)
+                .sort((a, b) => (a.order || 999) - (b.order || 999));
+            
+            menuRoutes.forEach(route => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = route.path;
+                a.textContent = route.title.split(' - ')[0]; // Берем часть до " - "
+                a.setAttribute('data-link', '');
+                li.appendChild(a);
+                nav.appendChild(li);
+            });
+        }
+
         // Динамическая загрузка маршрутов из config.json
         async function initializeRoutes() {
             try {
                 // Загружаем конфигурацию
                 const response = await fetch(`${basePath}/data/config.json`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const config = await response.json();
 
-                // Регистрируем маршруты из конфига
-                if (config.routes && Array.isArray(config.routes)) {
-                    config.routes.forEach(route => {
-                        router.addRoute(route.path, () => 
-                            loadPage(`${basePath}/pages/${route.page}`)
-                        );
-                    });
-                } else {
-                    // Fallback: если конфиг не загрузился
-                    console.warn('Routes not found in config, using defaults');
-                    registerDefaultRoutes();
+                // Проверяем наличие маршрутов
+                if (!config.routes || !Array.isArray(config.routes) || config.routes.length === 0) {
+                    throw new Error('No routes found in config.json');
                 }
+
+                // Генерируем навигацию из конфига
+                generateNavigation(config.routes);
+
+                // Регистрируем маршруты из конфига
+                config.routes.forEach(route => {
+                    router.addRoute(route.path, () => 
+                        loadPage(`${basePath}/pages/${route.page}`)
+                    );
+                });
 
                 // Запускаем роутер после регистрации маршрутов
                 router.start();
 
             } catch (error) {
                 console.error('Error loading routes config:', error);
-                // Fallback на жестко закодированные маршруты
-                registerDefaultRoutes();
-                router.start();
+                
+                // Показываем ошибку пользователю
+                const app = document.getElementById('app');
+                app.style.opacity = '1';
+                app.innerHTML = `
+                    <div class="container" style="padding: 4rem 1rem;">
+                        <div class="card" style="background: #fee2e2; border-left: 4px solid #ef4444;">
+                            <h2 style="color: #dc2626;">❌ Ошибка загрузки конфигурации</h2>
+                            <p style="font-size: 1.1rem; margin: 1rem 0;">
+                                Не удалось загрузить файл конфигурации <code>data/config.json</code>.
+                            </p>
+                            <p style="margin: 0;">
+                                <strong>Ошибка:</strong> ${error.message}
+                            </p>
+                            <p style="margin-top: 1rem;">
+                                Пожалуйста, убедитесь что файл существует и доступен.
+                            </p>
+                        </div>
+                    </div>
+                `;
             }
-        }
-
-        // Fallback маршруты (на случай если config.json недоступен)
-        function registerDefaultRoutes() {
-            router.addRoute('/', () => loadPage(`${basePath}/pages/home.html`));
-            router.addRoute('/about', () => loadPage(`${basePath}/pages/about.html`));
-            router.addRoute('/technology', () => loadPage(`${basePath}/pages/technology.html`));
-            router.addRoute('/contact', () => loadPage(`${basePath}/pages/contact.html`));
-            router.addRoute('/404', () => loadPage(`${basePath}/pages/404.html`));
         }
 
         // Инициализируем маршруты и запускаем роутер
