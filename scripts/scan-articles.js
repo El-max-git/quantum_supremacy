@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ARTICLES_DIR = path.join(__dirname, '..', 'articles');
-const CONFIG_PATH = path.join(__dirname, '..', 'data', 'config.json');
+const ARTICLES_LIST_PATH = path.join(__dirname, '..', 'articles', 'articles-list.json');
 
 /**
  * Сканирует директорию articles/ и находит все article.md файлы
@@ -48,21 +48,20 @@ function scanArticles() {
 }
 
 /**
- * Обновляет config.json с найденными статьями
+ * Создает articles-list.json в папке articles/ с найденными статьями
  */
-function updateConfig(articles) {
-    // Читаем текущий config
-    const configText = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    const config = JSON.parse(configText);
-    
-    // Обновляем секцию articles
-    config.articles = articles;
+function createArticlesList(articles) {
+    const articlesList = {
+        articles: articles,
+        lastUpdated: new Date().toISOString(),
+        count: articles.length
+    };
     
     // Сохраняем с отступами
-    const updatedConfig = JSON.stringify(config, null, 2);
-    fs.writeFileSync(CONFIG_PATH, updatedConfig, 'utf-8');
+    const jsonContent = JSON.stringify(articlesList, null, 2);
+    fs.writeFileSync(ARTICLES_LIST_PATH, jsonContent, 'utf-8');
     
-    console.log(`\n✓ Updated config.json with ${articles.length} articles`);
+    console.log(`\n✓ Created articles/articles-list.json with ${articles.length} articles`);
 }
 
 /**
@@ -79,7 +78,7 @@ function main() {
             return;
         }
         
-        updateConfig(articles);
+        createArticlesList(articles);
         
         console.log('\n✓ Done! Articles list updated.');
         console.log('\nFound articles:');

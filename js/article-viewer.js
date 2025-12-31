@@ -44,21 +44,34 @@ class ArticleViewer {
     }
 
     /**
-     * Загрузка списка статей из config.json и извлечение метаданных из frontmatter
+     * Автоматическое сканирование папки articles/ и загрузка метаданных из frontmatter
      */
     async loadArticles() {
-        const configUrl = `${this.config.basePath}${this.config.configPath}?v=${Date.now()}`;
-        const response = await fetch(configUrl);
+        // Список статей в папке articles/ (генерируется скриптом scan-articles.js)
+        // Формат: articles/articles-list.json с массивом {id, mdFile}
+        const articlesListUrl = `${this.config.basePath}/articles/articles-list.json?v=${Date.now()}`;
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        let articlesList = [];
+        
+        try {
+            // Пытаемся загрузить список статей
+            const response = await fetch(articlesListUrl);
+            if (response.ok) {
+                const data = await response.json();
+                articlesList = data.articles || [];
+                console.log(`Loaded articles list from articles-list.json: ${articlesList.length} articles`);
+            } else {
+                console.warn('articles/articles-list.json not found, will try to discover articles...');
+                // Fallback: пытаемся найти статьи вручную (если есть известные)
+                articlesList = await this.discoverArticles();
+            }
+        } catch (error) {
+            console.warn('Error loading articles/articles-list.json:', error);
+            articlesList = await this.discoverArticles();
         }
         
-        const config = await response.json();
-        const articlesList = config.articles || [];
-        
         if (articlesList.length === 0) {
-            console.warn('No articles found in config.json');
+            console.warn('No articles found');
             this.articles = [];
             return this.articles;
         }
@@ -92,18 +105,23 @@ class ArticleViewer {
                     const { metadata } = this.parser.extractFrontmatter(mdText);
                     console.log(`Extracted metadata for ${article.id}:`, metadata);
                     
-                    // Объединяем: приоритет у frontmatter, fallback на config.json
+                    if (!metadata.id || !metadata.title) {
+                        console.warn(`Article ${article.id} missing required metadata (id or title)`);
+                        return null;
+                    }
+                    
+                    // Все метаданные из frontmatter
                     return {
-                        id: metadata.id || article.id,
-                        title: metadata.title || article.title,
-                        author: metadata.author || article.author || 'Автор не указан',
-                        date: metadata.date || article.date || '',
-                        category: metadata.category || article.category || 'Без категории',
-                        tags: metadata.tags || article.tags || [],
-                        description: metadata.description || article.description || '',
-                        readingTime: metadata.readingTime || article.readingTime || null,
-                        difficulty: metadata.difficulty || article.difficulty || null,
-                        path: article.path || `/articles?id=${metadata.id || article.id}`,
+                        id: metadata.id,
+                        title: metadata.title,
+                        author: metadata.author || 'Автор не указан',
+                        date: metadata.date || '',
+                        category: metadata.category || 'Без категории',
+                        tags: metadata.tags || [],
+                        description: metadata.description || '',
+                        readingTime: metadata.readingTime || null,
+                        difficulty: metadata.difficulty || null,
+                        path: `/articles?id=${metadata.id}`,
                         mdFile: article.mdFile
                     };
                 } catch (error) {
@@ -119,6 +137,21 @@ class ArticleViewer {
         console.log(`Loaded ${this.articles.length} articles with metadata`);
         
         return this.articles;
+    }
+
+    /**
+     * Попытка автоматического обнаружения статей (fallback)
+     */
+    async discoverArticles() {
+        // Список известных статей для fallback
+        // В реальности это должно генерироваться скриптом
+        const knownArticles = [
+            { id: 'test-simple', mdFile: 'articles/test-simple/article.md' },
+            { id: 'expanding-universe-hypersphere', mdFile: 'articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md' }
+        ];
+        
+        console.log('Using fallback article discovery');
+        return knownArticles;
     }
 
     /**

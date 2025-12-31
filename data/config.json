@@ -125,11 +125,6 @@
     "analytics": false,
     "comments": false
   },
-  "articles": [
-    {
-      "id": "test-simple",
-      "mdFile": "articles/test-simple/article.md"
-    }
-  ]
+  "articles": []
 }
 
