@@ -59,9 +59,12 @@ class ArticleViewer {
                 const text = await response.text();
                 console.log(`✓ Loaded from GitHub Pages: ${mdPath}`);
                 return text;
+            } else {
+                // Response не ok (404, 500, etc.) - пробуем fallback
+                console.warn(`GitHub Pages returned ${response.status}, trying GitHub Raw API...`);
             }
         } catch (error) {
-            console.warn(`Failed to load from GitHub Pages: ${error.message}`);
+            console.warn(`Failed to load from GitHub Pages: ${error.message}, trying GitHub Raw API...`);
         }
         
         // Fallback: GitHub Raw API
