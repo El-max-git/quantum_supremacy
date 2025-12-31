@@ -8,14 +8,19 @@
 
 ```
 articles/
-└── article-id/
-    ├── article.md          # Main markdown content with frontmatter metadata
-    └── images/             # Article images (optional)
-        ├── diagram1.png
-        └── formula.svg
+├── articles-list.json     # Список всех статей (автоматически генерируется)
+├── article-id/
+│   ├── article.md          # Main markdown content with frontmatter metadata
+│   └── images/             # Article images (optional)
+│       ├── diagram1.png
+│       └── formula.svg
+└── ...
 ```
 
-**Важно:** Метаданные теперь встроены в сам файл `article.md` через YAML frontmatter (в начале файла), вместо отдельного `metadata.json`.
+**Важно:** 
+- Метаданные встроены в сам файл `article.md` через YAML frontmatter (в начале файла)
+- Список статей хранится в `articles/articles-list.json` (генерируется скриптом `scan-articles.js`)
+- Статьи **НЕ** регистрируются в `config.json`
 
 ## Создание новой статьи
 
@@ -76,19 +81,19 @@ Summary and next steps...
 
 **Важно:** Метаданные указываются в YAML frontmatter между `---` в начале файла.
 
-### Шаг 3: Зарегистрировать в конфигурации
+### Шаг 3: Зарегистрировать статью
 
-**Вариант 1: Автоматическое сканирование (рекомендуется)**
+**Автоматическое сканирование (рекомендуется):**
 
 ```bash
 node scripts/scan-articles.js
 ```
 
-Скрипт автоматически найдёт все статьи в `articles/` и обновит `config.json`.
+Скрипт автоматически найдёт все статьи в `articles/` и создаст/обновит `articles/articles-list.json`.
 
-**Вариант 2: Ручное добавление**
+**Ручное добавление (если нужно):**
 
-Добавьте в `data/config.json`:
+Отредактируйте `articles/articles-list.json`:
 
 ```json
 {
@@ -101,7 +106,10 @@ node scripts/scan-articles.js
 }
 ```
 
-**Примечание:** Все метаданные (title, author, date, tags, etc.) читаются автоматически из YAML frontmatter статьи. В `config.json` достаточно указать только `id` и `mdFile`.
+**Важно:** 
+- Все метаданные (title, author, date, tags, etc.) читаются автоматически из YAML frontmatter статьи
+- В `articles-list.json` достаточно указать только `id` и `mdFile`
+- Список статей хранится в папке `articles/`, а не в `config.json`
 
 ## Доступные возможности статей
 
@@ -183,11 +191,12 @@ $$
 
 | Проблема | Решение |
 |---------|----------|
-| Статья не найдена | Проверьте ID статьи в config.json |
+| Статья не найдена | Проверьте ID статьи в `articles/articles-list.json`, запустите `scan-articles.js` |
 | Формулы не рендерятся | Дождитесь загрузки MathJax, проверьте консоль |
 | Изображения 404 | Проверьте пути изображений и структуру директорий |
 | Ссылки не работают | Убедитесь что .md ссылки конвертированы в /article/id |
 | Содержание пустое | Добавьте больше заголовков или снизьте minHeadings в настройках |
+| Список статей пуст | Запустите `node scripts/scan-articles.js` для обновления списка |
 
 ## Миграция из папки VP
 
@@ -197,7 +206,7 @@ $$
 2. Добавьте YAML frontmatter в начало файла с метаданными
 3. Переместите изображения в `articles/article-id/images/`
 4. Обновите пути изображений с `./VP/images/` на `./images/`
-5. Зарегистрируйте в `data/config.json` (минимальная конфигурация)
+5. Запустите `node scripts/scan-articles.js` для обновления списка статей
 6. Протестируйте статью в браузере
 
 ## Примечания
