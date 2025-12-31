@@ -113,6 +113,9 @@ class Router {
             // Update content while hidden
             this.rootElement.innerHTML = content;
 
+            // Execute scripts in the loaded content
+            this.executeScripts();
+
             // Initialize page scripts
             this.initializePageScripts();
 
@@ -129,6 +132,29 @@ class Router {
             this.rootElement.innerHTML = '<h1>Error loading page</h1>';
             this.rootElement.style.opacity = '1';
         }
+    }
+
+    /**
+     * Execute scripts from loaded HTML content
+     */
+    executeScripts() {
+        const scripts = this.rootElement.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement('script');
+            
+            // Copy attributes
+            Array.from(oldScript.attributes).forEach(attr => {
+                newScript.setAttribute(attr.name, attr.value);
+            });
+            
+            // Copy content
+            if (oldScript.textContent) {
+                newScript.textContent = oldScript.textContent;
+            }
+            
+            // Replace old script with new one (this executes it)
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
     }
 
     /**

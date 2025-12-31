@@ -51,22 +51,27 @@ class ArticleViewer {
         // Формат: articles/articles-list.json с массивом {id, mdFile}
         const articlesListUrl = `${this.config.basePath}/articles/articles-list.json?v=${Date.now()}`;
         
+        console.log('ArticleViewer.loadArticles(): Loading from', articlesListUrl);
+        
         let articlesList = [];
         
         try {
             // Пытаемся загрузить список статей
+            console.log('Fetching articles list...');
             const response = await fetch(articlesListUrl);
+            console.log('Response status:', response.status, response.statusText);
+            
             if (response.ok) {
                 const data = await response.json();
                 articlesList = data.articles || [];
-                console.log(`Loaded articles list from articles-list.json: ${articlesList.length} articles`);
+                console.log(`✓ Loaded articles list from articles-list.json: ${articlesList.length} articles`);
             } else {
-                console.warn('articles/articles-list.json not found, will try to discover articles...');
+                console.warn(`✗ articles/articles-list.json not found (${response.status}), will try to discover articles...`);
                 // Fallback: пытаемся найти статьи вручную (если есть известные)
                 articlesList = await this.discoverArticles();
             }
         } catch (error) {
-            console.warn('Error loading articles/articles-list.json:', error);
+            console.error('✗ Error loading articles/articles-list.json:', error);
             articlesList = await this.discoverArticles();
         }
         

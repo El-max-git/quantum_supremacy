@@ -205,65 +205,103 @@
 
 <!-- Initialize Article Viewer -->
 <script>
-(async function() {
-    try {
-        // Проверяем что ArticleViewer доступен
-        if (typeof ArticleViewer === 'undefined') {
-            throw new Error('ArticleViewer class not loaded. Check script order in index.html');
-        }
+(function() {
+    console.log('Articles page script starting...');
+    
+    // Функция инициализации с повторными попытками
+    async function initArticleViewer(retries = 5) {
+        console.log(`Attempting to initialize ArticleViewer (${retries} retries left)...`);
         
-        // Проверяем что ArticleParser доступен
-        if (typeof ArticleParser === 'undefined') {
-            throw new Error('ArticleParser class not loaded. Check script order in index.html');
-        }
-        
-        // Получаем basePath из роутера
-        const basePath = window.router?.basePath || '';
-        console.log('ArticleViewer: basePath =', basePath);
-        
-        // Создаём экземпляр ArticleViewer
-        const viewer = new ArticleViewer({
-            basePath: basePath,
-            listContainerId: 'articles-list',
-            viewerContainerId: 'article-viewer',
-            configPath: '/data/config.json'
-        });
-        
-        console.log('ArticleViewer instance created');
-        
-        // Делаем доступным глобально для кнопок
-        window.articleViewer = viewer;
-        
-        // Инициализируем
-        console.log('Initializing ArticleViewer...');
-        await viewer.init();
-        console.log('ArticleViewer initialized successfully');
-        
-        // Обработка кнопки "Назад" в браузере
-        window.addEventListener('popstate', (event) => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const articleId = urlParams.get('id');
-            
-            if (articleId) {
-                viewer.viewArticle(articleId);
-            } else {
-                viewer.backToList();
+        try {
+            // Проверяем что ArticleViewer доступен
+            if (typeof ArticleViewer === 'undefined') {
+                if (retries > 0) {
+                    console.log('ArticleViewer not ready, retrying in 200ms...');
+                    setTimeout(() => initArticleViewer(retries - 1), 200);
+                    return;
+                }
+                throw new Error('ArticleViewer class not loaded. Check script order in index.html');
             }
-        });
-    } catch (error) {
-        console.error('Error initializing ArticleViewer:', error);
-        const listContainer = document.getElementById('articles-list');
-        if (listContainer) {
-            listContainer.innerHTML = `
-                <div class="article-error">
-                    <h2>❌ Ошибка инициализации</h2>
-                    <p>${error.message}</p>
-                    <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                        Проверьте консоль браузера для деталей.
-                    </p>
-                </div>
-            `;
+            console.log('✓ ArticleViewer class found');
+            
+            // Проверяем что ArticleParser доступен
+            if (typeof ArticleParser === 'undefined') {
+                if (retries > 0) {
+                    console.log('ArticleParser not ready, retrying in 200ms...');
+                    setTimeout(() => initArticleViewer(retries - 1), 200);
+                    return;
+                }
+                throw new Error('ArticleParser class not loaded. Check script order in index.html');
+            }
+            console.log('✓ ArticleParser class found');
+            
+            // Проверяем что контейнеры существуют
+            const listContainer = document.getElementById('articles-list');
+            if (!listContainer) {
+                console.warn('articles-list container not found, waiting...');
+                if (retries > 0) {
+                    setTimeout(() => initArticleViewer(retries - 1), 200);
+                    return;
+                }
+                throw new Error('articles-list container not found');
+            }
+            console.log('✓ Containers found');
+            
+            // Получаем basePath из роутера
+            const basePath = window.router?.basePath || '';
+            console.log('ArticleViewer: basePath =', basePath);
+            
+            // Создаём экземпляр ArticleViewer
+            console.log('Creating ArticleViewer instance...');
+            const viewer = new ArticleViewer({
+                basePath: basePath,
+                listContainerId: 'articles-list',
+                viewerContainerId: 'article-viewer',
+                configPath: '/data/config.json'
+            });
+            
+            console.log('✓ ArticleViewer instance created');
+            
+            // Делаем доступным глобально для кнопок
+            window.articleViewer = viewer;
+            
+            // Инициализируем
+            console.log('Initializing ArticleViewer...');
+            await viewer.init();
+            console.log('✓ ArticleViewer initialized successfully');
+            
+            // Обработка кнопки "Назад" в браузере
+            window.addEventListener('popstate', (event) => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const articleId = urlParams.get('id');
+                
+                if (articleId) {
+                    viewer.viewArticle(articleId);
+                } else {
+                    viewer.backToList();
+                }
+            });
+            
+            console.log('✓ Articles page initialization complete');
+        } catch (error) {
+            console.error('✗ Error initializing ArticleViewer:', error);
+            console.error('Error stack:', error.stack);
+            const listContainer = document.getElementById('articles-list');
+            if (listContainer) {
+                listContainer.innerHTML = `
+                    <div class="article-error">
+                        <h2>❌ Ошибка инициализации</h2>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            Проверьте консоль браузера для деталей.
+                        </p>
+                    </div>
+                `;
+            }
         }
     }
+    
+    // Запускаем инициализацию
+    setTimeout(() => initArticleViewer(), 100);
 })();
 </script>
