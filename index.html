@@ -104,22 +104,30 @@
             // Получаем маршруты для меню через NavUtils
             const menuRoutes = NavUtils.getMenuRoutes();
             
+            console.log('Menu routes:', menuRoutes);
+            console.log('Number of menu items:', menuRoutes.length);
+            
             menuRoutes.forEach(route => {
+                console.log('Adding menu item:', route.path, route.title);
                 const li = document.createElement('li');
                 // Используем NavUtils для создания ссылки
                 const a = NavUtils.createLink(route.path, route.title.split(' - ')[0]);
                 li.appendChild(a);
                 nav.appendChild(li);
             });
+            
+            console.log('Navigation generated:', nav.innerHTML);
         }
 
         // Динамическая загрузка маршрутов из config.json
         async function initializeRoutes() {
             try {
-                console.log('Loading config from:', `${basePath}/data/config.json`);
+                // Добавляем timestamp чтобы избежать кэширования
+                const configUrl = `${basePath}/data/config.json?v=${Date.now()}`;
+                console.log('Loading config from:', configUrl);
                 
                 // Загружаем конфигурацию
-                const response = await fetch(`${basePath}/data/config.json`);
+                const response = await fetch(configUrl);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
