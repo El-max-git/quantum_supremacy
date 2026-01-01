@@ -35,6 +35,22 @@ class ArticleParser {
             // 1. Pre-process: защитить формулы от обработки marked.js
             const { protectedText, formulas } = this.protectFormulas(content);
             
+            // Проверяем проблемную формулу после защиты
+            const problemFormulaIndex = formulas.findIndex(f => f.formula.includes('\\text{div}(g) = 2'));
+            if (problemFormulaIndex >= 0) {
+                console.log('🔍 STEP 1 (protectFormulas): Problem formula protected');
+                console.log('  Formula:', formulas[problemFormulaIndex].formula);
+                console.log('  Index:', problemFormulaIndex);
+                const placeholder = `\u200B\u200B\u200BMATH_INLINE_${problemFormulaIndex}_MATH\u200B\u200B\u200B`;
+                const placeholderInText = protectedText.includes(placeholder);
+                console.log('  Placeholder in protected text:', placeholderInText);
+                if (placeholderInText) {
+                    const index = protectedText.indexOf(placeholder);
+                    const context = protectedText.substring(Math.max(0, index - 50), Math.min(protectedText.length, index + placeholder.length + 50));
+                    console.log('  Context:', context);
+                }
+            }
+            
             // 2. Pre-process: специальные блоки
             let processed = this.preprocessSpecialBlocks(protectedText);
             
@@ -44,14 +60,55 @@ class ArticleParser {
             // 4. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
             
+            // Проверяем проблемную формулу перед marked.js
+            if (problemFormulaIndex >= 0) {
+                const placeholder = `\u200B\u200B\u200BMATH_INLINE_${problemFormulaIndex}_MATH\u200B\u200B\u200B`;
+                const placeholderInProcessed = processed.includes(placeholder);
+                console.log('🔍 STEP 2-4 (preprocessing): Placeholder still in processed text:', placeholderInProcessed);
+            }
+            
             // 5. Parse markdown to HTML
             let html = await this.convertMarkdownToHtml(processed);
+            
+            // Проверяем проблемную формулу после marked.js
+            if (problemFormulaIndex >= 0) {
+                const placeholder = `\u200B\u200B\u200BMATH_INLINE_${problemFormulaIndex}_MATH\u200B\u200B\u200B`;
+                const placeholderInHtml = html.includes(placeholder);
+                console.log('🔍 STEP 5 (convertMarkdownToHtml): Placeholder in HTML after marked.js:', placeholderInHtml);
+                if (!placeholderInHtml) {
+                    // Проверяем, что marked.js сделал с формулой
+                    const formulaText = formulas[problemFormulaIndex].formula;
+                    const formulaInHtml = html.includes(formulaText);
+                    console.log('  Formula text found directly in HTML:', formulaInHtml);
+                    if (formulaInHtml) {
+                        const index = html.indexOf(formulaText);
+                        const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + formulaText.length + 100));
+                        console.log('  Context around formula in HTML:', context);
+                    }
+                }
+            }
             
             // 6. Восстановить защищенные формулы
             html = this.restoreProtectedFormulas(html, formulas);
             
+            // Проверяем проблемную формулу после восстановления
+            if (problemFormulaIndex >= 0) {
+                const formulaText = formulas[problemFormulaIndex].formula;
+                const formulaInHtml = html.includes(`$${formulaText}$`);
+                console.log('🔍 STEP 6 (restoreProtectedFormulas): Formula restored in HTML:', formulaInHtml);
+                if (!formulaInHtml) {
+                    // Проверяем, есть ли формула без $...$
+                    const formulaWithoutDollars = html.includes(formulaText);
+                    console.log('  Formula without $...$ found:', formulaWithoutDollars);
+                    if (formulaWithoutDollars) {
+                        const index = html.indexOf(formulaText);
+                        const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + formulaText.length + 100));
+                        console.log('  Context around formula:', context);
+                    }
+                }
+            }
+            
             // Проверяем, есть ли проблемы с конкретной формулой
-            const problemFormula = '\\text{div}(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)';
             const hasProblemFormula = formulas.some(f => f.formula.includes('\\text{div}(g) = 2'));
             if (hasProblemFormula) {
                 console.warn('⚠ Found problem formula with \\text{div}(g) = 2');
@@ -64,20 +121,57 @@ class ArticleParser {
                     const placeholder = `\u200B\u200B\u200BMATH_INLINE_${formulaIndex}_MATH\u200B\u200B\u200B`;
                     const found = html.includes(placeholder);
                     console.log('Placeholder found in HTML:', found);
+                    console.log('Placeholder to search:', placeholder);
+                    
+                    // Пробуем найти плейсхолдер в разных форматах
+                    const searchVariants = [
+                        placeholder,
+                        placeholder.replace(/\u200B/g, ''),
+                        `MATH_INLINE_${formulaIndex}`,
+                        `MATH_INLINE_${formulaIndex}_MATH`,
+                    ];
+                    
+                    searchVariants.forEach((variant, idx) => {
+                        const foundVariant = html.includes(variant);
+                        console.log(`Search variant ${idx} (${variant.substring(0, 30)}...):`, foundVariant);
+                        if (foundVariant) {
+                            const index = html.indexOf(variant);
+                            const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + variant.length + 100));
+                            console.log('Context around found variant:', context);
+                        }
+                    });
+                    
                     if (!found) {
-                        // Пробуем найти части плейсхолдера
-                        const parts = [
-                            `MATH_INLINE_${formulaIndex}`,
-                            `MATH_INLINE_${formulaIndex}_MATH`,
-                        ];
-                        parts.forEach(part => {
-                            if (html.includes(part)) {
-                                console.log('Found partial placeholder:', part);
-                                const index = html.indexOf(part);
-                                const context = html.substring(Math.max(0, index - 50), Math.min(html.length, index + 100));
-                                console.log('Context:', context);
+                        // Пробуем найти формулу напрямую в HTML и восстановить её
+                        const formulaText = formulas[formulaIndex].formula;
+                        const formulaInHtml = html.includes(formulaText);
+                        console.log('Formula found directly in HTML:', formulaInHtml);
+                        if (formulaInHtml) {
+                            const index = html.indexOf(formulaText);
+                            const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + formulaText.length + 100));
+                            console.log('Context around formula:', context);
+                            
+                            // Пробуем восстановить формулу напрямую
+                            const replacement = `$${formulaText}$`;
+                            const escaped = formulaText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escaped, 'gi');
+                            if (regex.test(html)) {
+                                html = html.replace(regex, replacement);
+                                console.log('✓ Problem formula restored directly from HTML');
                             }
-                        });
+                        } else {
+                            // Пробуем найти части формулы
+                            const formulaParts = [
+                                '\\text{div}(g) = 2',
+                                '\\times',
+                                '\\left(\\frac{\\dot{V}}{V}\\right)',
+                            ];
+                            formulaParts.forEach(part => {
+                                if (html.includes(part)) {
+                                    console.log('Found formula part in HTML:', part);
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -317,10 +411,11 @@ ${cleanContent}
             formulas.push({ type: 'inline', formula: trimmedFormula });
             
             // Специальная проверка для формул с \text{} и \left(\right)
-            if (trimmedFormula.includes('\\text{') || trimmedFormula.includes('\\left(')) {
-                if (window.DEBUG_ARTICLE_PARSER) {
-                    console.log(`Protected inline formula ${formulaIndex} (with \\text{} or \\left()):`, trimmedFormula);
-                }
+            const hasTextOrLeft = trimmedFormula.includes('\\text{') || trimmedFormula.includes('\\left(');
+            if (hasTextOrLeft) {
+                // Всегда логируем формулы с \text{} и \left(\right)
+                console.log(`Protected inline formula ${formulaIndex} (with \\text{} or \\left()):`, trimmedFormula);
+                console.log(`Placeholder: ${placeholder.substring(0, 30)}...`);
             } else if (window.DEBUG_ARTICLE_PARSER) {
                 console.log(`Protected inline formula ${formulaIndex}:`, trimmedFormula.substring(0, 100));
             }
