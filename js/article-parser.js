@@ -225,18 +225,22 @@ ${cleanContent}
         const formulas = [];
         let formulaIndex = 0;
         
+        // Используем более уникальные маркеры, которые точно не будут обработаны marked.js
+        // Используем формат, который выглядит как HTML комментарий, но не является им
+        const createPlaceholder = (type, index) => {
+            // Используем формат, который не будет обработан marked.js как markdown
+            return `<!--MATH_${type}_${index}-->`;
+        };
+        
         // Защищаем block формулы $$...$$
-        // Важно: сохраняем формулу как есть, включая все обратные слеши
         let protectedText = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
-            const placeholder = `__MATH_BLOCK_${formulaIndex}__`;
-            // Сохраняем формулу с сохранением всех обратных слешей
+            const placeholder = createPlaceholder('BLOCK', formulaIndex);
             formulas.push({ type: 'block', formula: formula.trim() });
             formulaIndex++;
             return placeholder;
         });
         
         // Защищаем inline формулы $...$ (но не $$)
-        // Используем более надежный паттерн, который не использует lookbehind (не поддерживается в старых браузерах)
         protectedText = protectedText.replace(/\$([^$\n]+?)\$/g, (match, formula, offset, string) => {
             // Проверяем, что это не часть $$...$$
             const before = string.substring(Math.max(0, offset - 1), offset);
@@ -247,7 +251,7 @@ ${cleanContent}
                 return match;
             }
             
-            const placeholder = `__MATH_INLINE_${formulaIndex}__`;
+            const placeholder = createPlaceholder('INLINE', formulaIndex);
             formulas.push({ type: 'inline', formula: formula.trim() });
             formulaIndex++;
             return placeholder;
@@ -274,13 +278,13 @@ ${cleanContent}
         // Сначала пробуем найти все плейсхолдеры в HTML (включая обернутые в теги)
         const findAllPlaceholders = (text) => {
             const found = [];
-            // Ищем плейсхолдеры в разных форматах
+            // Ищем плейсхолдеры в разных форматах (новый формат с HTML комментариями и старый)
             const patterns = [
+                /<!--MATH_(BLOCK|INLINE)_(\d+)-->/g,
+                /&lt;!--MATH_(BLOCK|INLINE)_(\d+)--&gt;/g,
+                /&amp;lt;!--MATH_(BLOCK|INLINE)_(\d+)--&amp;gt;/g,
                 /__MATH_(BLOCK|INLINE)_(\d+)__/g,
                 /&#95;&#95;MATH_(BLOCK|INLINE)_(\d+)&#95;&#95;/g,
-                /&amp;#95;&amp;#95;MATH_(BLOCK|INLINE)_(\d+)&amp;#95;&amp;#95;/g,
-                /<p>__MATH_(BLOCK|INLINE)_(\d+)__<\/p>/g,
-                /<code>__MATH_(BLOCK|INLINE)_(\d+)__<\/code>/g,
             ];
             
             patterns.forEach(pattern => {
@@ -305,8 +309,9 @@ ${cleanContent}
         }
         
         formulas.forEach((formulaObj, index) => {
-            const blockPlaceholder = `__MATH_BLOCK_${index}__`;
-            const inlinePlaceholder = `__MATH_INLINE_${index}__`;
+            // Используем новый формат плейсхолдера (HTML комментарии)
+            const blockPlaceholder = `<!--MATH_BLOCK_${index}-->`;
+            const inlinePlaceholder = `<!--MATH_INLINE_${index}-->`;
             
             if (formulaObj.type === 'block') {
                 const replacement = `$$${formulaObj.formula}$$`;
@@ -318,14 +323,8 @@ ${cleanContent}
                 // Пробуем все возможные варианты плейсхолдера
                 const variants = [
                     blockPlaceholder,
-                    blockPlaceholder.replace(/_/g, '&#95;'),
-                    blockPlaceholder.replace(/_/g, '&amp;#95;'),
-                    `<p>${blockPlaceholder}</p>`,
-                    `<p>${blockPlaceholder.replace(/_/g, '&#95;')}</p>`,
-                    `<code>${blockPlaceholder}</code>`,
-                    `&lt;code&gt;${blockPlaceholder}&lt;/code&gt;`,
-                    // Также пробуем с экранированными тегами
-                    `&lt;p&gt;${blockPlaceholder}&lt;/p&gt;`,
+                    blockPlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                    blockPlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
                 ];
                 
                 variants.forEach(variant => {
@@ -344,10 +343,8 @@ ${cleanContent}
                 
                 const variants = [
                     inlinePlaceholder,
-                    inlinePlaceholder.replace(/_/g, '&#95;'),
-                    inlinePlaceholder.replace(/_/g, '&amp;#95;'),
-                    `<code>${inlinePlaceholder}</code>`,
-                    `&lt;code&gt;${inlinePlaceholder}&lt;/code&gt;`,
+                    inlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                    inlinePlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
                 ];
                 
                 variants.forEach(variant => {
@@ -361,27 +358,29 @@ ${cleanContent}
         });
         
         // Проверяем, что все формулы восстановлены
-        // Проверяем разные варианты экранирования плейсхолдеров
-        const remainingPlaceholders = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
-        const remainingEscaped = html.match(/__MATH_(BLOCK|INLINE)_\d+__|&#95;&#95;MATH_(BLOCK|INLINE)_\d+&#95;&#95;/g);
+        // Проверяем разные варианты плейсхолдеров (старый и новый формат)
+        const remainingPlaceholders = html.match(/<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
         
         if (remainingPlaceholders && remainingPlaceholders.length > 0) {
             console.warn('Some formulas were not restored:', remainingPlaceholders);
             // Попытка восстановить оставшиеся формулы вручную
             formulas.forEach((formulaObj, index) => {
-                const blockPlaceholder = `__MATH_BLOCK_${index}__`;
-                const inlinePlaceholder = `__MATH_INLINE_${index}__`;
+                // Поддерживаем оба формата для обратной совместимости
+                const blockPlaceholder = `<!--MATH_BLOCK_${index}-->`;
+                const inlinePlaceholder = `<!--MATH_INLINE_${index}-->`;
+                const oldBlockPlaceholder = `__MATH_BLOCK_${index}__`;
+                const oldInlinePlaceholder = `__MATH_INLINE_${index}__`;
                 
                 if (formulaObj.type === 'block') {
                     // Пробуем все возможные варианты экранирования и обертки в теги
                     const variants = [
                         blockPlaceholder,
-                        blockPlaceholder.replace(/_/g, '&#95;'),
-                        blockPlaceholder.replace(/_/g, '&amp;#95;'),
-                        `<p>${blockPlaceholder}</p>`,
-                        `<code>${blockPlaceholder}</code>`,
-                        `&lt;code&gt;${blockPlaceholder}&lt;/code&gt;`,
-                        blockPlaceholder.replace(/_/g, '_'),
+                        blockPlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                        oldBlockPlaceholder,
+                        oldBlockPlaceholder.replace(/_/g, '&#95;'),
+                        oldBlockPlaceholder.replace(/_/g, '&amp;#95;'),
+                        `<p>${oldBlockPlaceholder}</p>`,
+                        `<code>${oldBlockPlaceholder}</code>`,
                     ];
                     
                     variants.forEach(variant => {
@@ -395,11 +394,11 @@ ${cleanContent}
                 } else {
                     const variants = [
                         inlinePlaceholder,
-                        inlinePlaceholder.replace(/_/g, '&#95;'),
-                        inlinePlaceholder.replace(/_/g, '&amp;#95;'),
-                        `<code>${inlinePlaceholder}</code>`,
-                        `&lt;code&gt;${inlinePlaceholder}&lt;/code&gt;`,
-                        inlinePlaceholder.replace(/_/g, '_'),
+                        inlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                        oldInlinePlaceholder,
+                        oldInlinePlaceholder.replace(/_/g, '&#95;'),
+                        oldInlinePlaceholder.replace(/_/g, '&amp;#95;'),
+                        `<code>${oldInlinePlaceholder}</code>`,
                     ];
                     
                     variants.forEach(variant => {
@@ -413,12 +412,16 @@ ${cleanContent}
             });
             
             // Финальная проверка - если остались плейсхолдеры, пробуем восстановить их все сразу
-            const stillRemaining = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
+            const stillRemaining = html.match(/<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
             if (stillRemaining && stillRemaining.length > 0) {
                 console.error('Failed to restore formulas:', stillRemaining);
                 // Последняя попытка - заменяем все оставшиеся плейсхолдеры напрямую
                 stillRemaining.forEach(placeholder => {
-                    const match = placeholder.match(/__MATH_(BLOCK|INLINE)_(\d+)__/);
+                    // Пробуем оба формата
+                    let match = placeholder.match(/<!--MATH_(BLOCK|INLINE)_(\d+)-->/);
+                    if (!match) {
+                        match = placeholder.match(/__MATH_(BLOCK|INLINE)_(\d+)__/);
+                    }
                     if (match) {
                         const type = match[1];
                         const index = parseInt(match[2]);
