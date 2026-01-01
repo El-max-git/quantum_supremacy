@@ -970,6 +970,8 @@ ul.features-list li::before {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     margin-bottom: 1rem;
+    overflow: visible;
+    max-height: none;
 }
 
 /* Table of Contents Sidebar (старый стиль, для обратной совместимости) */
@@ -998,36 +1000,72 @@ ul.features-list li::before {
 /* TOC title для TOC сверху */
 .article-toc-top .toc-title {
     margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+/* Убеждаемся, что все элементы TOC отображаются построчно */
+.article-toc-top li {
+    display: list-item !important;
+    list-style: none;
+    width: 100%;
+    margin: 0.5rem 0;
+}
+
+.article-toc-top ul {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .toc-nav {
     font-size: 0.9rem;
+    display: block;
+    width: 100%;
+    overflow: visible;
+}
+
+.toc-nav ul {
+    display: block;
+    width: 100%;
 }
 
 .toc-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: block;
+    width: 100%;
 }
 
 .toc-list-nested {
     list-style: none;
-    padding-left: 1rem;
+    padding-left: 1.5rem;
     margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    width: 100%;
 }
 
 .toc-item {
-    margin: 0.25rem 0;
+    margin: 0.5rem 0;
+    display: block;
+    width: 100%;
+    line-height: 1.6;
 }
 
 .toc-link {
     display: block;
+    width: 100%;
     padding: 0.5rem 0.75rem;
     color: var(--text-secondary);
     text-decoration: none;
     border-left: 2px solid transparent;
     transition: var(--transition);
     border-radius: 4px;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .toc-link:hover {
@@ -1041,6 +1079,39 @@ ul.features-list li::before {
     color: var(--primary-color);
     border-left-color: var(--primary-color);
     font-weight: 600;
+}
+
+/* Улучшенные стили для TOC сверху */
+.article-toc-top .toc-nav {
+    width: 100%;
+}
+
+.article-toc-top .toc-list {
+    display: block;
+    width: 100%;
+}
+
+.article-toc-top .toc-item {
+    display: list-item;
+    width: 100%;
+    margin: 0.5rem 0;
+}
+
+.article-toc-top .toc-link {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.article-toc-top .toc-list-nested {
+    display: block;
+    width: 100%;
+    margin-left: 1.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
 }
 
 /* Article Content */
