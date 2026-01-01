@@ -32,17 +32,23 @@ class ArticleParser {
             // 0. Extract frontmatter (YAML metadata)
             const { content, metadata } = this.extractFrontmatter(markdownText);
             
-            // 1. Pre-process: специальные блоки
-            let processed = this.preprocessSpecialBlocks(content);
+            // 1. Pre-process: защитить формулы от обработки marked.js
+            const { protectedText, formulas } = this.protectFormulas(content);
             
-            // 2. Pre-process: формулы в блоках кода (преобразование в MathJax)
+            // 2. Pre-process: специальные блоки
+            let processed = this.preprocessSpecialBlocks(protectedText);
+            
+            // 3. Pre-process: формулы в блоках кода (преобразование в MathJax)
             processed = this.preprocessCodeBlockFormulas(processed);
             
-            // 3. Pre-process: рамки для формул
+            // 4. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
             
-            // 4. Parse markdown to HTML
+            // 5. Parse markdown to HTML
             let html = await this.convertMarkdownToHtml(processed);
+            
+            // 6. Восстановить защищенные формулы
+            html = this.restoreProtectedFormulas(html, formulas);
             
             // 5. Post-process: изображения
             html = this.processImages(html, articlePath);
@@ -195,6 +201,73 @@ ${cleanContent}
     }
 
     /**
+     * Защищает формулы от обработки marked.js
+     * @param {string} text - Markdown текст
+     * @returns {{protectedText: string, formulas: Array}} - Защищенный текст и массив формул
+     */
+    protectFormulas(text) {
+        const formulas = [];
+        let formulaIndex = 0;
+        
+        // Защищаем block формулы $$...$$
+        let protectedText = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+            const placeholder = `__MATH_BLOCK_${formulaIndex}__`;
+            formulas.push({ type: 'block', formula: formula.trim() });
+            formulaIndex++;
+            return placeholder;
+        });
+        
+        // Защищаем inline формулы $...$ (но не $$)
+        // Используем более надежный паттерн, который не использует lookbehind (не поддерживается в старых браузерах)
+        protectedText = protectedText.replace(/\$([^$\n]+?)\$/g, (match, formula, offset, string) => {
+            // Проверяем, что это не часть $$...$$
+            const before = string.substring(Math.max(0, offset - 1), offset);
+            const after = string.substring(offset + match.length, offset + match.length + 1);
+            
+            // Если перед или после есть $, это часть block формулы, пропускаем
+            if (before === '$' || after === '$') {
+                return match;
+            }
+            
+            const placeholder = `__MATH_INLINE_${formulaIndex}__`;
+            formulas.push({ type: 'inline', formula: formula.trim() });
+            formulaIndex++;
+            return placeholder;
+        });
+        
+        return { protectedText, formulas };
+    }
+    
+    /**
+     * Восстанавливает защищенные формулы после парсинга
+     * @param {string} html - HTML после парсинга
+     * @param {Array} formulas - Массив формул
+     * @returns {string} - HTML с восстановленными формулами
+     */
+    restoreProtectedFormulas(html, formulas) {
+        formulas.forEach((formulaObj, index) => {
+            const blockPlaceholder = `__MATH_BLOCK_${index}__`;
+            const inlinePlaceholder = `__MATH_INLINE_${index}__`;
+            
+            if (formulaObj.type === 'block') {
+                // Восстанавливаем block формулы
+                html = html.replace(
+                    new RegExp(blockPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                    `$$${formulaObj.formula}$$`
+                );
+            } else {
+                // Восстанавливаем inline формулы
+                html = html.replace(
+                    new RegExp(inlinePlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                    `$${formulaObj.formula}$`
+                );
+            }
+        });
+        
+        return html;
+    }
+
+    /**
      * Предобработка формул в блоках кода (преобразование в MathJax)
      */
     preprocessCodeBlockFormulas(text) {
@@ -296,10 +369,13 @@ ${cleanContent}
                     // Специальные символы
                     .replace(/×/g, '\\times')
                     .replace(/≈/g, '\\approx')
+                    .replace(/∼/g, '\\sim') // тильда (пропорционально)
                     .replace(/→/g, '\\to')
                     .replace(/≤/g, '\\leq')
                     .replace(/≥/g, '\\geq')
                     .replace(/≠/g, '\\neq')
+                    .replace(/≫/g, '\\gg') // много больше
+                    .replace(/≪/g, '\\ll') // много меньше
                     .replace(/∞/g, '\\infty')
                     // Корни (обрабатываем после замены греческих букв)
                     .replace(/√\(([^)]+)\)/g, '\\sqrt{$1}') // √(x) -> \sqrt{x}
