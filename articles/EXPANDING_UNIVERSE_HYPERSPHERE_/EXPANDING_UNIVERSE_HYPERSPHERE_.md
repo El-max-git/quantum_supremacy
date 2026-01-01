@@ -1043,23 +1043,17 @@ $$
 
 **Сопутствующее расстояние:**
 
-$$
-r_{\text{horizon}}(t) = R(t) \int_0^t \frac{c \, dt'}{R(t')}
-$$
+$r_{\text{horizon}}(t) = R(t) \int_0^t \frac{c \, dt'}{R(t')}$
 
 Для Вселенной с материей, излучением и Λ:
 
-$$
-r_{\text{horizon}} \approx 46 \text{ млрд св. лет} \quad \text{(сегодня)}
-$$
+$r_{\text{horizon}} \approx 46 \text{ млрд св. лет} \quad \text{(сегодня)}$
 
 **На гиперсфере S³:**
 
 Это соответствует углу:
 
-$$
-\chi_{\text{horizon}} = \frac{r_{\text{horizon}}}{R}
-$$
+$\chi_{\text{horizon}} = \frac{r_{\text{horizon}}}{R}$
 
 Если R → ∞ (плоская): χ → 0 (бесконечно малый угол)
 
@@ -1069,23 +1063,17 @@ $$
 
 **Если Вселенная — S³:**
 
-$$
-\frac{V_{\text{total}}}{V_{\text{obs}}} = \frac{2\pi^2 R^3}{(4\pi/3) r_{\text{obs}}^3} \approx \frac{3\pi}{2} \left(\frac{R}{r_{\text{obs}}}\right)^3
-$$
+$\frac{V_{\text{total}}}{V_{\text{obs}}} = \frac{2\pi^2 R^3}{(4\pi/3) r_{\text{obs}}^3} \approx \frac{3\pi}{2} \left(\frac{R}{r_{\text{obs}}}\right)^3$
 
 При $R/r_{\text{obs}} = 10$:
 
-$$
-\frac{V_{\text{total}}}{V_{\text{obs}}} \approx 1500
-$$
+$\frac{V_{\text{total}}}{V_{\text{obs}}} \approx 1500$
 
 Вселенная в **1500 раз больше** наблюдаемой части!
 
 **Количество галактик во всей Вселенной:**
 
-$$
-N_{\text{total}} \approx N_{\text{obs}} \times 1500 \approx 2 \times 10^{11} \times 1500 \approx 3 \times 10^{14} \text{ галактик}
-$$
+$N_{\text{total}} \approx N_{\text{obs}} \times 1500 \approx 2 \times 10^{11} \times 1500 \approx 3 \times 10^{14} \text{ галактик}$
 
 ---
 
@@ -1097,21 +1085,15 @@ $$
 
 **Уравнение Фридмана** можно переписать:
 
-```
-3H² = 8πG ρ_total
-```
+$$3H^2 = 8\pi G \rho_{\text{total}}$$
 
-где ρ_total включает вклад **вакуумной энергии**:
+где $\rho_{\text{total}}$ включает вклад **вакуумной энергии**:
 
-```
-ρ_vac = Λ c² / (8πG)
-```
+$$\rho_{\text{vac}} = \frac{\Lambda c^2}{8\pi G}$$
 
 **Современные наблюдения:**
 
-```
-ρ_vac ≈ 0.7 × ρ_critical ≈ 6×10⁻¹⁰ Дж/м³
-```
+$$\rho_{\text{vac}} \approx 0.7 \times \rho_{\text{critical}} \approx 6 \times 10^{-10} \text{ Дж/м}^3$$
 
 ### 6.2. Квантовые флуктуации и геометрия
 
