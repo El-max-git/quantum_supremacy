@@ -921,12 +921,17 @@ ul.features-list li::before {
 
 /* Article Layout */
 .article-wrapper {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
     max-width: 1400px;
     margin: 2rem auto;
     padding: 0 2rem;
+    width: 100%;
+}
+
+.article-wrapper > * {
+    display: block;
     width: 100%;
 }
 
@@ -957,7 +962,17 @@ ul.features-list li::before {
     box-sizing: border-box;
 }
 
-/* Table of Contents Sidebar */
+/* Table of Contents (сверху) */
+.article-toc-top {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+}
+
+/* Table of Contents Sidebar (старый стиль, для обратной совместимости) */
 .article-toc-sidebar {
     position: relative;
 }
@@ -978,6 +993,11 @@ ul.features-list li::before {
     font-weight: 600;
     margin: 0 0 1rem 0;
     color: var(--text-primary);
+}
+
+/* TOC title для TOC сверху */
+.article-toc-top .toc-title {
+    margin-top: 0;
 }
 
 .toc-nav {
@@ -1025,11 +1045,17 @@ ul.features-list li::before {
 
 /* Article Content */
 .article-content {
+    width: 100%;
     background: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    overflow: hidden;
-    min-width: 0; /* Позволяет flex/grid элементу сжиматься */
+    overflow: visible;
+    display: block;
+    order: 2;
+}
+
+.article-toc-top {
+    order: 1;
 }
 
 .article-header {
@@ -1099,6 +1125,8 @@ ul.features-list li::before {
     line-height: 1.8;
     max-width: none;
     width: 100%;
+    display: block;
+    visibility: visible;
 }
 
 .article-body h2 {
@@ -1381,16 +1409,14 @@ ul.features-list li::before {
     line-height: 1.4;
 }
 
-/* Article Footer */
+/* Article Footer (скрыт) */
 .article-footer {
-    padding: 2rem 3rem 3rem;
-    border-top: 1px solid var(--border-color);
+    display: none;
 }
 
+/* Article Navigation (скрыт) */
 .article-navigation {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+    display: none;
 }
 
 .article-nav-button {
@@ -1440,8 +1466,18 @@ ul.features-list li::before {
 /* Responsive Design */
 @media (max-width: 1024px) {
     .article-wrapper {
-        grid-template-columns: 1fr;
-        gap: 2rem;
+        gap: 1.5rem;
+        padding: 0 1.5rem;
+        flex-direction: column;
+    }
+    
+    .article-toc-top {
+        padding: 1rem;
+        width: 100%;
+    }
+    
+    .article-content {
+        width: 100%;
     }
     
     .article-toc-sidebar {
@@ -1462,13 +1498,18 @@ ul.features-list li::before {
     }
     
     .article-footer {
-        padding: 1.5rem 2rem 2rem;
+        display: none;
     }
 }
 
 @media (max-width: 768px) {
     .article-wrapper {
         padding: 0 1rem;
+        gap: 1rem;
+    }
+    
+    .article-toc-top {
+        padding: 1rem;
     }
     
     .article-title {
@@ -1492,15 +1533,11 @@ ul.features-list li::before {
     }
     
     .article-footer {
-        padding: 1rem 1.5rem 1.5rem;
+        display: none;
     }
     
     .article-navigation {
-        flex-direction: column;
-    }
-    
-    .article-nav-button {
-        max-width: 100%;
+        display: none;
     }
     
     .article-meta {
@@ -1515,15 +1552,17 @@ ul.features-list li::before {
 
 /* Print Styles for Articles */
 @media print {
+    .article-toc-top,
     .article-toc-sidebar,
     .article-navigation,
+    .article-footer,
     .article-tags,
     .article-category {
         display: none !important;
     }
     
     .article-wrapper {
-        grid-template-columns: 1fr;
+        flex-direction: column;
     }
     
     .article-content {

@@ -563,15 +563,13 @@ class ArticleViewer {
             </div>
             
             <div class="article-wrapper">
-                <!-- Table of Contents -->
-                <aside class="article-toc-sidebar" id="article-toc-sidebar">
-                    <div class="toc-sticky">
-                        <h3 class="toc-title">Содержание</h3>
-                        <div id="article-toc"></div>
-                    </div>
+                <!-- Table of Contents (сверху) -->
+                <aside class="article-toc-top" id="article-toc-sidebar">
+                    <h3 class="toc-title">Содержание</h3>
+                    <div id="article-toc"></div>
                 </aside>
                 
-                <!-- Article Content -->
+                <!-- Article Content (под TOC) -->
                 <article class="article-content">
                     <!-- Header -->
                     <header class="article-header">
