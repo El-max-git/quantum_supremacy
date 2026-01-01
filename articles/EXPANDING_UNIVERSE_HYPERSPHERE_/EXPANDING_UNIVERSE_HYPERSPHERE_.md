@@ -1654,11 +1654,12 @@ r_eh → 0  при  t → t_rip
 
 При фантомной энергии H(t) растёт:
 
-```
-H(t) = H₀ × (t_rip - t₀)/(t_rip - t) → ∞  при  t → t_rip
-
-div(g) = 6H(t) → ∞  при  t → t_rip
-```
+$$
+\begin{aligned}
+H(t) = H_0 \times \frac{t_{\text{rip}} - t_0}{t_{\text{rip}} - t} &\to \infty \text{ при } t \to t_{\text{rip}} \\
+\text{div}(g) = 6H(t) &\to \infty \text{ при } t \to t_{\text{rip}}
+\end{aligned}
+$$
 
 **Дивергенция стремится к бесконечности!** Пространство создаётся с бесконечной скоростью в момент Big Rip.
 

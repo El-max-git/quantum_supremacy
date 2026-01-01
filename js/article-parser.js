@@ -267,8 +267,19 @@ ${cleanContent}
         
         // Защищаем block формулы $$...$$
         let protectedText = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+            const trimmedFormula = formula.trim();
             const placeholder = createPlaceholder('BLOCK', formulaIndex);
-            formulas.push({ type: 'block', formula: formula.trim() });
+            formulas.push({ type: 'block', formula: trimmedFormula });
+            
+            // Специальная проверка для формул с \begin{aligned} и \text{}
+            if (trimmedFormula.includes('\\begin{aligned}') || trimmedFormula.includes('\\text{')) {
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Protected block formula ${formulaIndex} (with \\begin{aligned} or \\text{}):`, trimmedFormula.substring(0, 150));
+                }
+            } else if (window.DEBUG_ARTICLE_PARSER) {
+                console.log(`Protected block formula ${formulaIndex}:`, trimmedFormula.substring(0, 100));
+            }
+            
             formulaIndex++;
             return placeholder;
         });
@@ -382,8 +393,10 @@ ${cleanContent}
             if (formulaObj.type === 'block') {
                 const replacement = `$$${formulaObj.formula}$$`;
                 
-                if (window.DEBUG_ARTICLE_PARSER) {
-                    console.log(`Restoring block formula ${index}:`, formulaObj.formula.substring(0, 100));
+                // Специальная проверка для формул с \begin{aligned} и \text{}
+                const hasAlignedOrText = formulaObj.formula.includes('\\begin{aligned}') || formulaObj.formula.includes('\\text{');
+                if (hasAlignedOrText || window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Restoring block formula ${index}:`, formulaObj.formula);
                 }
                 
                 // Пробуем все возможные варианты плейсхолдера
@@ -492,6 +505,50 @@ ${cleanContent}
         if (remainingPlaceholders && remainingPlaceholders.length > 0) {
             console.warn('Some formulas were not restored:', remainingPlaceholders);
             // Попытка восстановить оставшиеся формулы вручную
+            // Особое внимание к формулам с \text{} и \left(\right)
+            formulas.forEach((formulaObj, index) => {
+                // Проверяем, есть ли эта формула в списке невосстановленных
+                const placeholderPattern = new RegExp(`MATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}`, 'g');
+                const isUnrestored = html.match(placeholderPattern);
+                
+                if (isUnrestored) {
+                    console.warn(`Attempting manual restoration of formula ${index}:`, formulaObj.formula.substring(0, 100));
+                    
+                    // Пробуем все возможные варианты плейсхолдеров
+                    const allPlaceholders = [
+                        `\u200B\u200B\u200BMATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}_MATH\u200B\u200B\u200B`,
+                        `<!--MATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}-->`,
+                        `__MATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}__`,
+                    ];
+                    
+                    const replacement = formulaObj.type === 'block' 
+                        ? `$$${formulaObj.formula}$$` 
+                        : `$${formulaObj.formula}$`;
+                    
+                    allPlaceholders.forEach(placeholder => {
+                        // Пробуем найти плейсхолдер в разных форматах
+                        const variants = [
+                            placeholder,
+                            placeholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                            placeholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
+                            // Пробуем найти части плейсхолдера
+                            placeholder.replace(/\u200B/g, ''),
+                            placeholder.replace(/<!--/g, '').replace(/-->/g, ''),
+                        ];
+                        
+                        variants.forEach(variant => {
+                            if (html.includes(variant)) {
+                                const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const regex = new RegExp(escaped, 'gi');
+                                html = html.replace(regex, replacement);
+                                console.log(`✓ Manually restored formula ${index} using variant:`, variant.substring(0, 50));
+                            }
+                        });
+                    });
+                }
+            });
+            
+            // Повторная попытка восстановления для всех формул
             formulas.forEach((formulaObj, index) => {
                 // Поддерживаем оба формата для обратной совместимости
                 const blockPlaceholder = `<!--MATH_BLOCK_${index}-->`;
@@ -520,13 +577,19 @@ ${cleanContent}
                         }
                     });
                 } else {
+                    // Для inline формул пробуем все возможные варианты, включая новый формат с zero-width spaces
+                    const newInlinePlaceholder = `\u200B\u200B\u200BMATH_INLINE_${index}_MATH\u200B\u200B\u200B`;
                     const variants = [
+                        newInlinePlaceholder,  // Новый формат с zero-width spaces
                         inlinePlaceholder,
                         inlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
                         oldInlinePlaceholder,
                         oldInlinePlaceholder.replace(/_/g, '&#95;'),
                         oldInlinePlaceholder.replace(/_/g, '&amp;#95;'),
                         `<code>${oldInlinePlaceholder}</code>`,
+                        // Пробуем найти части плейсхолдера
+                        `MATH_INLINE_${index}`,
+                        `MATH_INLINE_${index}_MATH`,
                     ];
                     
                     variants.forEach(variant => {
@@ -534,6 +597,7 @@ ${cleanContent}
                         const regex = new RegExp(escapedVariant, 'gi');
                         if (regex.test(html)) {
                             html = html.replace(regex, `$${formulaObj.formula}$`);
+                            console.log(`✓ Final restoration: inline formula ${index} restored using:`, variant.substring(0, 50));
                         }
                     });
                 }
