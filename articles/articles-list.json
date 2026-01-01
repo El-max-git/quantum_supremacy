@@ -53,6 +53,11 @@
           "type": "article",
           "id": "test-simple",
           "mdFile": "articles/test-simple/article.md"
+        },
+        {
+          "type": "article",
+          "id": "test-formula",
+          "mdFile": "articles/test-formula/article.md"
         }
       ]
     }
@@ -65,7 +70,11 @@
     {
       "id": "test-simple",
       "mdFile": "articles/test-simple/article.md"
+    },
+    {
+      "id": "test-formula",
+      "mdFile": "articles/test-formula/article.md"
     }
   ],
-  "count": 2
+  "count": 3
 }
