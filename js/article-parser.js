@@ -28,14 +28,20 @@ class ArticleParser {
         this.currentArticlePath = articlePath;
         this.headingIds.clear();
 
+        console.log(`[ArticleParser] parse() called, articlePath="${articlePath}", text length=${markdownText.length}`);
+
         try {
             // 0. Extract frontmatter (YAML metadata)
             const { content, metadata } = this.extractFrontmatter(markdownText);
+            
+            console.log(`[ArticleParser] Frontmatter extracted, metadata.id=${metadata?.id}, articlePath="${articlePath}"`);
             
             // Включаем детальное логирование для тестовой статьи
             if (metadata && (metadata.id === 'test-formula' || articlePath.includes('test-formula'))) {
                 window.DEBUG_ARTICLE_PARSER = true;
                 console.log('🔍 DEBUG MODE: Detailed logging enabled for test-formula article');
+            } else {
+                console.log(`[ArticleParser] DEBUG mode NOT enabled: metadata.id=${metadata?.id}, articlePath includes test-formula=${articlePath.includes('test-formula')}`);
             }
             
             // 1. Pre-process: защитить формулы от обработки marked.js

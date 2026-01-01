@@ -517,7 +517,9 @@ class ArticleViewer {
             const mdText = await this.fetchArticleFile(article.mdFile);
             
             // Парсим статью
-            const { html, metadata } = await this.parser.parse(mdText, article.path);
+            console.log(`[ArticleViewer] Parsing article: id=${article.id}, path=${article.path || article.mdFile}`);
+            const { html, metadata } = await this.parser.parse(mdText, article.path || article.mdFile);
+            console.log(`[ArticleViewer] Article parsed, metadata.id=${metadata?.id}`);
             
             // Рендерим статью
             this.renderArticleView(article, metadata, html);
