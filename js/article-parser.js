@@ -480,17 +480,51 @@ ${cleanContent}
                     
                     if (!foundPartial) {
                         // Пробуем найти формулу напрямую в HTML (возможно, она не была защищена)
-                        const formulaInHtml = html.includes(formulaObj.formula);
-                        if (formulaInHtml && window.DEBUG_ARTICLE_PARSER) {
-                            console.warn(`⚠ Inline formula ${index} found directly in HTML (not protected):`, formulaObj.formula.substring(0, 100));
-                        } else if (window.DEBUG_ARTICLE_PARSER) {
-                            console.warn(`⚠ Inline formula ${index} not found in HTML:`, formulaObj.formula.substring(0, 100));
-                            // Показываем контекст вокруг ожидаемого плейсхолдера
-                            const searchText = `MATH_INLINE_${index}`;
-                            const indexInHtml = html.indexOf(searchText);
-                            if (indexInHtml > 0) {
-                                const context = html.substring(Math.max(0, indexInHtml - 50), Math.min(html.length, indexInHtml + 100));
-                                console.log('Context around expected placeholder:', context);
+                        // Ищем формулу в разных форматах (с экранированием и без)
+                        const formulaVariants = [
+                            formulaObj.formula,
+                            formulaObj.formula.replace(/\\/g, '\\\\'), // Экранированные обратные слеши
+                            formulaObj.formula.replace(/\\text\{/g, '\\text{').replace(/\{/g, '&#123;').replace(/\}/g, '&#125;'), // HTML entities
+                        ];
+                        
+                        let foundFormula = false;
+                        formulaVariants.forEach((variant, variantIndex) => {
+                            if (html.includes(variant)) {
+                                foundFormula = true;
+                                // Заменяем найденную формулу на правильный формат MathJax
+                                const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const regex = new RegExp(escaped, 'gi');
+                                html = html.replace(regex, replacement);
+                                console.log(`✓ Inline formula ${index} restored from direct HTML match (variant ${variantIndex}):`, variant.substring(0, 100));
+                            }
+                        });
+                        
+                        if (!foundFormula) {
+                            // Пробуем найти части формулы (возможно, она разбита)
+                            const formulaParts = [
+                                '\\text{div}(g) = 2',
+                                '\\times',
+                                '\\left(\\frac{\\dot{V}}{V}\\right)',
+                            ];
+                            
+                            let foundParts = 0;
+                            formulaParts.forEach(part => {
+                                if (html.includes(part)) {
+                                    foundParts++;
+                                }
+                            });
+                            
+                            if (foundParts > 0) {
+                                console.warn(`⚠ Inline formula ${index} may be split. Found ${foundParts}/${formulaParts.length} parts`);
+                            } else if (window.DEBUG_ARTICLE_PARSER) {
+                                console.warn(`⚠ Inline formula ${index} not found in HTML:`, formulaObj.formula.substring(0, 100));
+                                // Показываем контекст вокруг ожидаемого плейсхолдера
+                                const searchText = `MATH_INLINE_${index}`;
+                                const indexInHtml = html.indexOf(searchText);
+                                if (indexInHtml > 0) {
+                                    const context = html.substring(Math.max(0, indexInHtml - 50), Math.min(html.length, indexInHtml + 100));
+                                    console.log('Context around expected placeholder:', context);
+                                }
                             }
                         }
                     }
