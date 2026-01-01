@@ -123,7 +123,15 @@ class ArticleParser {
                         const expectedFormat = formulas[problemFormulaIndex].type === 'block' 
                             ? `$$${formulaText}$$` 
                             : `$${formulaText}$`;
-                        if (!html.includes(expectedFormat)) {
+                        // Проверяем, нет ли уже формулы с тремя знаками доллара (ошибка двойного восстановления)
+                        const tripleDollarFormat = `$$${expectedFormat}`;
+                        if (html.includes(tripleDollarFormat)) {
+                            console.warn('  ⚠ Found formula with triple dollar signs, fixing...');
+                            const escaped = tripleDollarFormat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escaped, 'gi');
+                            html = html.replace(regex, expectedFormat);
+                            console.log('✓ Fixed triple dollar signs');
+                        } else if (!html.includes(expectedFormat)) {
                             const escaped = formulaText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                             const regex = new RegExp(escaped, 'gi');
                             html = html.replace(regex, expectedFormat);
@@ -611,13 +619,21 @@ ${cleanContent}
             if (formulaObj.type === 'block') {
                 const replacement = `$$${formulaObj.formula}$$`;
                 
+                // Проверяем, не восстановлена ли формула уже (защита от двойного восстановления)
+                if (html.includes(replacement)) {
+                    if (window.DEBUG_ARTICLE_PARSER) {
+                        console.log(`Block formula ${index} already restored, skipping`);
+                    }
+                    return; // Пропускаем, формула уже восстановлена
+                }
+                
                 // Специальная проверка для формул с \begin{aligned} и \text{}
                 const hasAlignedOrText = formulaObj.formula.includes('\\begin{aligned}') || formulaObj.formula.includes('\\text{');
                 const hasLeftRight = formulaObj.formula.includes('\\left(') || formulaObj.formula.includes('\\right)');
                 // Всегда логируем формулы с \text{} и \left(\right), а также проблемную формулу
                 const isProblemFormula = formulaObj.formula.includes('\\text{div}(g) = 2');
                 if (hasAlignedOrText || hasLeftRight || isProblemFormula || window.DEBUG_ARTICLE_PARSER) {
-                    console.log(`Restoring block formula ${index}:`, formulaObj.formula);
+                    console.log(`🔄 Restoring block formula ${index}:`, formulaObj.formula);
                     console.log(`  Replacement:`, replacement.substring(0, 100) + '...');
                 }
                 
@@ -634,10 +650,13 @@ ${cleanContent}
                     const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(escaped, 'gi');
                     if (regex.test(html)) {
-                        html = html.replace(regex, replacement);
-                        replaced = true;
-                        if (hasAlignedOrText || hasLeftRight || isProblemFormula || window.DEBUG_ARTICLE_PARSER) {
-                            console.log(`✓ Block formula ${index} restored using variant ${variantIndex}:`, variant.substring(0, 50));
+                        // Проверяем, что формула еще не восстановлена (защита от двойного восстановления)
+                        if (!html.includes(replacement)) {
+                            html = html.replace(regex, replacement);
+                            replaced = true;
+                            if (hasAlignedOrText || hasLeftRight || isProblemFormula || window.DEBUG_ARTICLE_PARSER) {
+                                console.log(`✓ Block formula ${index} restored using variant ${variantIndex}:`, variant.substring(0, 50));
+                            }
                         }
                     }
                 });
@@ -967,6 +986,16 @@ ${cleanContent}
             const problemFormula = formulas[problemFormulaIndex];
             const expectedFormat = problemFormula.type === 'block' ? `$$${problemFormula.formula}$$` : `$${problemFormula.formula}$`;
             
+            // Проверяем, нет ли формулы с тремя знаками доллара (ошибка двойного восстановления)
+            const tripleDollarFormat = `$$${expectedFormat}`;
+            if (html.includes(tripleDollarFormat)) {
+                console.warn(`⚠ Found problem formula with triple dollar signs, fixing...`);
+                const escaped = tripleDollarFormat.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escaped, 'gi');
+                html = html.replace(regex, expectedFormat);
+                console.log(`✓ Fixed triple dollar signs for problem formula ${problemFormulaIndex}`);
+            }
+            
             if (!html.includes(expectedFormat)) {
                 console.error(`✗ Problem formula ${problemFormulaIndex} still not restored!`);
                 console.error(`  Expected: ${expectedFormat.substring(0, 100)}...`);
@@ -1002,6 +1031,19 @@ ${cleanContent}
             } else {
                 console.log(`✓ Problem formula ${problemFormulaIndex} successfully restored!`);
             }
+        }
+        
+        // Глобальная проверка: исправляем все формулы с тремя знаками доллара ($$$...$$$)
+        // Это может произойти при двойном восстановлении
+        const tripleDollarPattern = /\$\$\$([^$]+?)\$\$\$/g;
+        const tripleDollarMatches = html.match(tripleDollarPattern);
+        if (tripleDollarMatches && tripleDollarMatches.length > 0) {
+            console.warn(`⚠ Found ${tripleDollarMatches.length} formulas with triple dollar signs, fixing...`);
+            html = html.replace(tripleDollarPattern, (match, formula) => {
+                console.log(`  Fixing: ${match.substring(0, 80)}... -> $${formula}$`);
+                return `$$${formula}$$`;
+            });
+            console.log(`✓ Fixed all triple dollar signs`);
         }
         
         return html;
