@@ -206,23 +206,41 @@ ${cleanContent}
             
             // Проверяем, является ли содержимое математической формулой
             // Признаки формулы:
-            // - Содержит математические операторы: =, ≈, ×, /, +, -, →, ≤, ≥, ≠
+            // - Содержит математические операторы: =, ≈, ×, /, +, -, →, ≤, ≥, ≠, ≡
             // - Содержит переменные с индексами: R₀, H₀, Ω_tot, Ṙ, ẋ
-            // - Содержит математические функции: √, sin, cos, log, exp
+            // - Содержит математические функции: √, sin, cos, log, exp, ln
             // - Содержит степени: ², ³, ²⁶, ²⁷
             // - Содержит греческие буквы или специальные символы
-            const mathPattern = /[=≈×/+\-→≤≥≠√²³⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉αβγδϵθλμπρσφχωΩΔΛΣ]/;
+            // - Содержит числовые выражения с научной нотацией: ×10²⁶, e-10
+            const mathPattern = /[=≈×/+\-→≤≥≠≡√²³⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉αβγδϵθλμπρσφχωΩΔΛΣ]/;
             const hasMathSymbols = mathPattern.test(trimmed);
             
             // Проверяем наличие переменных с индексами или математических выражений
-            const hasMathVars = /[RHOΩ]_?[₀₁₂₃₄₅₆₇₈₉0-9]|Ṙ|ẋ|d[RHO]\s*\/\s*dt|sin|cos|log|exp|√/.test(trimmed);
+            // Расширенный паттерн для лучшего определения формул
+            const hasMathVars = /[RHOΩ]_?[₀₁₂₃₄₅₆₇₈₉0-9]|Ṙ|ẋ|d[RHO]\s*\/\s*dt|sin|cos|log|exp|ln|√|×\s*10[²³⁰¹²³⁴⁵⁶⁷⁸⁹]|e[+\-]\d+/.test(trimmed);
+            
+            // Дополнительная проверка: содержит ли выражение математическую структуру
+            // (переменные, числа, операторы в правильном порядке)
+            const hasMathStructure = /[A-Za-z]+\s*[=≈≤≥≠]\s*[A-Za-z0-9]/.test(trimmed) || 
+                                     /[A-Za-z]+\s*[+\-×/]\s*[A-Za-z0-9]/.test(trimmed) ||
+                                     /\d+\s*[+\-×/]\s*\d+/.test(trimmed);
             
             // Проверяем, что это не ASCII-диаграмма (рамки)
             const isAsciiDiagram = /┌[─┐]|│|└[─┘]/.test(trimmed);
             
             // Если это формула, преобразуем в MathJax
-            if ((hasMathSymbols || hasMathVars) && !isAsciiDiagram && trimmed.length < 500) {
-                console.log('Converting code block to MathJax:', trimmed.substring(0, 50));
+            // Условия: содержит математические символы/переменные ИЛИ имеет математическую структуру,
+            // НЕ является ASCII-диаграммой, и не слишком длинное (не код)
+            const isFormula = (hasMathSymbols || hasMathVars || hasMathStructure) && 
+                             !isAsciiDiagram && 
+                             trimmed.length < 500 &&
+                             trimmed.length > 2; // Минимум 3 символа
+                             
+            if (isFormula) {
+                // Логирование только в режиме разработки (можно отключить)
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log('Converting code block to MathJax:', trimmed.substring(0, 50));
+                }
                 // Заменяем специальные символы на LaTeX эквиваленты
                 let latexFormula = trimmed
                     // Индексы (перед другими заменами, чтобы не конфликтовать)
@@ -299,7 +317,10 @@ ${cleanContent}
                     result = `$$${latexFormula}$$`;
                 }
                 
-                console.log('✓ Converted formula:', trimmed.substring(0, 60), '->', result.substring(0, 80));
+                // Логирование только в режиме разработки
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log('✓ Converted formula:', trimmed.substring(0, 60), '->', result.substring(0, 80));
+                }
                 return result;
             }
             
