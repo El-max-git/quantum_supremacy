@@ -990,6 +990,13 @@ ${cleanContent}
     static initMathJax() {
         if (typeof window === 'undefined') return;
 
+        // Если MathJax уже инициализирован, не делаем ничего
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            console.log('MathJax already initialized');
+            return;
+        }
+
+        // Настройка MathJax ДО загрузки скрипта
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$']],
@@ -1005,7 +1012,14 @@ ${cleanContent}
                 displayAlign: 'center'
             },
             startup: {
+                ready: () => {
+                    console.log('MathJax startup.ready() called');
+                    // MathJax 3.x автоматически вызывает defaultReady после загрузки
+                    // typesetPromise становится доступным после этого
+                    return MathJax.startup.defaultReady();
+                },
                 pageReady: () => {
+                    console.log('MathJax startup.pageReady() called');
                     return MathJax.startup.defaultPageReady();
                 }
             }
@@ -1016,12 +1030,13 @@ ${cleanContent}
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
             script.async = true;
+            script.id = 'mathjax-script';
             
             // Обработчик загрузки скрипта
             script.onload = () => {
-                console.log('MathJax script loaded');
+                console.log('MathJax script loaded, waiting for initialization...');
                 // MathJax 3.x инициализируется автоматически после загрузки скрипта
-                // typesetPromise становится доступным после полной инициализации
+                // Нужно подождать, пока startup.ready() будет вызван
             };
             
             script.onerror = () => {

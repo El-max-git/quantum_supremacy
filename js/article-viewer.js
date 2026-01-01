@@ -632,29 +632,40 @@ class ArticleViewer {
             // Пытаемся загрузить MathJax
             ArticleParser.initMathJax();
             
-            // Ждем загрузки
+            // Ждем загрузки и инициализации
             let attempts = 0;
             const checkMathJax = setInterval(() => {
                 attempts++;
                 // Проверяем, что MathJax полностью загружен и готов
-                if (typeof MathJax !== 'undefined' && 
-                    MathJax.startup && 
-                    MathJax.startup.ready &&
-                    MathJax.typesetPromise) {
+                // В MathJax 3.x typesetPromise доступен после вызова startup.defaultReady()
+                const isReady = typeof MathJax !== 'undefined' && 
+                               MathJax.typesetPromise && 
+                               typeof MathJax.typesetPromise === 'function';
+                
+                if (isReady) {
                     clearInterval(checkMathJax);
+                    console.log('MathJax is ready, rendering formulas...');
                     // Небольшая задержка для гарантии, что DOM обновлен
                     setTimeout(() => this.typesetMath(articleBody), 200);
-                } else if (attempts > 150) {
+                } else if (attempts > 200) {
                     clearInterval(checkMathJax);
-                    console.warn('MathJax failed to load after 15 seconds');
+                    console.warn('MathJax failed to load after 20 seconds');
+                    console.log('MathJax state:', {
+                        defined: typeof MathJax !== 'undefined',
+                        hasTypesetPromise: typeof MathJax !== 'undefined' && !!MathJax.typesetPromise,
+                        hasStartup: typeof MathJax !== 'undefined' && !!MathJax.startup,
+                        MathJaxKeys: typeof MathJax !== 'undefined' ? Object.keys(MathJax) : []
+                    });
                     // Пробуем все равно вызвать typesetMath, если MathJax частично загружен
-                    if (typeof MathJax !== 'undefined') {
+                    if (typeof MathJax !== 'undefined' && MathJax.typeset) {
+                        console.log('Attempting to use MathJax.typeset as fallback...');
                         setTimeout(() => this.typesetMath(articleBody), 500);
                     }
                 }
             }, 100);
-        } else if (MathJax.startup && MathJax.startup.ready && MathJax.typesetPromise) {
+        } else if (MathJax.typesetPromise && typeof MathJax.typesetPromise === 'function') {
             // MathJax уже загружен и готов
+            console.log('MathJax already ready, rendering formulas...');
             setTimeout(() => this.typesetMath(articleBody), 200);
         } else {
             console.warn('MathJax.typesetPromise not available, waiting...');
