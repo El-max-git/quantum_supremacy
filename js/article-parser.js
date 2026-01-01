@@ -210,8 +210,10 @@ ${cleanContent}
         let formulaIndex = 0;
         
         // Защищаем block формулы $$...$$
+        // Важно: сохраняем формулу как есть, включая все обратные слеши
         let protectedText = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
             const placeholder = `__MATH_BLOCK_${formulaIndex}__`;
+            // Сохраняем формулу с сохранением всех обратных слешей
             formulas.push({ type: 'block', formula: formula.trim() });
             formulaIndex++;
             return placeholder;
@@ -259,24 +261,34 @@ ${cleanContent}
             
             if (formulaObj.type === 'block') {
                 // Восстанавливаем block формулы
-                const placeholderRegex = new RegExp(blockPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                // marked.js может экранировать подчеркивания в плейсхолдерах
+                const escapedPlaceholder = blockPlaceholder.replace(/_/g, '(_|&#95;|&amp;#95;)');
+                const placeholderRegex = new RegExp(escapedPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const replacement = `$$${formulaObj.formula}$$`;
                 
                 if (window.DEBUG_ARTICLE_PARSER) {
                     console.log(`Restoring block formula ${index}:`, formulaObj.formula.substring(0, 50));
                 }
                 
+                // Пробуем разные варианты плейсхолдера (на случай экранирования)
                 html = html.replace(placeholderRegex, replacement);
+                // Также пробуем с экранированными подчеркиваниями
+                html = html.replace(new RegExp(blockPlaceholder.replace(/_/g, '&#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+                html = html.replace(new RegExp(blockPlaceholder.replace(/_/g, '&amp;#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
             } else {
                 // Восстанавливаем inline формулы
-                const placeholderRegex = new RegExp(inlinePlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                const escapedPlaceholder = inlinePlaceholder.replace(/_/g, '(_|&#95;|&amp;#95;)');
+                const placeholderRegex = new RegExp(escapedPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const replacement = `$${formulaObj.formula}$`;
                 
                 if (window.DEBUG_ARTICLE_PARSER) {
                     console.log(`Restoring inline formula ${index}:`, formulaObj.formula.substring(0, 50));
                 }
                 
+                // Пробуем разные варианты плейсхолдера
                 html = html.replace(placeholderRegex, replacement);
+                html = html.replace(new RegExp(inlinePlaceholder.replace(/_/g, '&#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+                html = html.replace(new RegExp(inlinePlaceholder.replace(/_/g, '&amp;#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
             }
         });
         
@@ -521,6 +533,7 @@ ${cleanContent}
         html = html.replace(/&#36;/g, '$');
         
         // Восстанавливаем экранированные обратные слеши
+        // marked.js может экранировать \ как &#92; или &amp;#92;
         html = html.replace(/&amp;#92;/g, '\\');
         html = html.replace(/&#92;/g, '\\');
         
@@ -529,6 +542,26 @@ ${cleanContent}
         html = html.replace(/&#123;/g, '{');
         html = html.replace(/&amp;#125;/g, '}');
         html = html.replace(/&#125;/g, '}');
+        
+        // Восстанавливаем двойные обратные слеши (экранированные \)
+        // В HTML \\ может быть представлено как &#92;&#92; или &amp;#92;&amp;#92;
+        html = html.replace(/&amp;#92;&amp;#92;/g, '\\\\');
+        html = html.replace(/&#92;&#92;/g, '\\\\');
+        
+        // Восстанавливаем обратные слеши в формулах MathJax
+        // Проверяем формулы и восстанавливаем экранированные \text, \left, \right и т.д.
+        // Паттерн: внутри формул $...$ или $$...$$ восстанавливаем экранированные \
+        html = html.replace(/(\$\$?)([^$]+?)(\$\$?)/g, (match, start, formula, end) => {
+            // Восстанавливаем экранированные обратные слеши в формуле
+            let restored = formula
+                .replace(/&amp;#92;/g, '\\')
+                .replace(/&#92;/g, '\\')
+                .replace(/&amp;lt;/g, '<')
+                .replace(/&lt;/g, '<')
+                .replace(/&amp;gt;/g, '>')
+                .replace(/&gt;/g, '>');
+            return start + restored + end;
+        });
         
         return html;
     }
