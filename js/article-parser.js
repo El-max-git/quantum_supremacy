@@ -414,10 +414,14 @@ ${cleanContent}
             formulas.push({ type: 'block', formula: trimmedFormula });
             
             // Специальная проверка для формул с \begin{aligned} и \text{}
-            if (trimmedFormula.includes('\\begin{aligned}') || trimmedFormula.includes('\\text{')) {
-                if (window.DEBUG_ARTICLE_PARSER) {
-                    console.log(`Protected block formula ${formulaIndex} (with \\begin{aligned} or \\text{}):`, trimmedFormula.substring(0, 150));
-                }
+            const hasAlignedOrText = trimmedFormula.includes('\\begin{aligned}') || trimmedFormula.includes('\\text{');
+            const hasLeftRight = trimmedFormula.includes('\\left(') || trimmedFormula.includes('\\right)');
+            const isProblemFormula = trimmedFormula.includes('\\text{div}(g) = 2');
+            
+            if (hasAlignedOrText || hasLeftRight || isProblemFormula) {
+                // Всегда логируем проблемные формулы
+                console.log(`Protected block formula ${formulaIndex} (with special chars):`, trimmedFormula);
+                console.log(`  Placeholder: ${placeholder.substring(0, 50)}...`);
             } else if (window.DEBUG_ARTICLE_PARSER) {
                 console.log(`Protected block formula ${formulaIndex}:`, trimmedFormula.substring(0, 100));
             }
@@ -581,6 +585,64 @@ ${cleanContent}
                                 console.warn(`  Context:`, context);
                             }
                         });
+                        
+                        // Агрессивное восстановление: ищем саму формулу в HTML
+                        console.warn(`  Attempting aggressive restoration: searching for formula text in HTML...`);
+                        const formulaText = formulaObj.formula;
+                        // Пробуем найти формулу в разных форматах (с экранированием и без)
+                        const formulaVariants = [
+                            formulaText,
+                            formulaText.replace(/\\/g, '\\\\'), // Экранированные обратные слеши
+                            formulaText.replace(/\\text\{/g, '\\text{').replace(/\{/g, '&#123;').replace(/\}/g, '&#125;'), // HTML entities
+                            formulaText.replace(/\\left\(/g, '\\left(').replace(/\\right\)/g, '\\right)'),
+                        ];
+                        
+                        let foundFormula = false;
+                        formulaVariants.forEach((variant, variantIndex) => {
+                            if (html.includes(variant) && !html.includes(replacement)) {
+                                // Нашли формулу, но она еще не в формате MathJax
+                                const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                                const regex = new RegExp(escaped, 'gi');
+                                html = html.replace(regex, replacement);
+                                foundFormula = true;
+                                replaced = true; // Помечаем как восстановленную
+                                console.log(`✓ Block formula ${index} restored from direct HTML match (variant ${variantIndex}):`, variant.substring(0, 100));
+                            }
+                        });
+                        
+                        if (!foundFormula) {
+                            // Пробуем найти части формулы
+                            const formulaParts = [
+                                '\\text{div}(g) = 2',
+                                '\\times',
+                                '\\left(\\frac{\\dot{V}}{V}\\right)',
+                            ];
+                            
+                            let foundParts = 0;
+                            formulaParts.forEach(part => {
+                                if (html.includes(part)) {
+                                    foundParts++;
+                                }
+                            });
+                            
+                            if (foundParts > 0) {
+                                console.warn(`⚠ Block formula ${index} may be split. Found ${foundParts}/${formulaParts.length} parts`);
+                            } else {
+                                console.error(`✗ Block formula ${index} completely missing from HTML!`);
+                            }
+                        }
+                    } else {
+                        // Для всех block формул пробуем агрессивное восстановление
+                        // Ищем саму формулу в HTML (возможно, она не была защищена или плейсхолдер потерялся)
+                        const formulaText = formulaObj.formula;
+                        if (html.includes(formulaText) && !html.includes(replacement)) {
+                            // Нашли формулу, но она еще не в формате MathJax
+                            const escaped = formulaText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escaped, 'gi');
+                            html = html.replace(regex, replacement);
+                            replaced = true; // Помечаем как восстановленную
+                            console.log(`✓ Block formula ${index} restored from direct HTML match`);
+                        }
                     }
                 }
             } else {
@@ -697,7 +759,8 @@ ${cleanContent}
         const remainingPlaceholders = html.match(/\u200B\u200B\u200BMATH_(BLOCK|INLINE)_\d+_MATH\u200B\u200B\u200B|<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
         
         if (remainingPlaceholders && remainingPlaceholders.length > 0) {
-            console.warn('Some formulas were not restored:', remainingPlaceholders);
+            console.warn('⚠ Some formulas were not restored:', remainingPlaceholders.length, 'placeholders remain');
+            console.warn('Sample remaining placeholders:', remainingPlaceholders.slice(0, 5));
             // Попытка восстановить оставшиеся формулы вручную
             // Особое внимание к формулам с \text{} и \left(\right)
             formulas.forEach((formulaObj, index) => {
@@ -824,6 +887,49 @@ ${cleanContent}
                         }
                     }
                 });
+            }
+        }
+        
+        // Финальная проверка для проблемной формулы - если она все еще не восстановлена
+        const problemFormulaIndex = formulas.findIndex(f => f.formula.includes('\\text{div}(g) = 2'));
+        if (problemFormulaIndex >= 0) {
+            const problemFormula = formulas[problemFormulaIndex];
+            const expectedFormat = problemFormula.type === 'block' ? `$$${problemFormula.formula}$$` : `$${problemFormula.formula}$`;
+            
+            if (!html.includes(expectedFormat)) {
+                console.error(`✗ Problem formula ${problemFormulaIndex} still not restored!`);
+                console.error(`  Expected: ${expectedFormat.substring(0, 100)}...`);
+                
+                // Последняя попытка - ищем формулу напрямую в HTML
+                const formulaText = problemFormula.formula;
+                // Пробуем найти формулу в разных форматах
+                const searchPatterns = [
+                    formulaText,
+                    formulaText.replace(/\\text\{/g, '\\text{'),
+                    formulaText.replace(/\\left\(/g, '\\left('),
+                    'text{div}(g) = 2',
+                    'div(g) = 2',
+                ];
+                
+                let found = false;
+                searchPatterns.forEach((pattern, patternIndex) => {
+                    if (html.includes(pattern) && !html.includes(expectedFormat)) {
+                        // Нашли формулу, но она не в формате MathJax
+                        const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escaped, 'gi');
+                        html = html.replace(regex, expectedFormat);
+                        found = true;
+                        console.log(`✓ Problem formula ${problemFormulaIndex} restored from direct HTML search (pattern ${patternIndex}):`, pattern.substring(0, 80));
+                    }
+                });
+                
+                if (!found) {
+                    console.error(`✗ Problem formula ${problemFormulaIndex} completely missing from HTML!`);
+                    console.error(`  Formula text: ${formulaText}`);
+                    console.error(`  Formula type: ${problemFormula.type}`);
+                }
+            } else {
+                console.log(`✓ Problem formula ${problemFormulaIndex} successfully restored!`);
             }
         }
         
