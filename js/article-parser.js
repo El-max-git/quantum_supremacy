@@ -1016,6 +1016,18 @@ ${cleanContent}
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
             script.async = true;
+            
+            // Обработчик загрузки скрипта
+            script.onload = () => {
+                console.log('MathJax script loaded');
+                // MathJax 3.x инициализируется автоматически после загрузки скрипта
+                // typesetPromise становится доступным после полной инициализации
+            };
+            
+            script.onerror = () => {
+                console.error('Failed to load MathJax script');
+            };
+            
             document.head.appendChild(script);
         }
     }

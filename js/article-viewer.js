@@ -662,12 +662,31 @@ class ArticleViewer {
             let attempts = 0;
             const waitForReady = setInterval(() => {
                 attempts++;
-                if (MathJax.startup && MathJax.startup.ready && MathJax.typesetPromise) {
+                
+                // Проверяем разные варианты готовности MathJax
+                // MathJax 3.x может иметь typesetPromise напрямую или через startup
+                const hasTypesetPromise = MathJax.typesetPromise && typeof MathJax.typesetPromise === 'function';
+                const hasStartupReady = MathJax.startup && MathJax.startup.ready;
+                const hasTypeset = MathJax.typeset && typeof MathJax.typeset === 'function';
+                
+                if (hasTypesetPromise || (hasStartupReady && hasTypeset)) {
                     clearInterval(waitForReady);
-                    setTimeout(() => this.typesetMath(articleBody), 200);
-                } else if (attempts > 50) {
+                    console.log('MathJax is ready, rendering formulas...');
+                    setTimeout(() => this.typesetMath(articleBody), 300);
+                } else if (attempts > 150) {
                     clearInterval(waitForReady);
-                    console.error('MathJax did not become ready');
+                    console.error('MathJax did not become ready after 15 seconds');
+                    console.log('MathJax state:', {
+                        hasTypesetPromise,
+                        hasStartupReady,
+                        hasTypeset,
+                        MathJaxKeys: Object.keys(MathJax || {})
+                    });
+                    // Пробуем все равно вызвать typesetMath, если MathJax частично загружен
+                    if (typeof MathJax !== 'undefined' && hasTypeset) {
+                        console.log('Attempting to render with MathJax.typeset...');
+                        setTimeout(() => this.typesetMath(articleBody), 500);
+                    }
                 }
             }, 100);
         }
@@ -679,6 +698,37 @@ class ArticleViewer {
     async typesetMath(element) {
         if (!element) {
             console.error('Element is null for MathJax rendering');
+            return;
+        }
+        
+        // Дополнительная проверка готовности MathJax
+        if (typeof MathJax === 'undefined') {
+            console.error('MathJax is not defined');
+            return;
+        }
+        
+        // Ждем, пока MathJax полностью инициализируется
+        let attempts = 0;
+        while (attempts < 50) {
+            if (MathJax.typesetPromise && typeof MathJax.typesetPromise === 'function') {
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!MathJax.typesetPromise) {
+            console.error('MathJax.typesetPromise is not available after waiting');
+            // Пробуем использовать альтернативный метод
+            if (MathJax.typeset) {
+                console.log('Using MathJax.typeset as fallback...');
+                try {
+                    MathJax.typeset([element]);
+                    console.log('✓ MathJax formulas rendered using typeset');
+                } catch (e) {
+                    console.error('MathJax.typeset failed:', e);
+                }
+            }
             return;
         }
         
