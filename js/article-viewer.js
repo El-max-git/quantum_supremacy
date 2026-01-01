@@ -14,6 +14,7 @@ class ArticleViewer {
         };
         
         this.articles = [];
+        this.categories = [];
         this.currentArticle = null;
         this.parser = new ArticleParser({ basePath: this.config.basePath });
     }
@@ -112,8 +113,21 @@ class ArticleViewer {
             
             if (response.ok) {
                 const data = await response.json();
-                articlesList = data.articles || [];
-                console.log(`✓ Loaded articles list from articles-list.json: ${articlesList.length} articles`);
+                
+                // Проверяем структуру: tree или flat
+                if (data.structure === 'tree' && data.categories) {
+                    // Древовидная структура
+                    console.log('Using tree structure with categories');
+                    this.categories = data.categories;
+                    articlesList = this.extractArticlesFromTree(data.categories);
+                    console.log(`✓ Found ${articlesList.length} articles in tree structure`);
+                } else {
+                    // Плоская структура (обратная совместимость)
+                    console.log('Using flat structure (legacy)');
+                    this.categories = [];
+                    articlesList = data.articles || [];
+                    console.log(`✓ Loaded articles list from articles-list.json: ${articlesList.length} articles`);
+                }
             } else {
                 console.warn(`✗ articles/articles-list.json not found (${response.status}), will try to discover articles...`);
                 // Fallback: пытаемся найти статьи вручную (если есть известные)
@@ -195,6 +209,38 @@ class ArticleViewer {
         
         return this.articles;
     }
+    
+    /**
+     * Извлечение всех статей из древовидной структуры
+     */
+    extractArticlesFromTree(categories) {
+        const articles = [];
+        
+        function traverse(items) {
+            if (!items || !Array.isArray(items)) return;
+            
+            items.forEach(item => {
+                if (item.type === 'article') {
+                    articles.push({
+                        id: item.id,
+                        mdFile: item.mdFile
+                    });
+                } else if (item.type === 'category' && item.items) {
+                    traverse(item.items);
+                }
+            });
+        }
+        
+        if (Array.isArray(categories)) {
+            categories.forEach(category => {
+                if (category.items) {
+                    traverse(category.items);
+                }
+            });
+        }
+        
+        return articles;
+    }
 
     /**
      * Попытка автоматического обнаружения статей (fallback)
@@ -212,7 +258,7 @@ class ArticleViewer {
     }
 
     /**
-     * Отображение списка статей
+     * Отображение списка статей (поддержка древовидной структуры)
      */
     renderArticlesList() {
         const container = document.getElementById(this.config.listContainerId);
@@ -231,26 +277,31 @@ class ArticleViewer {
             return;
         }
         
-        // Группируем по категориям
-        const byCategory = this.groupByCategory(this.articles);
-        
         let html = '<div class="articles-grid">';
         
-        for (const [category, articles] of Object.entries(byCategory)) {
-            html += `
-                <div class="category-section">
-                    <h3 class="category-title">${category}</h3>
-                    <div class="articles-cards">
-            `;
+        // Если есть древовидная структура, используем её
+        if (this.categories && this.categories.length > 0) {
+            html += this.renderCategoriesTree(this.categories);
+        } else {
+            // Иначе группируем по категориям из метаданных статей
+            const byCategory = this.groupByCategory(this.articles);
             
-            articles.forEach(article => {
-                html += this.renderArticleCard(article);
-            });
-            
-            html += `
+            for (const [category, articles] of Object.entries(byCategory)) {
+                html += `
+                    <div class="category-section">
+                        <h3 class="category-title">${category}</h3>
+                        <div class="articles-cards">
+                `;
+                
+                articles.forEach(article => {
+                    html += this.renderArticleCard(article);
+                });
+                
+                html += `
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
         
         html += '</div>';
@@ -258,6 +309,120 @@ class ArticleViewer {
         
         // Добавляем обработчики кликов
         this.attachCardListeners();
+        
+        // Добавляем обработчики для сворачивания/разворачивания категорий
+        this.attachCategoryToggleListeners();
+    }
+    
+    /**
+     * Обработчики для сворачивания/разворачивания категорий
+     */
+    attachCategoryToggleListeners() {
+        const toggles = document.querySelectorAll('.category-toggle');
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const targetId = toggle.dataset.target;
+                const content = document.getElementById(targetId);
+                if (content) {
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? 'block' : 'none';
+                    toggle.textContent = isHidden ? '▲' : '▼';
+                }
+            });
+        });
+        
+        // Обработчики для заголовков категорий
+        const categoryHeaders = document.querySelectorAll('.category-header');
+        categoryHeaders.forEach(header => {
+            header.addEventListener('click', (e) => {
+                if (e.target.classList.contains('category-toggle')) return;
+                const categoryId = header.dataset.categoryId;
+                const content = document.getElementById(categoryId);
+                const toggle = header.querySelector('.category-toggle');
+                if (content && toggle) {
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? 'block' : 'none';
+                    toggle.textContent = isHidden ? '▲' : '▼';
+                }
+            });
+        });
+    }
+    
+    /**
+     * Рендеринг древовидной структуры категорий
+     */
+    renderCategoriesTree(categories, level = 0) {
+        let html = '';
+        
+        // Сортируем категории по order
+        const sortedCategories = [...categories].sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : 999;
+            const orderB = b.order !== undefined ? b.order : 999;
+            return orderA - orderB;
+        });
+        
+        sortedCategories.forEach(category => {
+            const categoryId = `category-${category.id}`;
+            const hasItems = category.items && category.items.length > 0;
+            const icon = category.icon || '📁';
+            const title = category.title || category.id;
+            const description = category.description || '';
+            
+            html += `
+                <div class="category-section ${level > 0 ? 'category-nested' : ''}" data-level="${level}">
+                    <div class="category-header" data-category-id="${categoryId}">
+                        <h${Math.min(2 + level, 4)} class="category-title">
+                            <span class="category-icon">${icon}</span>
+                            ${title}
+                            ${hasItems ? `<span class="category-toggle" data-target="${categoryId}">▼</span>` : ''}
+                        </h${Math.min(2 + level, 4)}>
+                        ${description ? `<p class="category-description">${description}</p>` : ''}
+                    </div>
+                    <div class="category-content" id="${categoryId}" style="display: ${level === 0 ? 'block' : 'none'};">
+            `;
+            
+            if (hasItems) {
+                // Сортируем элементы по order и type (сначала категории, потом статьи)
+                const sortedItems = [...category.items].sort((a, b) => {
+                    const orderA = a.order !== undefined ? a.order : 999;
+                    const orderB = b.order !== undefined ? b.order : 999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    // Если order одинаковый, категории идут первыми
+                    if (a.type === 'category' && b.type === 'article') return -1;
+                    if (a.type === 'article' && b.type === 'category') return 1;
+                    return 0;
+                });
+                
+                // Группируем: сначала подкатегории, потом статьи
+                const subcategories = sortedItems.filter(item => item.type === 'category');
+                const articles = sortedItems.filter(item => item.type === 'article');
+                
+                // Рендерим подкатегории
+                if (subcategories.length > 0) {
+                    html += this.renderCategoriesTree(subcategories, level + 1);
+                }
+                
+                // Рендерим статьи
+                if (articles.length > 0) {
+                    html += '<div class="articles-cards">';
+                    articles.forEach(item => {
+                        const article = this.articles.find(a => a.id === item.id);
+                        if (article) {
+                            html += this.renderArticleCard(article);
+                        }
+                    });
+                    html += '</div>';
+                }
+            }
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        return html;
     }
 
     /**

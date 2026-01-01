@@ -111,11 +111,19 @@ function scanArticles() {
 
 /**
  * Создает articles-list.json в папке articles/ с найденными статьями
+ * Поддерживает как плоскую, так и древовидную структуру
  */
 function createArticlesList(articles) {
+    // Создаем древовидную структуру на основе папок
+    const tree = buildCategoryTree(articles);
+    
     const articlesList = {
-        articles: articles,
+        structure: "tree",
+        version: "2.0",
         lastUpdated: new Date().toISOString(),
+        categories: tree.categories,
+        // Для обратной совместимости сохраняем плоский список
+        articles: articles,
         count: articles.length
     };
     
@@ -124,6 +132,134 @@ function createArticlesList(articles) {
     fs.writeFileSync(ARTICLES_LIST_PATH, jsonContent, 'utf-8');
     
     console.log(`\n✓ Created articles/articles-list.json with ${articles.length} articles`);
+    console.log(`  Structure: tree with ${tree.categories.length} top-level categories`);
+}
+
+/**
+ * Построение древовидной структуры категорий на основе путей статей
+ */
+function buildCategoryTree(articles) {
+    const categories = [];
+    const categoryMap = new Map(); // Для быстрого поиска категорий
+    
+    // Группируем статьи по категориям из метаданных или пути
+    articles.forEach(article => {
+        // Пытаемся извлечь категорию из frontmatter
+        let categoryId = null;
+        let categoryTitle = null;
+        
+        try {
+            const mdPath = path.join(ARTICLES_DIR, article.mdFile.replace('articles/', ''));
+            if (fs.existsSync(mdPath)) {
+                const content = fs.readFileSync(mdPath, 'utf-8');
+                const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n/);
+                if (frontmatterMatch) {
+                    const frontmatter = frontmatterMatch[1];
+                    const categoryMatch = frontmatter.match(/^category:\s*(.+)$/m);
+                    if (categoryMatch) {
+                        categoryId = categoryMatch[1].trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                        categoryTitle = categoryMatch[1].trim();
+                    }
+                }
+            }
+        } catch (error) {
+            // Игнорируем ошибки
+        }
+        
+        // Если категория не найдена, используем путь
+        if (!categoryId) {
+            const pathParts = article.mdFile.split('/');
+            if (pathParts.length > 2) {
+                // articles/category/article.md
+                categoryId = pathParts[1].toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                categoryTitle = pathParts[1].replace(/[_-]/g, ' ');
+            } else {
+                categoryId = 'uncategorized';
+                categoryTitle = 'Без категории';
+            }
+        }
+        
+        // Находим или создаем категорию
+        let category = categoryMap.get(categoryId);
+        if (!category) {
+            category = {
+                id: categoryId,
+                title: categoryTitle,
+                description: '',
+                icon: getCategoryIcon(categoryId),
+                order: getCategoryOrder(categoryId),
+                items: []
+            };
+            categoryMap.set(categoryId, category);
+            categories.push(category);
+        }
+        
+        // Добавляем статью в категорию
+        category.items.push({
+            type: 'article',
+            id: article.id,
+            mdFile: article.mdFile,
+            order: 0
+        });
+    });
+    
+    // Сортируем категории по order
+    categories.sort((a, b) => {
+        const orderA = a.order !== undefined ? a.order : 999;
+        const orderB = b.order !== undefined ? b.order : 999;
+        return orderA - orderB;
+    });
+    
+    // Сортируем статьи внутри категорий
+    categories.forEach(category => {
+        category.items.sort((a, b) => {
+            if (a.type !== b.type) {
+                // Категории идут первыми
+                return a.type === 'category' ? -1 : 1;
+            }
+            return (a.order || 0) - (b.order || 0);
+        });
+    });
+    
+    return { categories };
+}
+
+/**
+ * Получение иконки для категории по её ID
+ */
+function getCategoryIcon(categoryId) {
+    const iconMap = {
+        'cosmology': '🌌',
+        'quantum-physics': '⚛️',
+        'quantum': '⚛️',
+        'vacuum-energy': '⚡',
+        'vacuum': '⚡',
+        'physics': '🔬',
+        'mathematics': '📐',
+        'test': '🧪',
+        'uncategorized': '📁'
+    };
+    
+    return iconMap[categoryId] || '📁';
+}
+
+/**
+ * Получение порядка категории по её ID
+ */
+function getCategoryOrder(categoryId) {
+    const orderMap = {
+        'cosmology': 1,
+        'quantum-physics': 2,
+        'quantum': 2,
+        'vacuum-energy': 3,
+        'vacuum': 3,
+        'physics': 4,
+        'mathematics': 5,
+        'test': 99,
+        'uncategorized': 999
+    };
+    
+    return orderMap[categoryId] || 999;
 }
 
 /**

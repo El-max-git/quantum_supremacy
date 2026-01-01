@@ -1,4 +1,62 @@
 {
+  "structure": "tree",
+  "version": "2.0",
+  "lastUpdated": "2025-01-01T00:00:00.000Z",
+  "categories": [
+    {
+      "id": "cosmology",
+      "title": "Космология",
+      "description": "Статьи о космологии, Вселенной и космических явлениях",
+      "icon": "🌌",
+      "order": 1,
+      "items": [
+        {
+          "type": "article",
+          "id": "expanding-universe-hypersphere",
+          "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md"
+        },
+        {
+          "type": "category",
+          "id": "big-bang",
+          "title": "Теория Большого Взрыва",
+          "description": "Статьи о происхождении Вселенной",
+          "icon": "💥",
+          "order": 1,
+          "items": []
+        }
+      ]
+    },
+    {
+      "id": "quantum-physics",
+      "title": "Квантовая физика",
+      "description": "Статьи о квантовой механике и квантовых явлениях",
+      "icon": "⚛️",
+      "order": 2,
+      "items": []
+    },
+    {
+      "id": "vacuum-energy",
+      "title": "Вакуумная энергия",
+      "description": "Исследования вакуумной энергии и эффекта Казимира",
+      "icon": "⚡",
+      "order": 3,
+      "items": []
+    },
+    {
+      "id": "test",
+      "title": "Тестовые статьи",
+      "description": "Тестовые и примеры статей",
+      "icon": "🧪",
+      "order": 99,
+      "items": [
+        {
+          "type": "article",
+          "id": "test-simple",
+          "mdFile": "articles/test-simple/article.md"
+        }
+      ]
+    }
+  ],
   "articles": [
     {
       "id": "expanding-universe-hypersphere",
@@ -9,6 +67,5 @@
       "mdFile": "articles/test-simple/article.md"
     }
   ],
-  "lastUpdated": "2025-12-31T21:13:16.489Z",
   "count": 2
 }
