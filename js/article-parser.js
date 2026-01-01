@@ -278,8 +278,9 @@ ${cleanContent}
         // Сначала пробуем найти все плейсхолдеры в HTML (включая обернутые в теги)
         const findAllPlaceholders = (text) => {
             const found = [];
-            // Ищем плейсхолдеры в разных форматах (новый формат с HTML комментариями и старый)
+            // Ищем плейсхолдеры в разных форматах (новый формат с zero-width spaces и старые)
             const patterns = [
+                /\u200B\u200B\u200BMATH_(BLOCK|INLINE)_(\d+)_MATH\u200B\u200B\u200B/g,
                 /<!--MATH_(BLOCK|INLINE)_(\d+)-->/g,
                 /&lt;!--MATH_(BLOCK|INLINE)_(\d+)--&gt;/g,
                 /&amp;lt;!--MATH_(BLOCK|INLINE)_(\d+)--&amp;gt;/g,
@@ -309,9 +310,13 @@ ${cleanContent}
         }
         
         formulas.forEach((formulaObj, index) => {
-            // Используем новый формат плейсхолдера (HTML комментарии)
-            const blockPlaceholder = `<!--MATH_BLOCK_${index}-->`;
-            const inlinePlaceholder = `<!--MATH_INLINE_${index}-->`;
+            // Используем новый формат плейсхолдера (zero-width spaces)
+            const blockPlaceholder = `\u200B\u200B\u200BMATH_BLOCK_${index}_MATH\u200B\u200B\u200B`;
+            const inlinePlaceholder = `\u200B\u200B\u200BMATH_INLINE_${index}_MATH\u200B\u200B\u200B`;
+            
+            // Также поддерживаем старые форматы для обратной совместимости
+            const oldBlockPlaceholder = `<!--MATH_BLOCK_${index}-->`;
+            const oldInlinePlaceholder = `<!--MATH_INLINE_${index}-->`;
             
             if (formulaObj.type === 'block') {
                 const replacement = `$$${formulaObj.formula}$$`;
@@ -323,16 +328,15 @@ ${cleanContent}
                 // Пробуем все возможные варианты плейсхолдера
                 const variants = [
                     blockPlaceholder,
-                    blockPlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
-                    blockPlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
+                    oldBlockPlaceholder,
+                    oldBlockPlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                    oldBlockPlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
                 ];
                 
                 variants.forEach(variant => {
                     const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(escaped, 'gi');
-                    if (regex.test(html)) {
-                        html = html.replace(regex, replacement);
-                    }
+                    html = html.replace(regex, replacement);
                 });
             } else {
                 const replacement = `$${formulaObj.formula}$`;
@@ -343,23 +347,22 @@ ${cleanContent}
                 
                 const variants = [
                     inlinePlaceholder,
-                    inlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
-                    inlinePlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
+                    oldInlinePlaceholder,
+                    oldInlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
+                    oldInlinePlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
                 ];
                 
                 variants.forEach(variant => {
                     const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(escaped, 'gi');
-                    if (regex.test(html)) {
-                        html = html.replace(regex, replacement);
-                    }
+                    html = html.replace(regex, replacement);
                 });
             }
         });
         
         // Проверяем, что все формулы восстановлены
-        // Проверяем разные варианты плейсхолдеров (старый и новый формат)
-        const remainingPlaceholders = html.match(/<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
+        // Проверяем разные варианты плейсхолдеров (новый формат с zero-width spaces и старые форматы)
+        const remainingPlaceholders = html.match(/\u200B\u200B\u200BMATH_(BLOCK|INLINE)_\d+_MATH\u200B\u200B\u200B|<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
         
         if (remainingPlaceholders && remainingPlaceholders.length > 0) {
             console.warn('Some formulas were not restored:', remainingPlaceholders);
@@ -412,13 +415,16 @@ ${cleanContent}
             });
             
             // Финальная проверка - если остались плейсхолдеры, пробуем восстановить их все сразу
-            const stillRemaining = html.match(/<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
+            const stillRemaining = html.match(/\u200B\u200B\u200BMATH_(BLOCK|INLINE)_\d+_MATH\u200B\u200B\u200B|<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
             if (stillRemaining && stillRemaining.length > 0) {
                 console.error('Failed to restore formulas:', stillRemaining);
                 // Последняя попытка - заменяем все оставшиеся плейсхолдеры напрямую
                 stillRemaining.forEach(placeholder => {
-                    // Пробуем оба формата
-                    let match = placeholder.match(/<!--MATH_(BLOCK|INLINE)_(\d+)-->/);
+                    // Пробуем все форматы
+                    let match = placeholder.match(/\u200B\u200B\u200BMATH_(BLOCK|INLINE)_(\d+)_MATH\u200B\u200B\u200B/);
+                    if (!match) {
+                        match = placeholder.match(/<!--MATH_(BLOCK|INLINE)_(\d+)-->/);
+                    }
                     if (!match) {
                         match = placeholder.match(/__MATH_(BLOCK|INLINE)_(\d+)__/);
                     }
@@ -1016,7 +1022,9 @@ ${cleanContent}
                     console.log('MathJax startup.ready() called');
                     // MathJax 3.x автоматически вызывает defaultReady после загрузки
                     // typesetPromise становится доступным после этого
-                    return MathJax.startup.defaultReady();
+                    const result = MathJax.startup.defaultReady();
+                    console.log('MathJax.defaultReady() completed, typesetPromise available:', typeof MathJax.typesetPromise === 'function');
+                    return result;
                 },
                 pageReady: () => {
                     console.log('MathJax startup.pageReady() called');
@@ -1036,7 +1044,34 @@ ${cleanContent}
             script.onload = () => {
                 console.log('MathJax script loaded, waiting for initialization...');
                 // MathJax 3.x инициализируется автоматически после загрузки скрипта
-                // Нужно подождать, пока startup.ready() будет вызван
+                // startup.ready() будет вызван автоматически
+                // Проверяем готовность через небольшую задержку
+                setTimeout(() => {
+                    if (typeof MathJax !== 'undefined') {
+                        console.log('MathJax object available:', {
+                            hasTypesetPromise: !!MathJax.typesetPromise,
+                            hasStartup: !!MathJax.startup,
+                            hasStartupReady: !!(MathJax.startup && MathJax.startup.ready),
+                            MathJaxKeys: Object.keys(MathJax).slice(0, 10)
+                        });
+                        
+                        // Если typesetPromise еще не доступен, ждем еще
+                        if (!MathJax.typesetPromise) {
+                            console.log('Waiting for MathJax.typesetPromise...');
+                            let attempts = 0;
+                            const checkReady = setInterval(() => {
+                                attempts++;
+                                if (MathJax.typesetPromise && typeof MathJax.typesetPromise === 'function') {
+                                    clearInterval(checkReady);
+                                    console.log('✓ MathJax.typesetPromise is now available');
+                                } else if (attempts > 50) {
+                                    clearInterval(checkReady);
+                                    console.warn('MathJax.typesetPromise did not become available after 5 seconds');
+                                }
+                            }, 100);
+                        }
+                    }
+                }, 500);
             };
             
             script.onerror = () => {
