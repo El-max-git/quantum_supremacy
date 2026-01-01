@@ -636,20 +636,40 @@ class ArticleViewer {
             let attempts = 0;
             const checkMathJax = setInterval(() => {
                 attempts++;
-                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                // Проверяем, что MathJax полностью загружен и готов
+                if (typeof MathJax !== 'undefined' && 
+                    MathJax.startup && 
+                    MathJax.startup.ready &&
+                    MathJax.typesetPromise) {
                     clearInterval(checkMathJax);
                     // Небольшая задержка для гарантии, что DOM обновлен
-                    setTimeout(() => this.typesetMath(articleBody), 100);
-                } else if (attempts > 100) {
+                    setTimeout(() => this.typesetMath(articleBody), 200);
+                } else if (attempts > 150) {
                     clearInterval(checkMathJax);
-                    console.warn('MathJax failed to load after 10 seconds');
+                    console.warn('MathJax failed to load after 15 seconds');
+                    // Пробуем все равно вызвать typesetMath, если MathJax частично загружен
+                    if (typeof MathJax !== 'undefined') {
+                        setTimeout(() => this.typesetMath(articleBody), 500);
+                    }
                 }
             }, 100);
-        } else if (MathJax.typesetPromise) {
-            // Небольшая задержка для гарантии, что DOM обновлен
-            setTimeout(() => this.typesetMath(articleBody), 100);
+        } else if (MathJax.startup && MathJax.startup.ready && MathJax.typesetPromise) {
+            // MathJax уже загружен и готов
+            setTimeout(() => this.typesetMath(articleBody), 200);
         } else {
-            console.warn('MathJax.typesetPromise not available');
+            console.warn('MathJax.typesetPromise not available, waiting...');
+            // Ждем готовности MathJax
+            let attempts = 0;
+            const waitForReady = setInterval(() => {
+                attempts++;
+                if (MathJax.startup && MathJax.startup.ready && MathJax.typesetPromise) {
+                    clearInterval(waitForReady);
+                    setTimeout(() => this.typesetMath(articleBody), 200);
+                } else if (attempts > 50) {
+                    clearInterval(waitForReady);
+                    console.error('MathJax did not become ready');
+                }
+            }, 100);
         }
     }
     

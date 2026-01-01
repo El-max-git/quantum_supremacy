@@ -305,17 +305,23 @@ ${cleanContent}
                 const inlinePlaceholder = `__MATH_INLINE_${index}__`;
                 
                 if (formulaObj.type === 'block') {
-                    // Пробуем все возможные варианты экранирования
+                    // Пробуем все возможные варианты экранирования и обертки в теги
                     const variants = [
                         blockPlaceholder,
                         blockPlaceholder.replace(/_/g, '&#95;'),
                         blockPlaceholder.replace(/_/g, '&amp;#95;'),
+                        `<p>${blockPlaceholder}</p>`,
+                        `<code>${blockPlaceholder}</code>`,
+                        `&lt;code&gt;${blockPlaceholder}&lt;/code&gt;`,
                         blockPlaceholder.replace(/_/g, '_'),
                     ];
                     
                     variants.forEach(variant => {
-                        if (html.includes(variant)) {
-                            html = html.replace(new RegExp(variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$$${formulaObj.formula}$$`);
+                        // Проверяем, есть ли вариант в HTML (с учетом экранирования)
+                        const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escapedVariant, 'gi');
+                        if (regex.test(html)) {
+                            html = html.replace(regex, `$$${formulaObj.formula}$$`);
                         }
                     });
                 } else {
@@ -323,16 +329,42 @@ ${cleanContent}
                         inlinePlaceholder,
                         inlinePlaceholder.replace(/_/g, '&#95;'),
                         inlinePlaceholder.replace(/_/g, '&amp;#95;'),
+                        `<code>${inlinePlaceholder}</code>`,
+                        `&lt;code&gt;${inlinePlaceholder}&lt;/code&gt;`,
                         inlinePlaceholder.replace(/_/g, '_'),
                     ];
                     
                     variants.forEach(variant => {
-                        if (html.includes(variant)) {
-                            html = html.replace(new RegExp(variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$${formulaObj.formula}$`);
+                        const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const regex = new RegExp(escapedVariant, 'gi');
+                        if (regex.test(html)) {
+                            html = html.replace(regex, `$${formulaObj.formula}$`);
                         }
                     });
                 }
             });
+            
+            // Финальная проверка - если остались плейсхолдеры, пробуем восстановить их все сразу
+            const stillRemaining = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
+            if (stillRemaining && stillRemaining.length > 0) {
+                console.error('Failed to restore formulas:', stillRemaining);
+                // Последняя попытка - заменяем все оставшиеся плейсхолдеры напрямую
+                stillRemaining.forEach(placeholder => {
+                    const match = placeholder.match(/__MATH_(BLOCK|INLINE)_(\d+)__/);
+                    if (match) {
+                        const type = match[1];
+                        const index = parseInt(match[2]);
+                        if (formulas[index]) {
+                            const formulaObj = formulas[index];
+                            if (formulaObj.type === 'block' && type === 'BLOCK') {
+                                html = html.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$$${formulaObj.formula}$$`);
+                            } else if (formulaObj.type === 'inline' && type === 'INLINE') {
+                                html = html.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$${formulaObj.formula}$`);
+                            }
+                        }
+                    }
+                });
+            }
         }
         
         return html;
