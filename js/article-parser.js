@@ -406,14 +406,41 @@ ${cleanContent}
                     }
                 });
                 
-                if (!replaced && window.DEBUG_ARTICLE_PARSER) {
-                    console.warn(`⚠ Inline formula ${index} not found in HTML:`, formulaObj.formula.substring(0, 100));
-                    // Показываем контекст вокруг ожидаемого плейсхолдера
-                    const searchText = inlinePlaceholder.substring(0, 20);
-                    const indexInHtml = html.indexOf(searchText);
-                    if (indexInHtml > 0) {
-                        const context = html.substring(Math.max(0, indexInHtml - 50), Math.min(html.length, indexInHtml + 100));
-                        console.log('Context around expected placeholder:', context);
+                if (!replaced) {
+                    // Если не удалось восстановить, пробуем найти плейсхолдер в разных форматах
+                    // Возможно, marked.js разбил плейсхолдер на части или обработал его
+                    const searchPatterns = [
+                        inlinePlaceholder.substring(0, 15), // Первая часть плейсхолдера
+                        inlinePlaceholder.substring(inlinePlaceholder.length - 15), // Последняя часть
+                        `MATH_INLINE_${index}`, // Без zero-width spaces
+                        `MATH_INLINE_${index}_MATH`, // Средняя часть
+                    ];
+                    
+                    let foundPartial = false;
+                    searchPatterns.forEach(pattern => {
+                        if (html.includes(pattern)) {
+                            foundPartial = true;
+                            if (window.DEBUG_ARTICLE_PARSER) {
+                                console.warn(`⚠ Inline formula ${index} placeholder may be split. Found partial:`, pattern);
+                            }
+                        }
+                    });
+                    
+                    if (!foundPartial) {
+                        // Пробуем найти формулу напрямую в HTML (возможно, она не была защищена)
+                        const formulaInHtml = html.includes(formulaObj.formula);
+                        if (formulaInHtml && window.DEBUG_ARTICLE_PARSER) {
+                            console.warn(`⚠ Inline formula ${index} found directly in HTML (not protected):`, formulaObj.formula.substring(0, 100));
+                        } else if (window.DEBUG_ARTICLE_PARSER) {
+                            console.warn(`⚠ Inline formula ${index} not found in HTML:`, formulaObj.formula.substring(0, 100));
+                            // Показываем контекст вокруг ожидаемого плейсхолдера
+                            const searchText = `MATH_INLINE_${index}`;
+                            const indexInHtml = html.indexOf(searchText);
+                            if (indexInHtml > 0) {
+                                const context = html.substring(Math.max(0, indexInHtml - 50), Math.min(html.length, indexInHtml + 100));
+                                console.log('Context around expected placeholder:', context);
+                            }
+                        }
                     }
                 }
             }
