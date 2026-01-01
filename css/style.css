@@ -970,8 +970,30 @@ ul.features-list li::before {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     margin-bottom: 1rem;
-    overflow: visible;
-    max-height: none;
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: auto;
+    box-sizing: border-box;
+    display: block !important;
+}
+
+/* Принудительно делаем все элементы списка блочными */
+.article-toc-top nav,
+.article-toc-top ul,
+.article-toc-top li,
+.article-toc-top .toc-nav,
+.article-toc-top .toc-list,
+.article-toc-top .toc-list-nested,
+.article-toc-top .toc-item,
+.article-toc-top .toc-link {
+    display: block !important;
+    width: 100% !important;
+    float: none !important;
+    clear: both !important;
+}
+
+.article-toc-top li {
+    margin: 0.5rem 0 !important;
 }
 
 /* Table of Contents Sidebar (старый стиль, для обратной совместимости) */
@@ -1005,17 +1027,25 @@ ul.features-list li::before {
 
 /* Убеждаемся, что все элементы TOC отображаются построчно */
 .article-toc-top li {
-    display: list-item !important;
+    display: block !important;
     list-style: none;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0.5rem 0;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    clear: both;
+    float: none;
 }
 
 .article-toc-top ul {
     display: block !important;
-    width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0;
     padding: 0;
+    overflow: visible !important;
 }
 
 .toc-nav {
@@ -1034,8 +1064,15 @@ ul.features-list li::before {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: block;
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
+}
+
+.toc-list li {
+    display: block !important;
+    width: 100% !important;
+    float: none;
+    clear: both;
 }
 
 .toc-list-nested {
@@ -1043,15 +1080,24 @@ ul.features-list li::before {
     padding-left: 1.5rem;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
-    display: block;
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
+}
+
+.toc-list-nested li {
+    display: block !important;
+    width: 100% !important;
+    float: none;
+    clear: both;
 }
 
 .toc-item {
     margin: 0.5rem 0;
-    display: block;
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
     line-height: 1.6;
+    clear: both;
+    float: none;
 }
 
 .toc-link {
@@ -1063,9 +1109,14 @@ ul.features-list li::before {
     border-left: 2px solid transparent;
     transition: var(--transition);
     border-radius: 4px;
-    white-space: normal;
+    white-space: normal !important;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    word-break: break-word;
+    text-overflow: clip;
+    overflow: visible;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .toc-link:hover {
@@ -1082,36 +1133,83 @@ ul.features-list li::before {
 }
 
 /* Улучшенные стили для TOC сверху */
+.article-toc-top {
+    min-height: auto;
+    height: auto;
+}
+
 .article-toc-top .toc-nav {
     width: 100%;
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
 }
 
 .article-toc-top .toc-list {
     display: block;
     width: 100%;
+    max-width: 100%;
+    overflow: visible;
 }
 
 .article-toc-top .toc-item {
-    display: list-item;
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0.5rem 0;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    clear: both;
+    float: none;
 }
 
 .article-toc-top .toc-link {
-    display: block;
-    width: 100%;
-    white-space: normal;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    white-space: normal !important;
     word-break: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
+    text-overflow: clip !important;
+    overflow: visible !important;
+    box-sizing: border-box;
+    clear: both;
+    float: none;
 }
 
 .article-toc-top .toc-list-nested {
-    display: block;
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin-left: 1.5rem;
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
+    overflow: visible !important;
+}
+
+.article-toc-top .toc-list-nested li {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none;
+    clear: both;
+}
+
+.article-toc-top .toc-list-nested .toc-item {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none;
+    clear: both;
+}
+
+.article-toc-top .toc-list-nested .toc-link {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none;
+    clear: both;
 }
 
 /* Article Content */
