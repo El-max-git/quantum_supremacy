@@ -225,11 +225,11 @@ ${cleanContent}
         const formulas = [];
         let formulaIndex = 0;
         
-        // Используем более уникальные маркеры, которые точно не будут обработаны marked.js
-        // Используем формат, который выглядит как HTML комментарий, но не является им
+        // Используем уникальные маркеры с zero-width spaces, которые точно не будут обработаны marked.js
+        // Zero-width spaces (\u200B) невидимы и сохраняются в HTML
         const createPlaceholder = (type, index) => {
-            // Используем формат, который не будет обработан marked.js как markdown
-            return `<!--MATH_${type}_${index}-->`;
+            // Используем формат с zero-width spaces, который не будет обработан marked.js
+            return `\u200B\u200B\u200BMATH_${type}_${index}_MATH\u200B\u200B\u200B`;
         };
         
         // Защищаем block формулы $$...$$

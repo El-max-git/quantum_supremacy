@@ -730,15 +730,29 @@ class ArticleViewer {
         
         if (!MathJax.typesetPromise) {
             console.error('MathJax.typesetPromise is not available after waiting');
+            console.log('MathJax state:', {
+                hasTypeset: !!MathJax.typeset,
+                hasTypesetPromise: !!MathJax.typesetPromise,
+                hasStartup: !!MathJax.startup,
+                MathJaxType: typeof MathJax,
+                MathJaxKeys: Object.keys(MathJax || {}).slice(0, 20)
+            });
+            
             // Пробуем использовать альтернативный метод
-            if (MathJax.typeset) {
+            if (MathJax.typeset && typeof MathJax.typeset === 'function') {
                 console.log('Using MathJax.typeset as fallback...');
                 try {
                     MathJax.typeset([element]);
                     console.log('✓ MathJax formulas rendered using typeset');
+                    
+                    // Проверяем результат
+                    const mathElements = element.querySelectorAll('.MathJax, mjx-container');
+                    console.log(`Found ${mathElements.length} rendered MathJax elements using typeset`);
                 } catch (e) {
                     console.error('MathJax.typeset failed:', e);
                 }
+            } else {
+                console.error('MathJax.typeset is also not available');
             }
             return;
         }
