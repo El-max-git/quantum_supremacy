@@ -36,7 +36,33 @@ class ArticleParser {
             const { protectedText, formulas } = this.protectFormulas(content);
             
             // Проверяем проблемную формулу после защиты
-            const problemFormulaIndex = formulas.findIndex(f => f.formula.includes('\\text{div}(g) = 2'));
+            let problemFormulaIndex = formulas.findIndex(f => f.formula.includes('\\text{div}(g) = 2'));
+            
+            // Если формула не найдена, проверяем исходный текст
+            if (problemFormulaIndex < 0) {
+                console.warn('⚠ Problem formula NOT protected!');
+                const problemFormulaInContent = content.includes('$\\text{div}(g) = 2') || content.includes('$\\text{div}(g) = 2 \\times');
+                console.log('Found in original content:', problemFormulaInContent);
+                if (problemFormulaInContent) {
+                    // Ищем формулу в разных форматах
+                    const searchPatterns = [
+                        '$\\text{div}(g) = 2',
+                        '$\\text{div}(g) = 2 \\times',
+                        '\\text{div}(g) = 2',
+                    ];
+                    searchPatterns.forEach(pattern => {
+                        const index = content.indexOf(pattern);
+                        if (index >= 0) {
+                            const context = content.substring(Math.max(0, index - 50), Math.min(content.length, index + pattern.length + 100));
+                            console.log(`Found pattern "${pattern}" at index ${index}:`, context);
+                        }
+                    });
+                }
+                console.log('Total formulas protected:', formulas.length);
+                console.log('All protected inline formulas:', formulas.filter(f => f.type === 'inline').map((f, i) => `${i}: ${f.formula.substring(0, 80)}`));
+            } else {
+                console.log('✓ Problem formula protected at index:', problemFormulaIndex);
+            }
             if (problemFormulaIndex >= 0) {
                 console.log('🔍 STEP 1 (protectFormulas): Problem formula protected');
                 console.log('  Formula:', formulas[problemFormulaIndex].formula);
