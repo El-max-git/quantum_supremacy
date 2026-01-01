@@ -609,7 +609,23 @@ class ArticleViewer {
      */
     async renderMathJax() {
         const articleBody = document.getElementById('article-body');
-        if (!articleBody) return;
+        if (!articleBody) {
+            console.warn('Article body not found for MathJax rendering');
+            return;
+        }
+        
+        // Проверяем наличие формул
+        const hasFormulas = articleBody.innerHTML.includes('$$') || 
+                           articleBody.innerHTML.includes('$') ||
+                           articleBody.innerHTML.includes('\\(') ||
+                           articleBody.innerHTML.includes('\\[');
+        
+        if (!hasFormulas) {
+            console.log('No formulas found in article');
+            return;
+        }
+        
+        console.log('Rendering MathJax formulas...');
         
         // Ждем загрузки MathJax
         if (typeof MathJax === 'undefined') {
@@ -622,14 +638,18 @@ class ArticleViewer {
                 attempts++;
                 if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
                     clearInterval(checkMathJax);
-                    this.typesetMath(articleBody);
-                } else if (attempts > 50) {
+                    // Небольшая задержка для гарантии, что DOM обновлен
+                    setTimeout(() => this.typesetMath(articleBody), 100);
+                } else if (attempts > 100) {
                     clearInterval(checkMathJax);
-                    console.warn('MathJax failed to load after 5 seconds');
+                    console.warn('MathJax failed to load after 10 seconds');
                 }
             }, 100);
         } else if (MathJax.typesetPromise) {
-            this.typesetMath(articleBody);
+            // Небольшая задержка для гарантии, что DOM обновлен
+            setTimeout(() => this.typesetMath(articleBody), 100);
+        } else {
+            console.warn('MathJax.typesetPromise not available');
         }
     }
     
@@ -637,19 +657,33 @@ class ArticleViewer {
      * Выполнение рендеринга формул
      */
     async typesetMath(element) {
+        if (!element) {
+            console.error('Element is null for MathJax rendering');
+            return;
+        }
+        
         try {
+            console.log('Calling MathJax.typesetPromise...');
             await MathJax.typesetPromise([element]);
-            console.log('✓ MathJax formulas rendered');
+            console.log('✓ MathJax formulas rendered successfully');
+            
+            // Проверяем, что формулы действительно отрендерились
+            const mathElements = element.querySelectorAll('.MathJax, mjx-container');
+            console.log(`Found ${mathElements.length} rendered MathJax elements`);
+            
         } catch (err) {
             console.error('MathJax rendering error:', err);
             // Повторная попытка через небольшую задержку
             setTimeout(() => {
                 if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-                    MathJax.typesetPromise([element]).catch(e => {
+                    console.log('Retrying MathJax rendering...');
+                    MathJax.typesetPromise([element]).then(() => {
+                        console.log('✓ MathJax retry successful');
+                    }).catch(e => {
                         console.error('MathJax retry failed:', e);
                     });
                 }
-            }, 500);
+            }, 1000);
         }
     }
 

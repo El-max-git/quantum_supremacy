@@ -245,24 +245,46 @@ ${cleanContent}
      * @returns {string} - HTML с восстановленными формулами
      */
     restoreProtectedFormulas(html, formulas) {
+        if (!formulas || formulas.length === 0) {
+            return html;
+        }
+        
+        if (window.DEBUG_ARTICLE_PARSER) {
+            console.log(`Restoring ${formulas.length} protected formulas`);
+        }
+        
         formulas.forEach((formulaObj, index) => {
             const blockPlaceholder = `__MATH_BLOCK_${index}__`;
             const inlinePlaceholder = `__MATH_INLINE_${index}__`;
             
             if (formulaObj.type === 'block') {
                 // Восстанавливаем block формулы
-                html = html.replace(
-                    new RegExp(blockPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-                    `$$${formulaObj.formula}$$`
-                );
+                const placeholderRegex = new RegExp(blockPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                const replacement = `$$${formulaObj.formula}$$`;
+                
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Restoring block formula ${index}:`, formulaObj.formula.substring(0, 50));
+                }
+                
+                html = html.replace(placeholderRegex, replacement);
             } else {
                 // Восстанавливаем inline формулы
-                html = html.replace(
-                    new RegExp(inlinePlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
-                    `$${formulaObj.formula}$`
-                );
+                const placeholderRegex = new RegExp(inlinePlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                const replacement = `$${formulaObj.formula}$`;
+                
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Restoring inline formula ${index}:`, formulaObj.formula.substring(0, 50));
+                }
+                
+                html = html.replace(placeholderRegex, replacement);
             }
         });
+        
+        // Проверяем, что все формулы восстановлены
+        const remainingPlaceholders = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
+        if (remainingPlaceholders && remainingPlaceholders.length > 0) {
+            console.warn('Some formulas were not restored:', remainingPlaceholders);
+        }
         
         return html;
     }
