@@ -242,7 +242,8 @@ ${cleanContent}
         });
         
         // Защищаем inline формулы $...$ (но не $$)
-        // Используем жадное совпадение для длинных формул, но ограничиваем поиск до конца строки или следующего $
+        // Используем нежадное совпадение, но проверяем, что это не часть $$...$$
+        // Важно: обрабатываем формулы до обработки block формул, чтобы не перехватить их
         protectedText = protectedText.replace(/\$([^$\n]+?)\$/g, (match, formula, offset, string) => {
             // Проверяем, что это не часть $$...$$
             const before = string.substring(Math.max(0, offset - 1), offset);
@@ -257,6 +258,16 @@ ${cleanContent}
             const trimmedFormula = formula.trim();
             if (!trimmedFormula) {
                 return match;
+            }
+            
+            // Проверяем, что это действительно inline формула (не начинается/заканчивается на $)
+            // и не содержит переносов строк (inline формулы должны быть в одной строке)
+            if (trimmedFormula.includes('\n')) {
+                // Если содержит перенос строки, это может быть ошибка разметки
+                // Но мы все равно обработаем её как inline, если она между одиночными $
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.warn(`Inline formula ${formulaIndex} contains newline, may be incorrectly formatted:`, trimmedFormula.substring(0, 100));
+                }
             }
             
             const placeholder = createPlaceholder('INLINE', formulaIndex);
@@ -370,22 +381,27 @@ ${cleanContent}
                 }
                 
                 // Пробуем все возможные варианты плейсхолдера
+                // Важно: сначала пробуем новый формат с zero-width spaces, затем старые форматы
                 const variants = [
-                    inlinePlaceholder,
-                    oldInlinePlaceholder,
-                    oldInlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),
-                    oldInlinePlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),
+                    inlinePlaceholder,  // Новый формат: \u200B\u200B\u200BMATH_INLINE_X_MATH\u200B\u200B\u200B
+                    oldInlinePlaceholder,  // Старый формат: <!--MATH_INLINE_X-->
+                    oldInlinePlaceholder.replace(/<!--/g, '&lt;!--').replace(/-->/g, '--&gt;'),  // Экранированный HTML
+                    oldInlinePlaceholder.replace(/<!--/g, '&amp;lt;!--').replace(/-->/g, '--&amp;gt;'),  // Двойное экранирование
                 ];
                 
                 let replaced = false;
-                variants.forEach(variant => {
+                variants.forEach((variant, variantIndex) => {
+                    // Экранируем специальные символы для regex
                     const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     const regex = new RegExp(escaped, 'gi');
+                    
+                    // Проверяем, есть ли плейсхолдер в HTML
                     if (regex.test(html)) {
+                        // Заменяем все вхождения
                         html = html.replace(regex, replacement);
                         replaced = true;
                         if (window.DEBUG_ARTICLE_PARSER) {
-                            console.log(`✓ Inline formula ${index} restored using variant:`, variant.substring(0, 50));
+                            console.log(`✓ Inline formula ${index} restored using variant ${variantIndex}:`, variant.substring(0, 50));
                         }
                     }
                 });
