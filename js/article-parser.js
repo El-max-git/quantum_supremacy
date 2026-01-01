@@ -417,6 +417,69 @@ ${cleanContent}
     }
 
     /**
+     * Загрузка и инициализация MathJax
+     * @returns {Promise<void>}
+     */
+    async loadMathJax() {
+        // Если MathJax уже загружен, просто ждем его готовности
+        if (typeof MathJax !== 'undefined' && MathJax.startup) {
+            return;
+        }
+
+        // Инициализируем конфигурацию и загружаем скрипт
+        ArticleParser.initMathJax();
+
+        // Ждем загрузки MathJax
+        return new Promise((resolve, reject) => {
+            // Если MathJax уже загружен
+            if (typeof MathJax !== 'undefined' && MathJax.startup) {
+                resolve();
+                return;
+            }
+
+            // Проверяем наличие скрипта
+            const script = document.querySelector('script[src*="mathjax"]');
+            if (!script) {
+                console.warn('MathJax script not found');
+                resolve(); // Не блокируем парсинг, если MathJax не загрузился
+                return;
+            }
+
+            // Если скрипт уже загружен
+            if (script.dataset.loaded === 'true') {
+                resolve();
+                return;
+            }
+
+            // Ждем загрузки скрипта
+            script.onload = () => {
+                script.dataset.loaded = 'true';
+                // Дополнительно ждем инициализации MathJax
+                const checkMathJax = setInterval(() => {
+                    if (typeof MathJax !== 'undefined' && MathJax.startup) {
+                        clearInterval(checkMathJax);
+                        resolve();
+                    }
+                }, 50);
+
+                // Таймаут на случай, если MathJax не загрузится
+                setTimeout(() => {
+                    clearInterval(checkMathJax);
+                    if (typeof MathJax === 'undefined') {
+                        console.warn('MathJax failed to load');
+                    }
+                    resolve(); // Не блокируем парсинг
+                }, 5000);
+            };
+
+            script.onerror = () => {
+                console.error('Failed to load MathJax script');
+                resolve(); // Не блокируем парсинг
+            };
+        });
+    }
+
+    /**
      * Инициализация MathJax
      */
     static initMathJax() {
