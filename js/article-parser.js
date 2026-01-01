@@ -293,9 +293,46 @@ ${cleanContent}
         });
         
         // Проверяем, что все формулы восстановлены
+        // Проверяем разные варианты экранирования плейсхолдеров
         const remainingPlaceholders = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
+        const remainingEscaped = html.match(/__MATH_(BLOCK|INLINE)_\d+__|&#95;&#95;MATH_(BLOCK|INLINE)_\d+&#95;&#95;/g);
+        
         if (remainingPlaceholders && remainingPlaceholders.length > 0) {
             console.warn('Some formulas were not restored:', remainingPlaceholders);
+            // Попытка восстановить оставшиеся формулы вручную
+            formulas.forEach((formulaObj, index) => {
+                const blockPlaceholder = `__MATH_BLOCK_${index}__`;
+                const inlinePlaceholder = `__MATH_INLINE_${index}__`;
+                
+                if (formulaObj.type === 'block') {
+                    // Пробуем все возможные варианты экранирования
+                    const variants = [
+                        blockPlaceholder,
+                        blockPlaceholder.replace(/_/g, '&#95;'),
+                        blockPlaceholder.replace(/_/g, '&amp;#95;'),
+                        blockPlaceholder.replace(/_/g, '_'),
+                    ];
+                    
+                    variants.forEach(variant => {
+                        if (html.includes(variant)) {
+                            html = html.replace(new RegExp(variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$$${formulaObj.formula}$$`);
+                        }
+                    });
+                } else {
+                    const variants = [
+                        inlinePlaceholder,
+                        inlinePlaceholder.replace(/_/g, '&#95;'),
+                        inlinePlaceholder.replace(/_/g, '&amp;#95;'),
+                        inlinePlaceholder.replace(/_/g, '_'),
+                    ];
+                    
+                    variants.forEach(variant => {
+                        if (html.includes(variant)) {
+                            html = html.replace(new RegExp(variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), `$${formulaObj.formula}$`);
+                        }
+                    });
+                }
+            });
         }
         
         return html;
@@ -553,6 +590,28 @@ ${cleanContent}
         // Паттерн: внутри формул $...$ или $$...$$ восстанавливаем экранированные \
         html = html.replace(/(\$\$?)([^$]+?)(\$\$?)/g, (match, start, formula, end) => {
             // Восстанавливаем экранированные обратные слеши в формуле
+            let restored = formula
+                .replace(/&amp;#92;/g, '\\')
+                .replace(/&#92;/g, '\\')
+                .replace(/&amp;lt;/g, '<')
+                .replace(/&lt;/g, '<')
+                .replace(/&amp;gt;/g, '>')
+                .replace(/&gt;/g, '>')
+                // Восстанавливаем другие экранированные символы
+                .replace(/&amp;#123;/g, '{')
+                .replace(/&#123;/g, '{')
+                .replace(/&amp;#125;/g, '}')
+                .replace(/&#125;/g, '}')
+                // Восстанавливаем двойные обратные слеши
+                .replace(/&amp;#92;&amp;#92;/g, '\\\\')
+                .replace(/&#92;&#92;/g, '\\\\');
+            return start + restored + end;
+        });
+        
+        // Дополнительная проверка: ищем формулы, которые могли быть экранированы по-другому
+        // Например, если формула была обернута в <code> или <pre> теги
+        html = html.replace(/<code>(\$\$?)([^$]+?)(\$\$?)<\/code>/g, (match, start, formula, end) => {
+            // Восстанавливаем экранированные символы
             let restored = formula
                 .replace(/&amp;#92;/g, '\\')
                 .replace(/&#92;/g, '\\')
