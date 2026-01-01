@@ -601,10 +601,55 @@ class ArticleViewer {
         }
         
         // Рендерим математику если есть
-        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
-            MathJax.typesetPromise([document.getElementById('article-body')]).catch(err => {
-                console.warn('MathJax rendering error:', err);
-            });
+        this.renderMathJax();
+    }
+    
+    /**
+     * Рендеринг MathJax формул
+     */
+    async renderMathJax() {
+        const articleBody = document.getElementById('article-body');
+        if (!articleBody) return;
+        
+        // Ждем загрузки MathJax
+        if (typeof MathJax === 'undefined') {
+            // Пытаемся загрузить MathJax
+            ArticleParser.initMathJax();
+            
+            // Ждем загрузки
+            let attempts = 0;
+            const checkMathJax = setInterval(() => {
+                attempts++;
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    clearInterval(checkMathJax);
+                    this.typesetMath(articleBody);
+                } else if (attempts > 50) {
+                    clearInterval(checkMathJax);
+                    console.warn('MathJax failed to load after 5 seconds');
+                }
+            }, 100);
+        } else if (MathJax.typesetPromise) {
+            this.typesetMath(articleBody);
+        }
+    }
+    
+    /**
+     * Выполнение рендеринга формул
+     */
+    async typesetMath(element) {
+        try {
+            await MathJax.typesetPromise([element]);
+            console.log('✓ MathJax formulas rendered');
+        } catch (err) {
+            console.error('MathJax rendering error:', err);
+            // Повторная попытка через небольшую задержку
+            setTimeout(() => {
+                if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+                    MathJax.typesetPromise([element]).catch(e => {
+                        console.error('MathJax retry failed:', e);
+                    });
+                }
+            }, 500);
         }
     }
 

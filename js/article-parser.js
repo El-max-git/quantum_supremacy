@@ -35,27 +35,33 @@ class ArticleParser {
             // 1. Pre-process: специальные блоки
             let processed = this.preprocessSpecialBlocks(content);
             
-            // 2. Pre-process: рамки для формул
+            // 2. Pre-process: формулы в блоках кода (преобразование в MathJax)
+            processed = this.preprocessCodeBlockFormulas(processed);
+            
+            // 3. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
             
-            // 3. Parse markdown to HTML
+            // 4. Parse markdown to HTML
             let html = await this.convertMarkdownToHtml(processed);
             
-            // 4. Post-process: изображения
+            // 5. Post-process: изображения
             html = this.processImages(html, articlePath);
             
-            // 5. Post-process: внутренние ссылки
+            // 6. Post-process: внутренние ссылки
             html = this.processInternalLinks(html, articlePath);
             
-            // 6. Post-process: автоматические якоря
+            // 7. Post-process: автоматические якоря
             if (this.config.autoAnchors) {
                 html = this.generateAnchors(html);
             }
             
-            // 7. Post-process: обернуть формулы в блоки
+            // 8. Post-process: обернуть формулы в блоки
             html = this.wrapFormulaBoxes(html);
             
-            // 8. Инициализировать MathJax если есть формулы
+            // 9. Post-process: восстановить экранированные формулы
+            html = this.restoreEscapedFormulas(html);
+            
+            // 10. Инициализировать MathJax если есть формулы
             if (html.includes('$') || html.includes('\\(') || html.includes('\\[')) {
                 await this.loadMathJax();
             }
@@ -189,6 +195,122 @@ ${cleanContent}
     }
 
     /**
+     * Предобработка формул в блоках кода (преобразование в MathJax)
+     */
+    preprocessCodeBlockFormulas(text) {
+        // Паттерн для блоков кода без языка
+        const codeBlockPattern = /```\s*\n([\s\S]*?)\n```/g;
+        
+        text = text.replace(codeBlockPattern, (match, codeContent) => {
+            const trimmed = codeContent.trim();
+            
+            // Проверяем, является ли содержимое математической формулой
+            // Признаки формулы:
+            // - Содержит математические операторы: =, ≈, ×, /, +, -, →, ≤, ≥, ≠
+            // - Содержит переменные с индексами: R₀, H₀, Ω_tot, Ṙ, ẋ
+            // - Содержит математические функции: √, sin, cos, log, exp
+            // - Содержит степени: ², ³, ²⁶, ²⁷
+            // - Содержит греческие буквы или специальные символы
+            const mathPattern = /[=≈×/+\-→≤≥≠√²³⁰¹²³⁴⁵⁶⁷⁸⁹₀₁₂₃₄₅₆₇₈₉αβγδϵθλμπρσφχωΩΔΛΣ]/;
+            const hasMathSymbols = mathPattern.test(trimmed);
+            
+            // Проверяем наличие переменных с индексами или математических выражений
+            const hasMathVars = /[RHOΩ]_?[₀₁₂₃₄₅₆₇₈₉0-9]|Ṙ|ẋ|d[RHO]\s*\/\s*dt|sin|cos|log|exp|√/.test(trimmed);
+            
+            // Проверяем, что это не ASCII-диаграмма (рамки)
+            const isAsciiDiagram = /┌[─┐]|│|└[─┘]/.test(trimmed);
+            
+            // Если это формула, преобразуем в MathJax
+            if ((hasMathSymbols || hasMathVars) && !isAsciiDiagram && trimmed.length < 500) {
+                console.log('Converting code block to MathJax:', trimmed.substring(0, 50));
+                // Заменяем специальные символы на LaTeX эквиваленты
+                let latexFormula = trimmed
+                    // Индексы (перед другими заменами, чтобы не конфликтовать)
+                    .replace(/₀/g, '_0')
+                    .replace(/₁/g, '_1')
+                    .replace(/₂/g, '_2')
+                    .replace(/₃/g, '_3')
+                    .replace(/₄/g, '_4')
+                    .replace(/₅/g, '_5')
+                    .replace(/₆/g, '_6')
+                    .replace(/₇/g, '_7')
+                    .replace(/₈/g, '_8')
+                    .replace(/₉/g, '_9')
+                    // Степени (обрабатываем сложные степени перед простыми)
+                    .replace(/²⁶/g, '^{26}')
+                    .replace(/²⁷/g, '^{27}')
+                    .replace(/²⁸/g, '^{28}')
+                    .replace(/²⁹/g, '^{29}')
+                    .replace(/³⁰/g, '^{30}')
+                    .replace(/²/g, '^2')
+                    .replace(/³/g, '^3')
+                    // Греческие буквы (перед другими заменами)
+                    .replace(/Ω/g, '\\Omega')
+                    .replace(/α/g, '\\alpha')
+                    .replace(/β/g, '\\beta')
+                    .replace(/γ/g, '\\gamma')
+                    .replace(/δ/g, '\\delta')
+                    .replace(/ϵ/g, '\\epsilon')
+                    .replace(/ε/g, '\\varepsilon')
+                    .replace(/θ/g, '\\theta')
+                    .replace(/λ/g, '\\lambda')
+                    .replace(/μ/g, '\\mu')
+                    .replace(/π/g, '\\pi')
+                    .replace(/ρ/g, '\\rho')
+                    .replace(/σ/g, '\\sigma')
+                    .replace(/φ/g, '\\phi')
+                    .replace(/χ/g, '\\chi')
+                    .replace(/ω/g, '\\omega')
+                    .replace(/Δ/g, '\\Delta')
+                    .replace(/Λ/g, '\\Lambda')
+                    .replace(/Σ/g, '\\Sigma')
+                    // Производные и точки
+                    .replace(/Ṙ/g, '\\dot{R}')
+                    .replace(/ẋ/g, '\\dot{x}')
+                    // Специальные символы
+                    .replace(/×/g, '\\times')
+                    .replace(/≈/g, '\\approx')
+                    .replace(/→/g, '\\to')
+                    .replace(/≤/g, '\\leq')
+                    .replace(/≥/g, '\\geq')
+                    .replace(/≠/g, '\\neq')
+                    .replace(/∞/g, '\\infty')
+                    // Корни (обрабатываем после замены греческих букв)
+                    .replace(/√\(([^)]+)\)/g, '\\sqrt{$1}') // √(x) -> \sqrt{x}
+                    .replace(/√([A-Za-z0-9_]+)/g, '\\sqrt{$1}') // √x -> \sqrt{x}
+                    // Дроби вида a/b -> \frac{a}{b} (простые случаи, после обработки индексов)
+                    // Обрабатываем сложные дроби с скобками
+                    .replace(/([A-Za-z0-9_()]+)\s*\/\s*\(([^)]+)\)/g, '\\frac{$1}{$2}') // a/(b) -> \frac{a}{b}
+                    .replace(/([A-Za-z0-9_()]+)\s*\/\s*([A-Za-z0-9_()]+)/g, (match, num, den) => {
+                        // Не заменяем, если это уже LaTeX или очень простая конструкция
+                        if (match.includes('\\')) return match;
+                        return `\\frac{${num}}{${den}}`;
+                    })
+                    // Единицы измерения в тексте (в конце, чтобы не мешать формулам)
+                    .replace(/\s+([кмГпксв\.летм]+)\s*/g, '\\text{ $1} ')
+                    // Многострочные формулы
+                    .replace(/\n/g, '\\\\');
+                
+                // Если формула содержит несколько строк, используем выравнивание
+                let result;
+                if (trimmed.includes('\n')) {
+                    result = `$$\\begin{aligned}${latexFormula}\\end{aligned}$$`;
+                } else {
+                    result = `$$${latexFormula}$$`;
+                }
+                
+                console.log('✓ Converted formula:', trimmed.substring(0, 60), '->', result.substring(0, 80));
+                return result;
+            }
+            
+            // Если это не формула, оставляем как блок кода
+            return match;
+        });
+        
+        return text;
+    }
+
+    /**
      * Предобработка ASCII-рамок для формул
      */
     preprocessFormulaBoxes(text) {
@@ -220,6 +342,30 @@ ${cleanContent}
     wrapFormulaBoxes(html) {
         // Если формулы уже обработаны в preprocessFormulaBoxes, просто возвращаем HTML
         // Этот метод может быть расширен для дополнительной обработки формул в HTML
+        return html;
+    }
+    
+    /**
+     * Восстановление экранированных формул (после парсинга markdown)
+     * @param {string} html - HTML после парсинга
+     * @returns {string} - HTML с восстановленными формулами
+     */
+    restoreEscapedFormulas(html) {
+        // Восстанавливаем экранированные символы $ в формулах
+        // marked.js может экранировать $ как &#36; или &amp;#36;
+        html = html.replace(/&amp;#36;/g, '$');
+        html = html.replace(/&#36;/g, '$');
+        
+        // Восстанавливаем экранированные обратные слеши
+        html = html.replace(/&amp;#92;/g, '\\');
+        html = html.replace(/&#92;/g, '\\');
+        
+        // Восстанавливаем экранированные фигурные скобки в формулах
+        html = html.replace(/&amp;#123;/g, '{');
+        html = html.replace(/&#123;/g, '{');
+        html = html.replace(/&amp;#125;/g, '}');
+        html = html.replace(/&#125;/g, '}');
+        
         return html;
     }
 
