@@ -932,20 +932,20 @@ ul.features-list li::before {
 
 /* Если article-viewer внутри container, делаем его полной ширины */
 .container #article-viewer {
-    margin-left: -2rem;
-    margin-right: -2rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
-    width: calc(100% + 4rem);
-    max-width: 100vw;
+    margin-left: -2rem !important;
+    margin-right: -2rem !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    width: calc(100% + 4rem) !important;
+    max-width: 100vw !important;
     box-sizing: border-box;
 }
 
 /* Учитываем inline padding из pages/articles.html */
 .container[style*="padding"] #article-viewer {
-    margin-left: calc(-2rem - 1rem);
-    margin-right: calc(-2rem - 1rem);
-    width: calc(100% + 6rem);
+    margin-left: calc(-2rem - 1rem) !important;
+    margin-right: calc(-2rem - 1rem) !important;
+    width: calc(100% + 6rem) !important;
 }
 
 /* Article wrapper внутри viewer должен быть полной ширины */
@@ -954,6 +954,7 @@ ul.features-list li::before {
     margin: 2rem auto;
     padding: 0 2rem;
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* Table of Contents Sidebar */

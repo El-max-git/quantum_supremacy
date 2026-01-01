@@ -390,12 +390,14 @@ class ArticleViewer {
         ).join('') : '';
         
         viewer.innerHTML = `
-            <div class="article-wrapper">
-                <!-- Back Button -->
+            <!-- Back Button -->
+            <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
                 <button class="back-to-list-btn" id="back-to-list">
                     ← Назад к списку
                 </button>
-                
+            </div>
+            
+            <div class="article-wrapper">
                 <!-- Table of Contents -->
                 <aside class="article-toc-sidebar" id="article-toc-sidebar">
                     <div class="toc-sticky">
