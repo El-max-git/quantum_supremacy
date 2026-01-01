@@ -282,9 +282,17 @@ ${cleanContent}
                     .replace(/Δ/g, '\\Delta')
                     .replace(/Λ/g, '\\Lambda')
                     .replace(/Σ/g, '\\Sigma')
+                    .replace(/η/g, '\\eta') // эта
                     // Производные и точки
                     .replace(/Ṙ/g, '\\dot{R}')
                     .replace(/ẋ/g, '\\dot{x}')
+                    // Математические функции (обрабатываем перед другими заменами)
+                    .replace(/\bcos\b/g, '\\cos')
+                    .replace(/\bsin\b/g, '\\sin')
+                    .replace(/\btan\b/g, '\\tan')
+                    .replace(/\bexp\b/g, '\\exp')
+                    .replace(/\bln\b/g, '\\ln')
+                    .replace(/\blog\b/g, '\\log')
                     // Специальные символы
                     .replace(/×/g, '\\times')
                     .replace(/≈/g, '\\approx')
@@ -296,16 +304,53 @@ ${cleanContent}
                     // Корни (обрабатываем после замены греческих букв)
                     .replace(/√\(([^)]+)\)/g, '\\sqrt{$1}') // √(x) -> \sqrt{x}
                     .replace(/√([A-Za-z0-9_]+)/g, '\\sqrt{$1}') // √x -> \sqrt{x}
-                    // Дроби вида a/b -> \frac{a}{b} (простые случаи, после обработки индексов)
-                    // Обрабатываем сложные дроби с скобками
+                    // Дроби: сначала обрабатываем дроби в скобках с последующими степенями
+                    // (a/b)³ -> \left(\frac{a}{b}\right)^3
+                    // Важно: обрабатываем ДО замены простых дробей, чтобы не конфликтовать
+                    // Обрабатываем степени после скобок: (a/b)² -> \left(\frac{a}{b}\right)^2
+                    .replace(/\(([^()]+)\/([^()]+)\)\^?([²³⁰¹²³⁴⁵⁶⁷⁸⁹0-9]+)/g, (match, num, den, pow) => {
+                        const power = pow.replace(/²/g, '2').replace(/³/g, '3')
+                                         .replace(/⁰/g, '0').replace(/¹/g, '1')
+                                         .replace(/⁴/g, '4').replace(/⁵/g, '5')
+                                         .replace(/⁶/g, '6').replace(/⁷/g, '7')
+                                         .replace(/⁸/g, '8').replace(/⁹/g, '9');
+                        return `\\left(\\frac{${num}}{${den}}\\right)^{${power}}`;
+                    })
+                    // Дроби в скобках без степени: (a/b) -> \frac{a}{b}
+                    // Но только если это не часть более сложного выражения
+                    .replace(/\(([A-Za-z0-9_\\^²³]+)\/([A-Za-z0-9_\\^²³]+)\)/g, '\\frac{$1}{$2}')
+                    // Дроби вида a/b -> \frac{a}{b} (простые случаи)
                     .replace(/([A-Za-z0-9_()]+)\s*\/\s*\(([^)]+)\)/g, '\\frac{$1}{$2}') // a/(b) -> \frac{a}{b}
                     .replace(/([A-Za-z0-9_()]+)\s*\/\s*([A-Za-z0-9_()]+)/g, (match, num, den) => {
-                        // Не заменяем, если это уже LaTeX или очень простая конструкция
+                        // Не заменяем, если это уже LaTeX
                         if (match.includes('\\')) return match;
+                        // Не заменяем, если это единицы измерения (м/с, км/с и т.д.)
+                        if (/[кмГпксв\.летм]\/[кмГпксв\.летм]/.test(match)) return match;
                         return `\\frac{${num}}{${den}}`;
                     })
                     // Единицы измерения в тексте (в конце, чтобы не мешать формулам)
                     .replace(/\s+([кмГпксв\.летм]+)\s*/g, '\\text{ $1} ')
+                    // Обрабатываем степени после уже преобразованных дробей в скобках
+                    // \frac{...}{...}^n -> \left(\frac{...}{...}\right)^n
+                    // Это нужно для случаев, когда дробь была преобразована, а степень стоит после
+                    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}\^?([²³⁰¹²³⁴⁵⁶⁷⁸⁹0-9]+)/g, (match, num, den, pow) => {
+                        const power = pow.replace(/²/g, '2').replace(/³/g, '3')
+                                         .replace(/⁰/g, '0').replace(/¹/g, '1')
+                                         .replace(/⁴/g, '4').replace(/⁵/g, '5')
+                                         .replace(/⁶/g, '6').replace(/⁷/g, '7')
+                                         .replace(/⁸/g, '8').replace(/⁹/g, '9');
+                        return `\\left(\\frac{${num}}{${den}}\\right)^{${power}}`;
+                    })
+                    // Также обрабатываем степени, которые стоят сразу после закрывающей скобки
+                    // Это для случаев типа (a/b)², где дробь уже преобразована
+                    .replace(/\(\\frac\{([^}]+)\}\{([^}]+)\}\)\^?([²³⁰¹²³⁴⁵⁶⁷⁸⁹0-9]+)/g, (match, num, den, pow) => {
+                        const power = pow.replace(/²/g, '2').replace(/³/g, '3')
+                                         .replace(/⁰/g, '0').replace(/¹/g, '1')
+                                         .replace(/⁴/g, '4').replace(/⁵/g, '5')
+                                         .replace(/⁶/g, '6').replace(/⁷/g, '7')
+                                         .replace(/⁸/g, '8').replace(/⁹/g, '9');
+                        return `\\left(\\frac{${num}}{${den}}\\right)^{${power}}`;
+                    })
                     // Многострочные формулы
                     .replace(/\n/g, '\\\\');
                 
