@@ -32,6 +32,12 @@ class ArticleParser {
             // 0. Extract frontmatter (YAML metadata)
             const { content, metadata } = this.extractFrontmatter(markdownText);
             
+            // Включаем детальное логирование для тестовой статьи
+            if (metadata && (metadata.id === 'test-formula' || articlePath.includes('test-formula'))) {
+                window.DEBUG_ARTICLE_PARSER = true;
+                console.log('🔍 DEBUG MODE: Detailed logging enabled for test-formula article');
+            }
+            
             // 1. Pre-process: защитить формулы от обработки marked.js
             const { protectedText, formulas } = this.protectFormulas(content);
             
@@ -1057,8 +1063,28 @@ ${cleanContent}
         // Проверяем, есть ли формулы, которые отображаются как текст (без знаков доллара)
         // Это может произойти, если формула была обработана marked.js как обычный текст
         const problemFormulaText = '\\text{div}(g) = 2';
-        if (html.includes(problemFormulaText) && !html.includes(`$$${problemFormulaText}`)) {
-            console.warn(`⚠ Problem formula found in HTML but not in MathJax format!`);
+        const fullProblemFormula = '\\text{div}(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)';
+        
+        // Проверяем полную формулу
+        if (html.includes(fullProblemFormula) && !html.includes(`$$${fullProblemFormula}$$`)) {
+            console.warn(`⚠ Full problem formula found in HTML but not in MathJax format!`);
+            // Ищем контекст вокруг формулы
+            const index = html.indexOf(fullProblemFormula);
+            const context = html.substring(Math.max(0, index - 200), Math.min(html.length, index + fullProblemFormula.length + 200));
+            console.warn(`  Context: ${context.substring(0, 400)}...`);
+            
+            // Пробуем восстановить формулу
+            const escaped = fullProblemFormula.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escaped, 'gi');
+            if (regex.test(html)) {
+                html = html.replace(regex, `$$${fullProblemFormula}$$`);
+                console.log(`✓ Restored full problem formula from HTML text`);
+            }
+        }
+        
+        // Проверяем часть формулы
+        if (html.includes(problemFormulaText) && !html.includes(`$$${problemFormulaText}`) && !html.includes(`$$${fullProblemFormula}$$`)) {
+            console.warn(`⚠ Problem formula (partial) found in HTML but not in MathJax format!`);
             // Ищем контекст вокруг формулы
             const index = html.indexOf(problemFormulaText);
             const context = html.substring(Math.max(0, index - 200), Math.min(html.length, index + problemFormulaText.length + 200));
