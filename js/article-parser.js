@@ -50,6 +50,38 @@ class ArticleParser {
             // 6. Восстановить защищенные формулы
             html = this.restoreProtectedFormulas(html, formulas);
             
+            // Проверяем, есть ли проблемы с конкретной формулой
+            const problemFormula = '\\text{div}(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)';
+            const hasProblemFormula = formulas.some(f => f.formula.includes('\\text{div}(g) = 2'));
+            if (hasProblemFormula) {
+                console.warn('⚠ Found problem formula with \\text{div}(g) = 2');
+                const formulaIndex = formulas.findIndex(f => f.formula.includes('\\text{div}(g) = 2'));
+                if (formulaIndex >= 0) {
+                    console.log('Formula index:', formulaIndex);
+                    console.log('Formula:', formulas[formulaIndex].formula);
+                    console.log('Formula type:', formulas[formulaIndex].type);
+                    // Проверяем, есть ли плейсхолдер в HTML
+                    const placeholder = `\u200B\u200B\u200BMATH_INLINE_${formulaIndex}_MATH\u200B\u200B\u200B`;
+                    const found = html.includes(placeholder);
+                    console.log('Placeholder found in HTML:', found);
+                    if (!found) {
+                        // Пробуем найти части плейсхолдера
+                        const parts = [
+                            `MATH_INLINE_${formulaIndex}`,
+                            `MATH_INLINE_${formulaIndex}_MATH`,
+                        ];
+                        parts.forEach(part => {
+                            if (html.includes(part)) {
+                                console.log('Found partial placeholder:', part);
+                                const index = html.indexOf(part);
+                                const context = html.substring(Math.max(0, index - 50), Math.min(html.length, index + 100));
+                                console.log('Context:', context);
+                            }
+                        });
+                    }
+                }
+            }
+            
             // Отладочная информация
             if (window.DEBUG_ARTICLE_PARSER) {
                 // Проверяем все форматы плейсхолдеров
@@ -273,7 +305,12 @@ ${cleanContent}
             const placeholder = createPlaceholder('INLINE', formulaIndex);
             formulas.push({ type: 'inline', formula: trimmedFormula });
             
-            if (window.DEBUG_ARTICLE_PARSER) {
+            // Специальная проверка для формул с \text{} и \left(\right)
+            if (trimmedFormula.includes('\\text{') || trimmedFormula.includes('\\left(')) {
+                if (window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Protected inline formula ${formulaIndex} (with \\text{} or \\left()):`, trimmedFormula);
+                }
+            } else if (window.DEBUG_ARTICLE_PARSER) {
                 console.log(`Protected inline formula ${formulaIndex}:`, trimmedFormula.substring(0, 100));
             }
             
@@ -376,8 +413,10 @@ ${cleanContent}
             } else {
                 const replacement = `$${formulaObj.formula}$`;
                 
-                if (window.DEBUG_ARTICLE_PARSER) {
-                    console.log(`Restoring inline formula ${index}:`, formulaObj.formula.substring(0, 100));
+                // Специальная проверка для формул с \text{} и \left(\right)
+                const hasTextOrLeft = formulaObj.formula.includes('\\text{') || formulaObj.formula.includes('\\left(');
+                if (hasTextOrLeft || window.DEBUG_ARTICLE_PARSER) {
+                    console.log(`Restoring inline formula ${index}:`, formulaObj.formula);
                 }
                 
                 // Пробуем все возможные варианты плейсхолдера
