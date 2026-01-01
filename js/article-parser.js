@@ -1041,9 +1041,28 @@ ${cleanContent}
             console.warn(`⚠ Found ${tripleDollarMatches.length} formulas with triple dollar signs, fixing...`);
             html = html.replace(tripleDollarPattern, (match, formula) => {
                 console.log(`  Fixing: ${match.substring(0, 80)}... -> $${formula}$`);
-                return `$$${formula}$$`;
+                return `$$${formula.trim()}$$`;
             });
             console.log(`✓ Fixed all triple dollar signs`);
+        }
+        
+        // Финальная проверка: ищем все незащищенные формулы в HTML и восстанавливаем их
+        // Это для случаев, когда формулы вообще не были защищены
+        const unprotectedBlockPattern = /(?:^|\n)\$\$([^$]+?)\$\$(?:\n|$)/g;
+        const unprotectedMatches = html.match(unprotectedBlockPattern);
+        if (unprotectedMatches && unprotectedMatches.length > 0) {
+            console.log(`Found ${unprotectedMatches.length} unprotected block formulas in HTML, they should be processed by MathJax`);
+        }
+        
+        // Проверяем, есть ли формулы, которые отображаются как текст (без знаков доллара)
+        // Это может произойти, если формула была обработана marked.js как обычный текст
+        const problemFormulaText = '\\text{div}(g) = 2';
+        if (html.includes(problemFormulaText) && !html.includes(`$$${problemFormulaText}`)) {
+            console.warn(`⚠ Problem formula found in HTML but not in MathJax format!`);
+            // Ищем контекст вокруг формулы
+            const index = html.indexOf(problemFormulaText);
+            const context = html.substring(Math.max(0, index - 200), Math.min(html.length, index + problemFormulaText.length + 200));
+            console.warn(`  Context: ${context.substring(0, 300)}...`);
         }
         
         return html;
