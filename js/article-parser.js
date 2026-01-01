@@ -50,6 +50,22 @@ class ArticleParser {
             // 6. Восстановить защищенные формулы
             html = this.restoreProtectedFormulas(html, formulas);
             
+            // Отладочная информация
+            if (window.DEBUG_ARTICLE_PARSER) {
+                const remaining = html.match(/__MATH_(BLOCK|INLINE)_\d+__/g);
+                if (remaining && remaining.length > 0) {
+                    console.warn(`After restoreProtectedFormulas: ${remaining.length} placeholders still remain`);
+                    // Показываем первые несколько примеров
+                    console.warn('Sample remaining placeholders:', remaining.slice(0, 5));
+                    // Показываем контекст вокруг первого плейсхолдера
+                    const firstIndex = html.indexOf(remaining[0]);
+                    if (firstIndex > 0) {
+                        const context = html.substring(Math.max(0, firstIndex - 50), firstIndex + remaining[0].length + 50);
+                        console.warn('Context around first placeholder:', context);
+                    }
+                }
+            }
+            
             // 5. Post-process: изображения
             html = this.processImages(html, articlePath);
             
@@ -255,40 +271,92 @@ ${cleanContent}
             console.log(`Restoring ${formulas.length} protected formulas`);
         }
         
+        // Сначала пробуем найти все плейсхолдеры в HTML (включая обернутые в теги)
+        const findAllPlaceholders = (text) => {
+            const found = [];
+            // Ищем плейсхолдеры в разных форматах
+            const patterns = [
+                /__MATH_(BLOCK|INLINE)_(\d+)__/g,
+                /&#95;&#95;MATH_(BLOCK|INLINE)_(\d+)&#95;&#95;/g,
+                /&amp;#95;&amp;#95;MATH_(BLOCK|INLINE)_(\d+)&amp;#95;&amp;#95;/g,
+                /<p>__MATH_(BLOCK|INLINE)_(\d+)__<\/p>/g,
+                /<code>__MATH_(BLOCK|INLINE)_(\d+)__<\/code>/g,
+            ];
+            
+            patterns.forEach(pattern => {
+                let match;
+                while ((match = pattern.exec(text)) !== null) {
+                    found.push({
+                        type: match[1],
+                        index: parseInt(match[2]),
+                        fullMatch: match[0]
+                    });
+                }
+            });
+            
+            return found;
+        };
+        
+        // Находим все плейсхолдеры в HTML
+        const foundPlaceholders = findAllPlaceholders(html);
+        
+        if (window.DEBUG_ARTICLE_PARSER) {
+            console.log(`Found ${foundPlaceholders.length} placeholders in HTML`);
+        }
+        
         formulas.forEach((formulaObj, index) => {
             const blockPlaceholder = `__MATH_BLOCK_${index}__`;
             const inlinePlaceholder = `__MATH_INLINE_${index}__`;
             
             if (formulaObj.type === 'block') {
-                // Восстанавливаем block формулы
-                // marked.js может экранировать подчеркивания в плейсхолдерах
-                const escapedPlaceholder = blockPlaceholder.replace(/_/g, '(_|&#95;|&amp;#95;)');
-                const placeholderRegex = new RegExp(escapedPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const replacement = `$$${formulaObj.formula}$$`;
                 
                 if (window.DEBUG_ARTICLE_PARSER) {
                     console.log(`Restoring block formula ${index}:`, formulaObj.formula.substring(0, 50));
                 }
                 
-                // Пробуем разные варианты плейсхолдера (на случай экранирования)
-                html = html.replace(placeholderRegex, replacement);
-                // Также пробуем с экранированными подчеркиваниями
-                html = html.replace(new RegExp(blockPlaceholder.replace(/_/g, '&#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
-                html = html.replace(new RegExp(blockPlaceholder.replace(/_/g, '&amp;#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+                // Пробуем все возможные варианты плейсхолдера
+                const variants = [
+                    blockPlaceholder,
+                    blockPlaceholder.replace(/_/g, '&#95;'),
+                    blockPlaceholder.replace(/_/g, '&amp;#95;'),
+                    `<p>${blockPlaceholder}</p>`,
+                    `<p>${blockPlaceholder.replace(/_/g, '&#95;')}</p>`,
+                    `<code>${blockPlaceholder}</code>`,
+                    `&lt;code&gt;${blockPlaceholder}&lt;/code&gt;`,
+                    // Также пробуем с экранированными тегами
+                    `&lt;p&gt;${blockPlaceholder}&lt;/p&gt;`,
+                ];
+                
+                variants.forEach(variant => {
+                    const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escaped, 'gi');
+                    if (regex.test(html)) {
+                        html = html.replace(regex, replacement);
+                    }
+                });
             } else {
-                // Восстанавливаем inline формулы
-                const escapedPlaceholder = inlinePlaceholder.replace(/_/g, '(_|&#95;|&amp;#95;)');
-                const placeholderRegex = new RegExp(escapedPlaceholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
                 const replacement = `$${formulaObj.formula}$`;
                 
                 if (window.DEBUG_ARTICLE_PARSER) {
                     console.log(`Restoring inline formula ${index}:`, formulaObj.formula.substring(0, 50));
                 }
                 
-                // Пробуем разные варианты плейсхолдера
-                html = html.replace(placeholderRegex, replacement);
-                html = html.replace(new RegExp(inlinePlaceholder.replace(/_/g, '&#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
-                html = html.replace(new RegExp(inlinePlaceholder.replace(/_/g, '&amp;#95;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+                const variants = [
+                    inlinePlaceholder,
+                    inlinePlaceholder.replace(/_/g, '&#95;'),
+                    inlinePlaceholder.replace(/_/g, '&amp;#95;'),
+                    `<code>${inlinePlaceholder}</code>`,
+                    `&lt;code&gt;${inlinePlaceholder}&lt;/code&gt;`,
+                ];
+                
+                variants.forEach(variant => {
+                    const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escaped, 'gi');
+                    if (regex.test(html)) {
+                        html = html.replace(regex, replacement);
+                    }
+                });
             }
         });
         
