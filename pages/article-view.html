@@ -64,59 +64,103 @@
 
 <!-- Article Viewer Script -->
 <script>
-(async function() {
+(function() {
+    console.log('[ArticleView] Script initialized');
+    
     // Функция для получения ID статьи с повторными попытками (для SPA навигации)
     function getArticleId() {
+        console.log('[ArticleView] getArticleId() called');
+        console.log('[ArticleView] window.location.href:', window.location.href);
+        console.log('[ArticleView] window.location.search:', window.location.search);
+        console.log('[ArticleView] window.router:', window.router);
+        console.log('[ArticleView] window.router?.currentRoute:', window.router?.currentRoute);
+        
         // Пробуем получить из window.location.search
         const urlParams = new URLSearchParams(window.location.search);
         let articleId = urlParams.get('id');
+        console.log('[ArticleView] articleId from search:', articleId);
         
         // Если ID не найден, пробуем получить из router.currentRoute
         if (!articleId && window.router && window.router.currentRoute) {
             const routeUrl = window.router.currentRoute;
+            console.log('[ArticleView] Trying router.currentRoute:', routeUrl);
             if (routeUrl.includes('?')) {
                 const routeParams = new URLSearchParams(routeUrl.split('?')[1]);
                 articleId = routeParams.get('id');
+                console.log('[ArticleView] articleId from router.currentRoute:', articleId);
             }
         }
         
         // Если ID всё ещё не найден, пробуем получить из window.location.href напрямую
         if (!articleId) {
             const fullUrl = window.location.href;
+            console.log('[ArticleView] Trying window.location.href:', fullUrl);
             if (fullUrl.includes('?')) {
                 const hrefParams = new URLSearchParams(fullUrl.split('?')[1]);
                 articleId = hrefParams.get('id');
+                console.log('[ArticleView] articleId from href:', articleId);
             }
         }
         
+        // Последняя попытка: парсим хеш, если есть
+        if (!articleId && window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            console.log('[ArticleView] Trying hash:', hash);
+            if (hash.startsWith('id=')) {
+                articleId = hash.substring(3);
+                console.log('[ArticleView] articleId from hash:', articleId);
+            }
+        }
+        
+        console.log('[ArticleView] Final articleId:', articleId);
         return articleId;
     }
     
     // Функция загрузки статьи
     async function loadArticle(articleId) {
+        console.log('[ArticleView] loadArticle() called with articleId:', articleId);
+        
         if (!articleId) {
-            document.getElementById('article-body').innerHTML = `
+            console.error('[ArticleView] No articleId provided');
+            const errorHtml = `
                 <div class="article-error">
                     <h2>❌ Статья не указана</h2>
                     <p>Не указан ID статьи для просмотра.</p>
                     <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
                         URL: ${window.location.href}
                     </p>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Search: ${window.location.search}
+                    </p>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        Router: ${window.router ? 'exists' : 'not found'}
+                    </p>
+                    ${window.router?.currentRoute ? `<p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">Current Route: ${window.router.currentRoute}</p>` : ''}
                 </div>
             `;
+            const bodyEl = document.getElementById('article-body');
+            if (bodyEl) {
+                bodyEl.innerHTML = errorHtml;
+            } else {
+                console.error('[ArticleView] article-body element not found!');
+            }
             return;
         }
     
     try {
         const basePath = window.router?.basePath || '';
+        console.log('[ArticleView] basePath:', basePath);
         
         // Загружаем каталог статей для поиска статьи
-        const catalogResponse = await fetch(`${basePath}/articles/articles-list.json`);
+        const catalogUrl = `${basePath}/articles/articles-list.json`;
+        console.log('[ArticleView] Fetching catalog from:', catalogUrl);
+        const catalogResponse = await fetch(catalogUrl, { cache: 'no-store' });
         if (!catalogResponse.ok) {
-            throw new Error('Не удалось загрузить каталог статей');
+            throw new Error(`Не удалось загрузить каталог статей: ${catalogResponse.status} ${catalogResponse.statusText}`);
         }
         
         const catalog = await catalogResponse.json();
+        console.log('[ArticleView] Catalog loaded:', catalog);
         
         // Ищем статью в каталоге
         function findArticle(items, targetId) {
@@ -133,15 +177,20 @@
         }
         
         const article = findArticle(catalog.categories || [], articleId);
+        console.log('[ArticleView] Article found:', article);
         
         if (!article) {
-            throw new Error(`Статья с ID "${articleId}" не найдена`);
+            console.error('[ArticleView] Article not found in catalog. Available IDs:', 
+                catalog.categories?.flatMap(cat => cat.items?.map(i => i.id) || []) || []);
+            throw new Error(`Статья с ID "${articleId}" не найдена в каталоге`);
         }
         
         // Загружаем markdown файл
-        const mdResponse = await fetch(`${basePath}/${article.mdFile}`);
+        const mdUrl = `${basePath}/${article.mdFile}`;
+        console.log('[ArticleView] Fetching article from:', mdUrl);
+        const mdResponse = await fetch(mdUrl, { cache: 'no-store' });
         if (!mdResponse.ok) {
-            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile}`);
+            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText})`);
         }
         
         const mdText = await mdResponse.text();
@@ -324,44 +373,93 @@
         }, 100);
         
     } catch (error) {
-        console.error('Error loading article:', error);
-        document.getElementById('article-body').innerHTML = `
+        console.error('[ArticleView] Error loading article:', error);
+        const errorHtml = `
             <div class="article-error">
                 <h2>❌ Ошибка загрузки статьи</h2>
                 <p>${error.message}</p>
+                <details style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    <summary>Детали ошибки (для отладки)</summary>
+                    <pre style="margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px; overflow-x: auto;">${error.stack || error.toString()}</pre>
+                </details>
             </div>
         `;
+        const bodyEl = document.getElementById('article-body');
+        if (bodyEl) {
+            bodyEl.innerHTML = errorHtml;
+        } else {
+            console.error('[ArticleView] article-body element not found for error display!');
+        }
     }
     }
     
-    // Получаем ID статьи
-    let articleId = getArticleId();
+    // Функция инициализации - пытается загрузить статью
+    function initArticleView() {
+        console.log('[ArticleView] initArticleView() called');
+        
+        // Проверяем, что DOM готов
+        if (!document.getElementById('article-body')) {
+            console.warn('[ArticleView] article-body element not found, waiting for DOM...');
+            setTimeout(initArticleView, 100);
+            return;
+        }
+        
+        // Получаем ID статьи
+        let articleId = getArticleId();
+        
+        // Вызываем загрузку статьи, если ID найден сразу
+        if (articleId) {
+            console.log('[ArticleView] Article ID found immediately, loading...');
+            loadArticle(articleId);
+        } else {
+            console.warn('[ArticleView] Article ID not found immediately, retrying...');
+            // Если ID не найден сразу, пробуем ещё раз через небольшую задержку (для SPA)
+            let retryCount = 0;
+            const maxRetries = 5;
+            
+            const retryInterval = setInterval(() => {
+                retryCount++;
+                console.log(`[ArticleView] Retry ${retryCount}/${maxRetries}`);
+                
+                articleId = getArticleId();
+                if (articleId) {
+                    console.log('[ArticleView] Article ID found on retry, loading...');
+                    clearInterval(retryInterval);
+                    loadArticle(articleId);
+                } else if (retryCount >= maxRetries) {
+                    console.error('[ArticleView] Max retries reached, showing error');
+                    clearInterval(retryInterval);
+                    const errorHtml = `
+                        <div class="article-error">
+                            <h2>❌ Статья не указана</h2>
+                            <p>Не указан ID статьи для просмотра.</p>
+                            <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                URL: ${window.location.href}
+                            </p>
+                            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                Search: ${window.location.search}
+                            </p>
+                            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                                Router: ${window.router ? 'exists' : 'not found'}
+                            </p>
+                            ${window.router?.currentRoute ? `<p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">Current Route: ${window.router.currentRoute}</p>` : ''}
+                        </div>
+                    `;
+                    const bodyEl = document.getElementById('article-body');
+                    if (bodyEl) {
+                        bodyEl.innerHTML = errorHtml;
+                    }
+                }
+            }, 200);
+        }
+    }
     
-    // Вызываем загрузку статьи, если ID найден сразу
-    if (articleId) {
-        loadArticle(articleId);
+    // Инициализируем после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initArticleView);
     } else {
-        // Если ID не найден сразу, пробуем ещё раз через небольшую задержку (для SPA)
-        setTimeout(() => {
-            articleId = getArticleId();
-            if (articleId) {
-                loadArticle(articleId);
-            } else {
-                // Если после задержки ID всё ещё не найден, показываем ошибку
-                document.getElementById('article-body').innerHTML = `
-                    <div class="article-error">
-                        <h2>❌ Статья не указана</h2>
-                        <p>Не указан ID статьи для просмотра.</p>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            URL: ${window.location.href}
-                        </p>
-                        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            Search: ${window.location.search}
-                        </p>
-                    </div>
-                `;
-            }
-        }, 300);
+        // DOM уже загружен
+        initArticleView();
     }
     
     // Обработчик кнопки "Назад"

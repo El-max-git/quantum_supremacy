@@ -76,11 +76,18 @@ class Router {
      * @param {string} path - Route path
      */
     navigate(path) {
+        console.log('[Router] navigate() called with path:', path);
+        console.log('[Router] basePath:', this.basePath);
+        console.log('[Router] User Agent:', navigator.userAgent);
+        console.log('[Router] Is Mobile:', /Mobile|Android|iPhone|iPad/.test(navigator.userAgent));
+        
         // Add base path if needed
         const fullPath = this.basePath + path;
+        console.log('[Router] Full path:', fullPath);
         
         // Update browser history
         window.history.pushState({}, '', fullPath);
+        console.log('[Router] History updated, current URL:', window.location.href);
         
         // Load the route (without base path)
         this.loadRoute(path);

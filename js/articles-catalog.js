@@ -234,34 +234,74 @@ class ArticlesCatalog {
      * Добавление обработчиков событий
      */
     attachEventListeners() {
+        console.log('[ArticlesCatalog] attachEventListeners() called');
+        
         // Клики по директориям
-        document.querySelectorAll('.directory-card[data-type="directory"]').forEach(card => {
-            card.addEventListener('click', () => {
+        const directoryCards = document.querySelectorAll('.directory-card[data-type="directory"]');
+        console.log(`[ArticlesCatalog] Found ${directoryCards.length} directory cards`);
+        directoryCards.forEach(card => {
+            // Универсальная функция обработки клика/тапа
+            const handleInteraction = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const dirId = card.dataset.id;
+                console.log('[ArticlesCatalog] Directory card clicked:', dirId);
                 this.navigateToDirectory(dirId);
-            });
+            };
+            
+            // Добавляем обработчики для клика и тапа
+            card.addEventListener('click', handleInteraction);
+            card.addEventListener('touchend', (e) => {
+                // Предотвращаем двойной срабатывание (touch + click)
+                e.preventDefault();
+                handleInteraction(e);
+            }, { passive: false });
         });
         
         // Клики по статьям
-        document.querySelectorAll('.article-card[data-type="article"]').forEach(card => {
-            card.addEventListener('click', () => {
+        const articleCards = document.querySelectorAll('.article-card[data-type="article"]');
+        console.log(`[ArticlesCatalog] Found ${articleCards.length} article cards`);
+        articleCards.forEach(card => {
+            // Универсальная функция обработки клика/тапа
+            const handleInteraction = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const articleId = card.dataset.id;
+                console.log('[ArticlesCatalog] Article card clicked:', articleId);
                 this.openArticle(articleId);
-            });
+            };
+            
+            // Добавляем обработчики для клика и тапа
+            card.addEventListener('click', handleInteraction);
+            card.addEventListener('touchend', (e) => {
+                // Предотвращаем двойной срабатывание (touch + click)
+                e.preventDefault();
+                handleInteraction(e);
+            }, { passive: false });
         });
         
         // Клики по хлебным крошкам
-        document.querySelectorAll('.breadcrumb-link').forEach(link => {
-            link.addEventListener('click', (e) => {
+        const breadcrumbLinks = document.querySelectorAll('.breadcrumb-link');
+        console.log(`[ArticlesCatalog] Found ${breadcrumbLinks.length} breadcrumb links`);
+        breadcrumbLinks.forEach(link => {
+            const handleClick = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 const path = link.dataset.path;
+                console.log('[ArticlesCatalog] Breadcrumb clicked:', path);
                 if (path === '') {
                     this.currentPath = [];
                 } else {
                     this.currentPath = path.split('/');
                 }
                 this.renderCatalog();
-            });
+            };
+            
+            link.addEventListener('click', handleClick);
+            link.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleClick(e);
+            }, { passive: false });
         });
     }
 
@@ -277,11 +317,31 @@ class ArticlesCatalog {
      * Открытие статьи
      */
     openArticle(articleId) {
+        console.log('[ArticlesCatalog] openArticle() called with articleId:', articleId);
+        console.log('[ArticlesCatalog] window.router exists:', !!window.router);
+        console.log('[ArticlesCatalog] Current URL:', window.location.href);
+        
+        if (!articleId) {
+            console.error('[ArticlesCatalog] No articleId provided to openArticle()');
+            return;
+        }
+        
+        const articleUrl = `/article?id=${encodeURIComponent(articleId)}`;
+        console.log('[ArticlesCatalog] Navigating to:', articleUrl);
+        
         // Навигация на страницу просмотра статьи через роутер
         if (window.router) {
-            window.router.navigate(`/article?id=${articleId}`);
+            console.log('[ArticlesCatalog] Using router.navigate()');
+            try {
+                window.router.navigate(articleUrl);
+            } catch (error) {
+                console.error('[ArticlesCatalog] Error in router.navigate():', error);
+                console.log('[ArticlesCatalog] Fallback to window.location.href');
+                window.location.href = articleUrl;
+            }
         } else {
-            window.location.href = `/article?id=${articleId}`;
+            console.log('[ArticlesCatalog] Router not available, using window.location.href');
+            window.location.href = articleUrl;
         }
     }
 

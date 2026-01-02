@@ -2402,6 +2402,8 @@ ul.features-list li::before {
     border-radius: 8px;
     padding: 1.5rem;
     cursor: pointer;
+    touch-action: manipulation; /* Оптимизация для тач-устройств */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1); /* Подсветка при тапе на мобильных */
     transition: all 0.3s ease;
 }
 
@@ -2601,6 +2603,9 @@ ul.features-list li::before {
 
 /* Directory Card */
 .directory-card {
+    cursor: pointer;
+    touch-action: manipulation; /* Оптимизация для тач-устройств */
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1); /* Подсветка при тапе на мобильных */
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
