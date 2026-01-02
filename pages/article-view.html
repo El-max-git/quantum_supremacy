@@ -232,6 +232,15 @@
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlWithIds;
             const toc = new TableOfContents({ minHeadings: 2 });
+            
+            // Переопределяем метод generateId, чтобы использовать нашу функцию
+            const originalGenerateId = toc.generateId.bind(toc);
+            toc.generateId = function(text, index) {
+                // Используем нашу функцию generateHeadingId для единообразия
+                return generateHeadingId(text, index);
+            };
+            
+            // Генерируем TOC (будет использовать существующие ID из заголовков)
             tocHtml = toc.generate(tempDiv);
         }
         
@@ -243,10 +252,10 @@
         // Убеждаемся, что ID сохранены (добавляем ID к заголовкам, если их нет)
         addIdsToHeadings();
         
-        // Инициализируем интерактивность содержания (с небольшой задержкой для гарантии рендеринга)
+        // Инициализируем интерактивность содержания (с задержкой для гарантии рендеринга)
         setTimeout(() => {
             initTocInteractivity();
-        }, 50);
+        }, 200);
         
         // Инициализируем пагинацию
         initPagination();
@@ -950,6 +959,11 @@
             id = `section-${index}`;
         }
         
+        // Если ID начинается с цифры, добавляем префикс (CSS селекторы не могут начинаться с цифры)
+        if (/^\d/.test(id)) {
+            id = `section-${id}`;
+        }
+        
         return id;
     }
     
@@ -958,20 +972,32 @@
      */
     function addIdsToHeadings() {
         const articleBody = document.getElementById('article-body');
-        if (!articleBody) return;
+        if (!articleBody) {
+            console.warn('addIdsToHeadings: article-body not found');
+            return;
+        }
         
+        // Ищем заголовки во всех страницах (включая скрытые)
         const headings = articleBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
         let index = 0;
+        let addedCount = 0;
+        let skippedCount = 0;
         
         headings.forEach(heading => {
             // Если ID уже есть, не меняем его
-            if (heading.id) return;
+            if (heading.id) {
+                skippedCount++;
+                return;
+            }
             
             const text = heading.textContent.trim();
             const id = generateHeadingId(text, index);
             heading.id = id;
+            addedCount++;
             index++;
         });
+        
+        console.log(`addIdsToHeadings: processed ${headings.length} headings, added ${addedCount} IDs, skipped ${skippedCount} (already had ID)`);
     }
     
     /**
@@ -983,13 +1009,9 @@
             return;
         }
         
-        // Удаляем старые обработчики, если они есть (чтобы избежать дублирования)
-        const newContainer = container.cloneNode(true);
-        container.parentNode.replaceChild(newContainer, container);
-        
-        // Обрабатываем все ссылки с якорями (для ручного и автоматического содержания)
-        // Используем делегирование событий для обработки динамически добавленных ссылок
-        newContainer.addEventListener('click', (e) => {
+        // Используем делегирование событий для обработки всех ссылок
+        container.addEventListener('click', (e) => {
+            // Находим ближайшую ссылку
             const link = e.target.closest('a[href^="#"], a[data-toc-target]');
             if (!link) return;
             
@@ -1013,28 +1035,8 @@
             }
         });
         
-        // Также обрабатываем прямые клики по ссылкам (на случай, если делегирование не сработает)
-        const links = newContainer.querySelectorAll('a[href^="#"], a[data-toc-target]');
-        links.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                let targetId = link.getAttribute('data-toc-target');
-                if (!targetId) {
-                    const href = link.getAttribute('href');
-                    if (href && href.startsWith('#')) {
-                        targetId = href.substring(1);
-                    }
-                }
-                
-                if (targetId) {
-                    console.log('TOC link direct click, targetId:', targetId);
-                    scrollToHeading(targetId);
-                }
-            });
-        });
-        
+        // Подсчитываем ссылки для отладки
+        const links = container.querySelectorAll('a[href^="#"], a[data-toc-target]');
         console.log(`initTocLinks: initialized for container, found ${links.length} links`);
     }
     
@@ -1047,16 +1049,23 @@
             return;
         }
         
-        // Ищем элемент по ID во всем документе
+        // Ищем элемент по ID во всем документе (getElementById работает даже со скрытыми элементами)
         let targetElement = document.getElementById(targetId);
         
         // Если не нашли, возможно элемент на другой странице (при пагинации)
         // Проверяем все страницы
         if (!targetElement) {
             const allPages = document.querySelectorAll('.article-page');
+            console.log(`scrollToHeading: checking ${allPages.length} pages for id "${targetId}"`);
+            
             for (const page of allPages) {
-                targetElement = page.querySelector(`#${targetId}`);
-                if (targetElement) {
+                // Используем getElementById (работает даже в скрытых элементах)
+                // Но проверяем, находится ли найденный элемент внутри этой страницы
+                const foundElement = document.getElementById(targetId);
+                if (foundElement && page.contains(foundElement)) {
+                    targetElement = foundElement;
+                    console.log(`scrollToHeading: found element on page ${page.getAttribute('data-page')}`);
+                    
                     // Если элемент на другой странице, нужно перейти на эту страницу
                     const pageNum = page.getAttribute('data-page');
                     if (pageNum) {
@@ -1065,6 +1074,7 @@
                         const currentPage = parseInt(urlParams.get('page')) || 1;
                         
                         if (parseInt(pageNum) !== currentPage) {
+                            console.log(`scrollToHeading: navigating to page ${pageNum}`);
                             // Переходим на нужную страницу
                             const url = `/article?id=${encodeURIComponent(articleId)}&page=${pageNum}#${targetId}`;
                             if (window.router) {
@@ -1098,6 +1108,24 @@
             }
         } else {
             console.warn(`scrollToHeading: Element with id "${targetId}" not found`);
+            
+            // Показываем все доступные ID заголовков для отладки
+            const allHeadings = document.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
+            const headingIds = Array.from(allHeadings).map(el => ({
+                id: el.id,
+                text: el.textContent.trim().substring(0, 50),
+                tag: el.tagName
+            }));
+            console.log('Available heading IDs:', headingIds.slice(0, 20)); // Показываем первые 20
+            
+            // Показываем все ID в содержании для сравнения
+            const tocLinks = document.querySelectorAll('.article-toc-embedded a[href^="#"], .article-toc-embedded a[data-toc-target]');
+            const tocIds = Array.from(tocLinks).map(link => {
+                const href = link.getAttribute('href');
+                const dataTarget = link.getAttribute('data-toc-target');
+                return href ? href.substring(1) : dataTarget;
+            });
+            console.log('TOC link IDs:', tocIds.slice(0, 20));
         }
     }
     
