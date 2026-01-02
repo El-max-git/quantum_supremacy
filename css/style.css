@@ -5,6 +5,21 @@
    Based on SITE_CMS template1 design
    ============================================ */
 
+/* ===== ВАЖНО: Принцип разделения ответственности =====
+   CSS отвечает ТОЛЬКО за декоративное оформление:
+   - Цвета, шрифты, размеры, отступы
+   - Анимации и переходы
+   - Визуальное позиционирование
+   - Адаптивность (media queries)
+   
+   ЛОГИКА работы (показ/скрытие, переключение состояний) 
+   реализуется в JavaScript (js/main.js, router.js и др.)
+   
+   Например:
+   - CSS определяет КАК выглядит меню (цвет, размер, позиция)
+   - JavaScript определяет КОГДА показывать/скрывать меню (класс .active)
+   ============================================ */
+
 /* ===== CSS Variables ===== */
 :root {
     /* Brand Colors */
@@ -163,6 +178,7 @@ hr {
     justify-content: space-between;
     flex-wrap: wrap;
     padding: 2rem 0;
+    gap: 1rem; /* Отступ между элементами */
 }
 
 .logo {
@@ -178,6 +194,7 @@ hr {
 }
 
 /* Navigation */
+/* ВАЖНО: CSS только для оформления. Логика показа/скрытия меню в js/main.js */
 nav {
     display: flex;
     align-items: center;
@@ -211,15 +228,33 @@ nav a.active {
     text-decoration: none;
 }
 
-/* Mobile Menu Toggle */
+/* ===== ОФОРМЛЕНИЕ: Стили для кнопки мобильного меню =====
+   ЛОГИКА переключения меню (добавление/удаление класса .active) находится в js/main.js
+   CSS только определяет КАК выглядит кнопка */
+
+/* ОФОРМЛЕНИЕ: Базовые стили кнопки */
 .mobile-menu-toggle {
-    display: none;
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    cursor: pointer;
-    padding: 0.5rem;
+    display: block; /* Видимость */
+    background: none; /* Цвет фона */
+    border: none; /* Граница */
+    font-size: 1.5rem; /* Размер шрифта */
+    color: var(--text-primary); /* Цвет текста */
+    cursor: pointer; /* Курсор при наведении */
+    padding: 0.5rem; /* Отступы */
+    user-select: none; /* Запрет выделения текста */
+    -webkit-tap-highlight-color: transparent; /* Убираем подсветку на мобильных */
+    touch-action: manipulation; /* Оптимизация для тач-устройств */
+    z-index: 1001; /* Слой отображения */
+    position: relative; /* Позиционирование */
+    transition: var(--transition); /* Плавные переходы */
+    margin-left: auto; /* Выравнивание справа */
+}
+
+/* ОФОРМЛЕНИЕ: Стили при наведении */
+.mobile-menu-toggle:hover {
+    background-color: var(--bg-secondary); /* Цвет фона при наведении */
+    border-radius: var(--border-radius-sm); /* Скругление углов */
+    opacity: 0.8; /* Прозрачность */
 }
 
 /* ===== Separator ===== */
@@ -705,6 +740,39 @@ ul.features-list li::before {
 
 /* ===== Responsive Design ===== */
 
+/* Desktop - навигация видна по умолчанию, но можно скрывать через кнопку */
+@media (min-width: 1024px) {
+    .mobile-menu-toggle {
+        display: block;
+        order: 2; /* После логотипа, перед навигацией */
+    }
+    
+    nav {
+        order: 3; /* После кнопки меню */
+    }
+    
+    nav ul {
+        display: flex !important; /* Навигация видна по умолчанию на десктопе */
+        position: static; /* Не абсолютное позиционирование */
+        flex-direction: row;
+        width: auto;
+        background: none;
+        padding: 0;
+        box-shadow: none;
+        margin-top: 0;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    /* На десктопе можно скрывать меню через класс active на кнопке (опционально) */
+    /* Если нужно скрывать меню на десктопе, раскомментируйте следующее правило: */
+    /*
+    .mobile-menu-toggle.active ~ nav ul,
+    nav ul:not(.active) {
+        display: none !important;
+    }
+    */
+}
+
 /* Tablet - 768px to 1023px */
 @media (max-width: 1023px) {
     .container {
@@ -744,6 +812,37 @@ ul.features-list li::before {
         margin-left: 4rem;
         margin-right: 0;
     }
+    
+    /* ===== ОФОРМЛЕНИЕ: Стили для планшетов =====
+       ЛОГИКА управления меню (класс .active) находится в js/main.js */
+    
+    nav {
+        position: relative; /* Для позиционирования выпадающего меню */
+    }
+    
+    /* ОФОРМЛЕНИЕ: Стили для закрытого состояния меню на планшетах */
+    nav ul {
+        display: none !important; /* Визуально скрыто */
+        position: absolute; /* Абсолютное позиционирование */
+        top: 100%; /* Позиция относительно nav */
+        left: 0;
+        right: 0;
+        flex-direction: column; /* Вертикальное расположение */
+        background: var(--card-bg); /* Цвет фона */
+        padding: 1rem; /* Отступы */
+        border-radius: var(--border-radius); /* Скругление углов */
+        box-shadow: var(--shadow-lg); /* Тень */
+        z-index: 1000; /* Слой отображения */
+        margin-top: 0.5rem; /* Отступ сверху */
+        width: 100%; /* Ширина */
+    }
+    
+    /* ОФОРМЛЕНИЕ: Стили для открытого состояния меню (класс .active добавляется JavaScript) */
+    nav ul.active {
+        display: flex !important; /* Визуально видно */
+        visibility: visible; /* Видимо */
+        opacity: 1; /* Непрозрачно */
+    }
 }
 
 /* Mobile - up to 767px */
@@ -769,27 +868,50 @@ ul.features-list li::before {
     nav {
         width: 100%;
         order: 3; /* Перемещаем навигацию после кнопки меню */
+        position: relative; /* Для позиционирования выпадающего меню */
     }
     
+    /* ===== ОФОРМЛЕНИЕ: Стили для мобильного меню =====
+       ЛОГИКА управления (добавление/удаление класса .active) находится в js/main.js
+       CSS только определяет КАК выглядит меню в разных состояниях */
+    
+    /* ОФОРМЛЕНИЕ: Стили для закрытого состояния меню (по умолчанию) */
     nav ul {
-        display: none;
+        display: none !important; /* Визуально скрыто */
         flex-direction: column;
         width: 100%;
         gap: 0;
-        background: var(--card-bg);
-        padding: 1rem;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-lg);
-        position: absolute;
-        top: 100%;
+        background: var(--card-bg); /* Цвет фона */
+        padding: 1rem; /* Отступы */
+        border-radius: var(--border-radius); /* Скругление углов */
+        box-shadow: var(--shadow-lg); /* Тень */
+        position: absolute; /* Позиционирование */
+        top: calc(100% + 0.5rem); /* Позиция относительно header */
         left: 0;
         right: 0;
-        z-index: 1000;
-        margin-top: 0.5rem;
+        z-index: 1000; /* Слой отображения */
+        margin: 0;
+        list-style: none; /* Убираем маркеры списка */
+        max-height: calc(100vh - 120px); /* Максимальная высота */
+        overflow-y: auto; /* Скролл при переполнении */
+        visibility: hidden; /* Скрыто для анимации */
+        opacity: 0; /* Прозрачность для анимации */
+        transition: opacity 0.3s ease, visibility 0.3s ease; /* Плавная анимация */
     }
     
+    /* ОФОРМЛЕНИЕ: Стили для открытого состояния меню (когда есть класс .active)
+       Класс .active добавляется/удаляется JavaScript в js/main.js */
     nav ul.active {
-        display: flex;
+        display: flex !important; /* Визуально видно */
+        visibility: visible !important; /* Видимо для анимации */
+        opacity: 1 !important; /* Непрозрачно для анимации */
+    }
+    
+    /* ОФОРМЛЕНИЕ: Стили для активного состояния кнопки (когда меню открыто)
+       Класс .active добавляется/удаляется JavaScript в js/main.js */
+    .mobile-menu-toggle.active {
+        background-color: var(--bg-secondary); /* Цвет фона активной кнопки */
+        border-radius: var(--border-radius-sm); /* Скругление углов */
     }
     
     nav ul li {
@@ -802,7 +924,13 @@ ul.features-list li::before {
     }
     
     .mobile-menu-toggle {
-        display: block;
+        display: block !important;
+        visibility: visible;
+        opacity: 1;
+    }
+    
+    .mobile-menu-toggle:active {
+        opacity: 0.7;
     }
     
     /* Content */

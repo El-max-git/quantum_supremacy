@@ -17,52 +17,157 @@ function initializePageComponents() {
 // Store reference to outside click handler for cleanup
 let mobileMenuOutsideClickHandler = null;
 
+/**
+ * Инициализация мобильного меню
+ * ЛОГИКА: Управление показом/скрытием меню через классы .active
+ * CSS только определяет стили для этих классов
+ */
 function initMobileMenu() {
+    console.log('=== initMobileMenu() called ===');
+    
     const navToggle = document.querySelector('.mobile-menu-toggle');
     const navMenu = document.querySelector('nav ul');
+    const nav = document.querySelector('nav');
 
-    if (navToggle && navMenu) {
-        // Remove old listeners by cloning
-        const newToggle = navToggle.cloneNode(true);
-        navToggle.parentNode.replaceChild(newToggle, navToggle);
-
-        // Remove old outside click handler if exists
-        if (mobileMenuOutsideClickHandler) {
-            document.removeEventListener('click', mobileMenuOutsideClickHandler);
-            mobileMenuOutsideClickHandler = null;
-        }
-
-        // Toggle menu on button click
-        newToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            navMenu.classList.toggle('active');
-            newToggle.classList.toggle('active');
-        });
-
-        // Close menu when clicking nav link
-        // Use event delegation to handle dynamically added links
-        const handleNavLinkClick = (e) => {
-            const link = e.target.closest('nav a[data-link]');
-            if (link) {
-                navMenu.classList.remove('active');
-                newToggle.classList.remove('active');
-            }
-        };
-
-        // Remove old listener if exists
-        navMenu.removeEventListener('click', handleNavLinkClick);
-        // Add new listener with event delegation
-        navMenu.addEventListener('click', handleNavLinkClick);
-
-        // Close menu when clicking outside
-        mobileMenuOutsideClickHandler = (e) => {
-            if (!newToggle.contains(e.target) && !navMenu.contains(e.target)) {
-                navMenu.classList.remove('active');
-                newToggle.classList.remove('active');
-            }
-        };
-        document.addEventListener('click', mobileMenuOutsideClickHandler);
+    console.log('navToggle found:', !!navToggle, navToggle);
+    console.log('navMenu found:', !!navMenu, navMenu);
+    console.log('nav found:', !!nav, nav);
+    console.log('navMenu children:', navMenu ? navMenu.children.length : 0);
+    
+    if (navMenu) {
+        console.log('navMenu HTML:', navMenu.outerHTML.substring(0, 200));
     }
+
+    if (!navToggle) {
+        console.warn('Mobile menu toggle button not found!');
+        return;
+    }
+
+    if (!navMenu) {
+        console.warn('Navigation menu (nav ul) not found!');
+        return;
+    }
+
+    // Check if menu has items
+    if (navMenu.children.length === 0) {
+        console.warn('Navigation menu is empty! Menu items may not be generated yet.');
+        // Don't return - still set up the button, menu might be populated later
+    }
+
+    // ЛОГИКА: Устанавливаем начальное состояние - меню закрыто
+    // CSS только определяет стили для этого состояния
+    navMenu.classList.remove('active');
+    navToggle.classList.remove('active');
+
+    // Remove old listeners by cloning
+    const newToggle = navToggle.cloneNode(true);
+    navToggle.parentNode.replaceChild(newToggle, navToggle);
+
+    // Remove old outside click handler if exists
+    if (mobileMenuOutsideClickHandler) {
+        document.removeEventListener('click', mobileMenuOutsideClickHandler);
+        mobileMenuOutsideClickHandler = null;
+    }
+
+    // Флаг для отслеживания клика на кнопке меню
+    let menuButtonClicked = false;
+    
+    /**
+     * ЛОГИКА: Обработчик клика на кнопку меню
+     * Управляет состоянием через добавление/удаление класса .active
+     * CSS только определяет визуальное оформление для этого класса
+     */
+    newToggle.addEventListener('click', (e) => {
+        menuButtonClicked = true; // Устанавливаем флаг
+        
+        e.stopPropagation(); // Останавливаем всплытие
+        e.preventDefault(); // Предотвращаем стандартное поведение
+        console.log('Menu toggle clicked, current state:', navMenu.classList.contains('active'));
+        
+        // ЛОГИКА: Переключаем состояние меню через класс .active
+        const isActive = navMenu.classList.contains('active');
+        if (isActive) {
+            // ЛОГИКА: Закрываем меню - удаляем класс .active
+            navMenu.classList.remove('active');
+            newToggle.classList.remove('active');
+            console.log('Menu closed (class .active removed)');
+        } else {
+            // ЛОГИКА: Открываем меню - добавляем класс .active
+            navMenu.classList.add('active');
+            newToggle.classList.add('active');
+            console.log('Menu opened (class .active added)');
+        }
+        
+        console.log('Menu state after toggle:', navMenu.classList.contains('active'));
+        console.log('Menu items count:', navMenu.children.length);
+        
+        // Сбрасываем флаг после небольшой задержки
+        setTimeout(() => {
+            menuButtonClicked = false;
+        }, 100);
+    });
+
+    /**
+     * ЛОГИКА: Закрытие меню при клике на ссылку навигации
+     * Управление через удаление класса .active
+     */
+    const handleNavLinkClick = (e) => {
+        const link = e.target.closest('nav a[data-link]');
+        if (link) {
+            console.log('Nav link clicked, closing menu');
+            // ЛОГИКА: Закрываем меню - удаляем класс .active
+            navMenu.classList.remove('active');
+            newToggle.classList.remove('active');
+        }
+    };
+
+    // Remove old listener if exists (won't work, but try anyway)
+    navMenu.removeEventListener('click', handleNavLinkClick);
+    // Add new listener with event delegation
+    navMenu.addEventListener('click', handleNavLinkClick);
+
+    /**
+     * ЛОГИКА: Закрытие меню при клике вне его области
+     * Управление через удаление класса .active
+     */
+    mobileMenuOutsideClickHandler = (e) => {
+        // Если был клик на кнопке меню, игнорируем
+        if (menuButtonClicked) {
+            return;
+        }
+        
+        // Проверяем, что клик не на кнопке меню и не на самом меню
+        const clickedToggle = e.target.closest('.mobile-menu-toggle');
+        const clickedMenu = e.target.closest('nav ul');
+        const clickedNav = e.target.closest('nav');
+        
+        // Если клик был на кнопке, не закрываем меню
+        if (clickedToggle) {
+            return;
+        }
+        
+        // Если клик был на меню или внутри nav, не закрываем
+        if (clickedMenu || clickedNav) {
+            return;
+        }
+        
+        // ЛОГИКА: Если меню открыто и клик был вне его, закрываем - удаляем класс .active
+        if (navMenu.classList.contains('active')) {
+            console.log('Click outside menu, closing (removing .active class)');
+            navMenu.classList.remove('active');
+            newToggle.classList.remove('active');
+        }
+    };
+    
+    // Добавляем обработчик с задержкой, чтобы обработчик кнопки успел сработать
+    document.addEventListener('click', (e) => {
+        setTimeout(() => mobileMenuOutsideClickHandler(e), 10);
+    }, false);
+
+    console.log('=== Mobile menu initialized successfully ===');
+    console.log('Button element:', newToggle);
+    console.log('Menu element:', navMenu);
+    console.log('Menu is now ready for clicks');
 }
 
 // ========================================
@@ -184,5 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if (typeof window !== 'undefined') {
     window.initializePageComponents = initializePageComponents;
+    window.initMobileMenu = initMobileMenu;
     window.updateActiveNav = updateActiveNav;
 }

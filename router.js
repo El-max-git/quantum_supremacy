@@ -197,8 +197,18 @@ class Router {
      */
     initializePageScripts() {
         // Reinitialize form handlers, animations, etc.
+        console.log('Router: initializePageScripts() called');
         if (typeof initializePageComponents === 'function') {
+            console.log('Router: Calling initializePageComponents()');
             initializePageComponents();
+        } else {
+            console.warn('Router: initializePageComponents is not available');
+        }
+        
+        // Также явно вызываем initMobileMenu если доступна
+        if (typeof initMobileMenu === 'function') {
+            console.log('Router: Also calling initMobileMenu() directly');
+            initMobileMenu();
         }
     }
 
