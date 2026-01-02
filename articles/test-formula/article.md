@@ -21,7 +21,7 @@ difficulty: beginner
 
 Поскольку $\text{div}(g) = 6H$ и $\dot{V}/V = 3H$:
 
-$\text{div}(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$
+$$\text{div}(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$$
 
 Эволюция дивергенции **напрямую определяет** эволюцию скорости роста гиперплощади.
 
