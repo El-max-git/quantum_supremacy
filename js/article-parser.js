@@ -860,6 +860,8 @@ ${cleanContent}
     cleanupFormulas(html) {
         // 1. Убираем лишние пробелы и переносы строк вокруг block формул
         // Исправляем случаи, когда формулы обернуты в несколько тегов
+        // Важно: сначала убираем <p> теги вокруг block формул
+        html = html.replace(/<p>\s*(\$\$[\s\S]*?\$\$)\s*<\/p>/g, '\n\n$1\n\n');
         html = html.replace(/(<p>\s*)?(\$\$[\s\S]*?\$\$)(\s*<\/p>)?/g, (match, pOpen, formula, pClose) => {
             // Если формула обернута в <p>, убираем обертку
             return '\n\n' + formula + '\n\n';
@@ -1081,6 +1083,8 @@ ${cleanContent}
                 return index >= 0 ? index : undefined;
             },
             tokenizer(src, tokens) {
+                // Ищем block формулы: $$...$$
+                // Используем нежадный поиск, но с учетом многострочных формул
                 const blockMatch = src.match(/^\$\$([\s\S]*?)\$\$/);
                 if (blockMatch) {
                     return {
@@ -1092,6 +1096,7 @@ ${cleanContent}
                 return false;
             },
             renderer(token) {
+                // Возвращаем block формулу как есть, с переносами строк
                 return `\n\n$$${token.text}$$\n\n`;
             }
         };
@@ -1113,11 +1118,13 @@ ${cleanContent}
             },
             tokenizer(src, tokens) {
                 // Inline формулы: $...$ (но не $$)
+                // Важно: не включаем переносы строк в inline формулы
                 const inlineMatch = src.match(/^\$([^$\n]+?)\$/);
                 if (inlineMatch) {
                     // Проверяем, что это не часть block формулы
-                    const before = src.substring(Math.max(0, src.indexOf(inlineMatch[0]) - 1), src.indexOf(inlineMatch[0]));
-                    const after = src.substring(src.indexOf(inlineMatch[0]) + inlineMatch[0].length, src.indexOf(inlineMatch[0]) + inlineMatch[0].length + 1);
+                    const matchIndex = src.indexOf(inlineMatch[0]);
+                    const before = src.substring(Math.max(0, matchIndex - 1), matchIndex);
+                    const after = src.substring(matchIndex + inlineMatch[0].length, matchIndex + inlineMatch[0].length + 1);
                     if (before !== '$' && after !== '$') {
                         return {
                             type: 'mathInline',
@@ -1129,6 +1136,7 @@ ${cleanContent}
                 return false;
             },
             renderer(token) {
+                // Возвращаем inline формулу как есть
                 return `$${token.text}$`;
             }
         };
@@ -1143,19 +1151,26 @@ ${cleanContent}
         // Проверяем, что формулы сохранились (для отладки)
         const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
         const inlineFormulaPattern = /\$[^$\n]+?\$/g;
+        
+        // Ищем формулы в HTML (после парсинга)
         const blockFormulas = (html.match(blockFormulaPattern) || []).length;
         const inlineFormulas = (html.match(inlineFormulaPattern) || []).length;
         const totalFormulas = blockFormulas + inlineFormulas;
         
+        // Ищем формулы в исходном markdown (до парсинга)
         const expectedBlock = (markdownText.match(blockFormulaPattern) || []).length;
         const expectedInline = (markdownText.match(inlineFormulaPattern) || []).length;
         const expectedTotal = expectedBlock + expectedInline;
         
         if (totalFormulas < expectedTotal) {
             const missing = expectedTotal - totalFormulas;
+            const missingBlock = expectedBlock - blockFormulas;
+            const missingInline = expectedInline - inlineFormulas;
+            
             console.warn(`⚠️ marked.js удалил или экранировал ${missing} формул!`);
             console.warn(`  Было: ${expectedTotal} (${expectedBlock} block, ${expectedInline} inline)`);
             console.warn(`  Стало: ${totalFormulas} (${blockFormulas} block, ${inlineFormulas} inline)`);
+            console.warn(`  Пропущено: ${missingBlock} block, ${missingInline} inline`);
             
             // Проверяем, не экранированы ли формулы
             const escapedDollar = (html.match(/&#36;|&amp;#36;/g) || []).length;
@@ -1168,8 +1183,14 @@ ${cleanContent}
             if (formulasInCode > 0) {
                 console.warn(`  Найдено ${formulasInCode} формул внутри <code> тегов - это может мешать MathJax`);
             }
-        } else if (expectedTotal > 0 && window.DEBUG_ARTICLE_PARSER) {
-            console.log(`✓ Все формулы сохранены: ${totalFormulas}/${expectedTotal}`);
+            
+            // Проверяем, не обернуты ли block формулы в <p> теги
+            const blockFormulasInP = (html.match(/<p>\s*\$\$[\s\S]*?\$\$\s*<\/p>/g) || []).length;
+            if (blockFormulasInP > 0) {
+                console.warn(`  Найдено ${blockFormulasInP} block формул внутри <p> тегов - это может мешать MathJax`);
+            }
+        } else if (expectedTotal > 0) {
+            console.log(`✓ Все формулы сохранены: ${totalFormulas}/${expectedTotal} (${blockFormulas} block, ${inlineFormulas} inline)`);
         }
         
         return html;
