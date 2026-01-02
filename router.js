@@ -11,16 +11,35 @@ class Router {
         // Detect base path for GitHub Pages
         // Для локальной разработки (localhost, IP адреса) basePath должен быть пустым
         const hostname = window.location.hostname;
+        const pathname = window.location.pathname;
+        
+        // Проверка на localhost и IP адреса (включая полную проверку на IP формат)
         const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || 
                           hostname.startsWith('192.168.') || hostname.startsWith('10.') || 
-                          hostname.startsWith('172.') || hostname === '';
+                          hostname.startsWith('172.') || hostname === '' ||
+                          /^\d+\.\d+\.\d+\.\d+$/.test(hostname); // Полная проверка на IP адрес
         
-        this.basePath = (hostname.includes('github.io') && !isLocalhost)
-            ? '/quantum_supremacy' 
-            : '';
+        // Проверяем pathname - если он начинается с /quantum_supremacy, значит это GitHub Pages
+        const isPathGitHubPages = pathname.startsWith('/quantum_supremacy');
+        
+        // basePath устанавливаем ТОЛЬКО если:
+        // 1. hostname содержит github.io И это НЕ localhost/IP
+        // 2. ИЛИ pathname указывает на GitHub Pages
+        // В противном случае (локальная разработка) basePath = ''
+        if (isLocalhost) {
+            this.basePath = ''; // Локальная разработка - basePath всегда пустой
+        } else if (isPathGitHubPages) {
+            this.basePath = '/quantum_supremacy'; // Pathname указывает на GitHub Pages
+        } else if (hostname.includes('github.io')) {
+            this.basePath = '/quantum_supremacy'; // GitHub Pages по hostname
+        } else {
+            this.basePath = ''; // По умолчанию пустой
+        }
         
         console.log('[Router] hostname:', hostname);
+        console.log('[Router] pathname:', pathname);
         console.log('[Router] isLocalhost:', isLocalhost);
+        console.log('[Router] isPathGitHubPages:', isPathGitHubPages);
         console.log('[Router] basePath determined:', this.basePath);
         
         // Handle initial redirect from 404.html

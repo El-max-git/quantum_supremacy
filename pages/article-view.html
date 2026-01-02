@@ -181,34 +181,52 @@
     try {
         // Определяем basePath так же, как в router.js
         let basePath = '';
-        if (window.router && window.router.basePath !== undefined) {
-            basePath = window.router.basePath || '';
+        
+        // Проверяем pathname - если он начинается с /quantum_supremacy, значит это GitHub Pages
+        const pathname = window.location.pathname;
+        const hostname = window.location.hostname;
+        const isPathGitHubPages = pathname.startsWith('/quantum_supremacy');
+        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || 
+                          hostname.startsWith('192.168.') || hostname.startsWith('10.') || 
+                          hostname.startsWith('172.') || hostname === '' ||
+                          /^\d+\.\d+\.\d+\.\d+$/.test(hostname); // Проверка на IP адрес
+        
+        console.log('[ArticleView] hostname:', hostname);
+        console.log('[ArticleView] pathname:', pathname);
+        console.log('[ArticleView] isLocalhost:', isLocalhost);
+        console.log('[ArticleView] isPathGitHubPages:', isPathGitHubPages);
+        
+        // Определяем basePath с приоритетом: isLocalhost > pathname > hostname
+        if (isLocalhost) {
+            // Локальная разработка - basePath ВСЕГДА пустой, независимо от router.basePath
+            basePath = '';
+            console.log('[ArticleView] Force basePath = "" because isLocalhost = true');
+        } else if (window.router && window.router.basePath !== undefined) {
+            // Используем basePath из router, но только если это не localhost
+            if (isPathGitHubPages && !window.router.basePath) {
+                // Если pathname указывает на GitHub Pages, но router.basePath пустой, используем pathname
+                basePath = '/quantum_supremacy';
+                console.log('[ArticleView] Overriding router.basePath because pathname indicates GitHub Pages');
+            } else {
+                basePath = window.router.basePath || '';
+            }
             console.log('[ArticleView] basePath from router:', basePath);
         } else {
             // Если router еще не инициализирован, определяем сами
-            const hostname = window.location.hostname;
-            const port = window.location.port;
-            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || 
-                              hostname.startsWith('192.168.') || hostname.startsWith('10.') || 
-                              hostname.startsWith('172.') || hostname === '';
-            
-            console.log('[ArticleView] hostname:', hostname);
-            console.log('[ArticleView] port:', port);
-            console.log('[ArticleView] full location:', window.location.href);
-            console.log('[ArticleView] pathname:', window.location.pathname);
-            console.log('[ArticleView] isLocalhost:', isLocalhost);
-            
-            // Проверяем, работаем ли мы на GitHub Pages или локально
-            // Для локальной разработки (localhost, IP адреса, пустой hostname) basePath должен быть пустым
-            if (hostname.includes('github.io') && !isLocalhost) {
+            // Приоритет: pathname > hostname
+            if (isPathGitHubPages) {
                 basePath = '/quantum_supremacy';
-                console.log('[ArticleView] Detected GitHub Pages, using basePath:', basePath);
+                console.log('[ArticleView] Detected GitHub Pages from pathname, using basePath:', basePath);
+            } else if (hostname.includes('github.io') && !isLocalhost) {
+                basePath = '/quantum_supremacy';
+                console.log('[ArticleView] Detected GitHub Pages from hostname, using basePath:', basePath);
             } else {
                 // Для локальной разработки basePath пустой
                 basePath = '';
                 console.log('[ArticleView] Detected local development, using basePath: "" (empty)');
             }
         }
+        
         console.log('[ArticleView] Final basePath:', basePath);
         
         // Загружаем каталог статей для поиска статьи
