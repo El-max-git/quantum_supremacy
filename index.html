@@ -31,7 +31,7 @@
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
     <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://raw.githubusercontent.com https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; connect-src 'self' https://raw.githubusercontent.com https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 </head>
 <body>
     <!-- Header -->
@@ -74,8 +74,7 @@
     <!-- Markdown Parser (marked.js from CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     
-    <!-- MathJax (lazy load, initialized by ArticleParser) -->
-    <!-- MathJax будет загружен автоматически при необходимости -->
+    <!-- MathJax рендеринг формул отключен -->
     
     <!-- Article Parser System -->
     <script src="js/article-parser.js"></script>
