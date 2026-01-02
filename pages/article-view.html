@@ -140,6 +140,13 @@
         return articleId;
     }
     
+    // Вспомогательная функция для экранирования HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
     // Функция загрузки статьи
     async function loadArticle(articleId) {
         console.log('[ArticleView] loadArticle() called with articleId:', articleId);
@@ -247,6 +254,15 @@
         console.log('[ArticleView] Current location:', window.location.href);
         console.log('[ArticleView] Hostname:', window.location.hostname);
         console.log('[ArticleView] Is GitHub Pages:', window.location.hostname.includes('github.io'));
+        
+        // Попробуем несколько вариантов пути, если первый не сработает
+        // На разных серверах может быть разная чувствительность к регистру
+        const possibleUrls = [mdUrl]; // Первый вариант - как есть (оригинальный путь)
+        const lowerUrl = mdUrl.toLowerCase();
+        if (lowerUrl !== mdUrl) {
+            possibleUrls.push(lowerUrl); // Второй вариант - нижний регистр (для Windows-серверов)
+        }
+        console.log('[ArticleView] Possible URLs to try:', possibleUrls);
         
         let mdResponse;
         let lastError = null;
