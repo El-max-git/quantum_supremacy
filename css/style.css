@@ -530,7 +530,8 @@ textarea {
 }
 
 /* ===== Loading Spinner ===== */
-.loading-spinner {
+.loading-spinner,
+.spinner {
     display: inline-block;
     width: 50px;
     height: 50px;
@@ -538,6 +539,11 @@ textarea {
     border-top-color: var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+.loading-indicator {
+    text-align: center;
+    padding: 4rem 1rem;
 }
 
 @keyframes spin {
@@ -1740,6 +1746,219 @@ ul.features-list li::before {
     
     .article-body {
         font-size: 11pt;
+    }
+}
+
+/* ===== Articles List Page Styles ===== */
+
+/* Articles Grid */
+.articles-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.category-section {
+    margin-bottom: 3rem;
+}
+
+.category-section.category-nested {
+    margin-bottom: 2rem;
+    margin-left: 2rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid var(--border-color);
+}
+
+.category-header {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.category-header:hover {
+    opacity: 0.8;
+}
+
+.category-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-section[data-level="1"] .category-title {
+    font-size: 1.5rem;
+}
+
+.category-section[data-level="2"] .category-title {
+    font-size: 1.25rem;
+}
+
+.category-icon {
+    font-size: 1.2em;
+}
+
+.category-toggle {
+    font-size: 0.8em;
+    margin-left: auto;
+    transition: transform 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.category-description {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.category-content {
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+}
+
+.articles-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Article Card */
+.article-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--primary-color);
+}
+
+.article-card-header {
+    margin-bottom: 1rem;
+}
+
+.article-card-title {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.article-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.article-card-body {
+    margin-bottom: 1rem;
+}
+
+.article-card-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.article-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.article-card-footer span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Back Button */
+.back-to-list-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 2rem;
+    transition: all 0.2s ease;
+}
+
+.back-to-list-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* No Articles Message */
+.no-articles {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--text-secondary);
+}
+
+.no-articles p {
+    font-size: 1.2rem;
+}
+
+/* Error Message (Articles Page) */
+.article-error {
+    text-align: center;
+    padding: 4rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.article-error h2 {
+    color: var(--error-color);
+    margin-bottom: 1rem;
+}
+
+.article-error p {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* Responsive - Articles Page */
+@media (max-width: 768px) {
+    .articles-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+    
+    .page-header p {
+        font-size: 1rem;
+    }
+}
+
+/* Dark Theme Support - Articles Page */
+@media (prefers-color-scheme: dark) {
+    .article-card {
+        background: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+    
+    .article-card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
     }
 }
 

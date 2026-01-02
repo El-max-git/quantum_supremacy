@@ -65,45 +65,41 @@
         // Загружаем markdown файл
         const mdText = await fetch(`${window.router?.basePath || ''}/${article.mdFile}`).then(r => r.text());
         
-        // Парсим markdown в HTML (теперь возвращает {html, metadata})
-        const parser = new ArticleParser({ 
-            basePath: window.router?.basePath || '' 
-        });
-        const { html, metadata } = await parser.parse(mdText, article.path);
+        // ArticleParser удален - парсинг markdown отключен
+        // TODO: Реализовать альтернативный способ парсинга markdown или использовать предкомпилированный HTML
         
-        // Заполняем метаданные (приоритет: frontmatter > config.json)
-        document.getElementById('article-title').textContent = metadata.title || article.title;
-        document.getElementById('article-category').textContent = metadata.category || article.category || 'Статья';
-        document.getElementById('article-author').textContent = metadata.author || article.author || '';
-        document.getElementById('article-date').textContent = metadata.date || article.date || '';
+        // Заполняем метаданные из config.json (frontmatter больше не парсится)
+        document.getElementById('article-title').textContent = article.title;
+        document.getElementById('article-category').textContent = article.category || 'Статья';
+        document.getElementById('article-author').textContent = article.author || '';
+        document.getElementById('article-date').textContent = article.date || '';
         
-        const readingTime = metadata.readingTime || article.readingTime;
+        const readingTime = article.readingTime;
         if (readingTime) {
             document.getElementById('article-reading-time').textContent = `${readingTime} мин чтения`;
         }
         
-        // Теги (из frontmatter или config)
-        const tags = metadata.tags || article.tags;
+        // Теги из config
+        const tags = article.tags;
         if (tags && tags.length) {
             const tagsHtml = tags.map(tag => `<span class="tag">${tag}</span>`).join('');
             document.getElementById('article-tags').innerHTML = tagsHtml;
         }
         
-        // Вставляем содержимое
-        document.getElementById('article-body').innerHTML = html;
+        // Вставляем содержимое (markdown не парсится)
+        // TODO: Использовать предкомпилированный HTML или альтернативный парсер
+        document.getElementById('article-body').innerHTML = `
+            <div class="article-error">
+                <h2>⚠️ Парсер статей отключен</h2>
+                <p>ArticleParser был удален. Необходимо реализовать альтернативный способ отображения статей.</p>
+            </div>
+        `;
         
-        // Генерируем содержание
-        const toc = new TableOfContents({ minHeadings: 2 });
-        const tocHtml = toc.generate(document.getElementById('article-body'));
-        document.getElementById('article-toc').innerHTML = tocHtml;
-        
-        // Инициализируем отслеживание скролла
-        toc.initScrollTracking();
-        
-        // Рендерим математику
-        if (typeof ArticleParser.renderMath === 'function') {
-            await ArticleParser.renderMath(document.getElementById('article-body'));
-        }
+        // Генерация содержания отключена (требует HTML контента)
+        // const toc = new TableOfContents({ minHeadings: 2 });
+        // const tocHtml = toc.generate(document.getElementById('article-body'));
+        // document.getElementById('article-toc').innerHTML = tocHtml;
+        // toc.initScrollTracking();
         
         // Навигация по статьям
         const currentIndex = config.articles.findIndex(a => a.id === articleId);
