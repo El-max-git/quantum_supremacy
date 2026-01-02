@@ -148,8 +148,26 @@
         }
     
     try {
-        const basePath = window.router?.basePath || '';
-        console.log('[ArticleView] basePath:', basePath);
+        // Определяем basePath так же, как в router.js
+        let basePath = '';
+        if (window.router && window.router.basePath) {
+            basePath = window.router.basePath;
+        } else {
+            // Если router еще не инициализирован, определяем сами
+            const hostname = window.location.hostname;
+            console.log('[ArticleView] hostname:', hostname);
+            console.log('[ArticleView] full location:', window.location.href);
+            console.log('[ArticleView] pathname:', window.location.pathname);
+            
+            // Проверяем, работаем ли мы на GitHub Pages или локально
+            if (hostname.includes('github.io')) {
+                basePath = '/quantum_supremacy';
+            } else {
+                // Для локальной разработки basePath пустой
+                basePath = '';
+            }
+        }
+        console.log('[ArticleView] Final basePath:', basePath);
         
         // Загружаем каталог статей для поиска статьи
         const catalogUrl = `${basePath}/articles/articles-list.json`;
@@ -186,14 +204,62 @@
         }
         
         // Загружаем markdown файл
-        const mdUrl = `${basePath}/${article.mdFile}`;
-        console.log('[ArticleView] Fetching article from:', mdUrl);
-        const mdResponse = await fetch(mdUrl, { cache: 'no-store' });
-        if (!mdResponse.ok) {
-            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText})`);
+        // Формируем правильный путь: убираем лишние слэши и нормализуем путь
+        let mdFile = article.mdFile.startsWith('/') ? article.mdFile.substring(1) : article.mdFile;
+        
+        // Разбиваем путь на сегменты и кодируем каждый сегмент отдельно
+        // Это важно для мобильных устройств, которые могут по-разному обрабатывать URL
+        const pathSegments = mdFile.split('/');
+        const encodedSegments = pathSegments.map(segment => {
+            // Кодируем каждый сегмент пути отдельно (но не кодируем слэши)
+            return encodeURIComponent(segment);
+        });
+        const encodedPath = encodedSegments.join('/');
+        
+        let mdUrl = basePath 
+            ? `${basePath}/${encodedPath}`.replace(/([^:]\/)\/+/g, '$1')
+            : `/${encodedPath}`.replace(/\/+/g, '/');
+        
+        console.log('[ArticleView] Original mdFile:', article.mdFile);
+        console.log('[ArticleView] Normalized mdFile:', mdFile);
+        console.log('[ArticleView] Path segments:', pathSegments);
+        console.log('[ArticleView] Encoded segments:', encodedSegments);
+        console.log('[ArticleView] Encoded path:', encodedPath);
+        console.log('[ArticleView] basePath:', basePath);
+        console.log('[ArticleView] Final mdUrl:', mdUrl);
+        console.log('[ArticleView] Full URL will be:', window.location.origin + mdUrl);
+        console.log('[ArticleView] Current location:', window.location.href);
+        console.log('[ArticleView] Hostname:', window.location.hostname);
+        console.log('[ArticleView] Is GitHub Pages:', window.location.hostname.includes('github.io'));
+        
+        let mdResponse;
+        try {
+            mdResponse = await fetch(mdUrl, { cache: 'no-store' });
+            console.log('[ArticleView] Response status:', mdResponse.status, mdResponse.statusText);
+            console.log('[ArticleView] Response ok:', mdResponse.ok);
+            console.log('[ArticleView] Response headers:', Object.fromEntries(mdResponse.headers.entries()));
+        } catch (fetchError) {
+            console.error('[ArticleView] Fetch error:', fetchError);
+            throw new Error(`Ошибка сети при загрузке файла статьи: ${fetchError.message}. URL: ${mdUrl}`);
         }
         
-        const mdText = await mdResponse.text();
+        if (!mdResponse.ok) {
+            const errorText = await mdResponse.text().catch(() => 'Не удалось прочитать текст ошибки');
+            console.error('[ArticleView] Response error text:', errorText);
+            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText}). URL: ${mdUrl}. Error: ${errorText.substring(0, 200)}`);
+        }
+        
+        let mdText;
+        try {
+            mdText = await mdResponse.text();
+            console.log('[ArticleView] Article loaded, length:', mdText.length, 'chars');
+            if (mdText.length === 0) {
+                throw new Error('Файл статьи пуст');
+            }
+        } catch (textError) {
+            console.error('[ArticleView] Text parsing error:', textError);
+            throw new Error(`Ошибка чтения содержимого файла: ${textError.message}`);
+        }
         
         // Простой парсинг frontmatter (YAML между ---)
         let content = mdText;
@@ -374,14 +440,37 @@
         
     } catch (error) {
         console.error('[ArticleView] Error loading article:', error);
+        console.error('[ArticleView] Error name:', error.name);
+        console.error('[ArticleView] Error message:', error.message);
+        console.error('[ArticleView] Error stack:', error.stack);
+        console.error('[ArticleView] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        
+        // Формируем детальное сообщение об ошибке
+        let errorDetails = error.message || 'Неизвестная ошибка';
+        if (error.stack) {
+            errorDetails += '\n\nStack trace:\n' + error.stack;
+        }
+        if (error.cause) {
+            errorDetails += '\n\nCause: ' + JSON.stringify(error.cause);
+        }
+        
         const errorHtml = `
             <div class="article-error">
                 <h2>❌ Ошибка загрузки статьи</h2>
-                <p>${error.message}</p>
-                <details style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
-                    <summary>Детали ошибки (для отладки)</summary>
-                    <pre style="margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px; overflow-x: auto;">${error.stack || error.toString()}</pre>
+                <p><strong>${error.message || 'Неизвестная ошибка'}</strong></p>
+                <details style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);" open>
+                    <summary style="cursor: pointer; font-weight: 600; margin-bottom: 0.5rem;">Детали ошибки (для отладки)</summary>
+                    <pre style="margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-secondary); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; max-height: 300px; overflow-y: auto;">${escapeHtml(errorDetails)}</pre>
                 </details>
+                <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    <p><strong>Информация для отладки:</strong></p>
+                    <ul style="list-style: disc; padding-left: 1.5rem; margin-top: 0.5rem;">
+                        <li>URL: ${window.location.href}</li>
+                        <li>Base Path: ${window.router?.basePath || 'не определен'}</li>
+                        <li>Article ID: ${articleId || 'не определен'}</li>
+                        <li>User Agent: ${navigator.userAgent.substring(0, 100)}...</li>
+                    </ul>
+                </div>
             </div>
         `;
         const bodyEl = document.getElementById('article-body');
