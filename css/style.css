@@ -1914,6 +1914,65 @@ ul.features-list li::before {
     color: var(--error-color);
 }
 
+/* Floating Scroll Buttons */
+.article-scroll-buttons {
+    position: fixed;
+    right: 2rem;
+    bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.article-scroll-buttons.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.scroll-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: var(--bg-primary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: var(--transition);
+    padding: 0;
+}
+
+.scroll-btn:hover {
+    background: var(--link-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.scroll-btn:active {
+    transform: translateY(0);
+}
+
+.scroll-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+}
+
+.scroll-btn-top {
+    /* Кнопка наверх */
+}
+
+.scroll-btn-bottom {
+    /* Кнопка вниз */
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .article-wrapper {

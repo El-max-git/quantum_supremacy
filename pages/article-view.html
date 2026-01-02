@@ -42,6 +42,20 @@
     </div>
 </div>
 
+<!-- Floating Navigation Buttons -->
+<div class="article-scroll-buttons" id="article-scroll-buttons">
+    <button class="scroll-btn scroll-btn-top" id="scroll-to-top" aria-label="Наверх документа" title="Наверх документа">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 15l-6-6-6 6"/>
+        </svg>
+    </button>
+    <button class="scroll-btn scroll-btn-bottom" id="scroll-to-bottom" aria-label="Вниз документа" title="Вниз документа">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9l6 6 6-6"/>
+        </svg>
+    </button>
+</div>
+
 <!-- Article Viewer Script -->
 <script>
 (async function() {
@@ -479,7 +493,19 @@
         
         html = htmlLines.join('\n');
         
-        // Заголовки
+        // Сначала обрабатываем inline форматирование (жирный, курсив) ДО заголовков
+        // чтобы форматирование внутри заголовков тоже обрабатывалось
+        
+        // Жирный текст (inline, не должен содержать переносы строк)
+        // Обрабатываем ПЕРЕД курсивом, чтобы избежать конфликтов
+        html = html.replace(/\*\*([^\n*]+?)\*\*/g, '<strong>$1</strong>');
+        
+        // Курсив (inline, не должен содержать переносы строк)
+        // Обрабатываем ПОСЛЕ жирного текста, чтобы избежать конфликтов
+        // Используем [^\n*]+? чтобы не захватывать переносы и звездочки
+        html = html.replace(/\*([^\n*]+?)\*/g, '<em>$1</em>');
+        
+        // Заголовки (обрабатываем ПОСЛЕ форматирования, чтобы форматирование внутри заголовков сохранялось)
         html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
         html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
         html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
@@ -529,20 +555,6 @@
                 .replace(/>/g, '&gt;');
             inlineCodeBlocks.push(`<code>${escaped}</code>`);
             return `__INLINE_CODE_${index}__`;
-        });
-        
-        // Жирный текст (с поддержкой переносов строк)
-        // Используем [\s\S] вместо . для захвата переносов строк
-        html = html.replace(/\*\*([\s\S]*?)\*\*/g, (match, content) => {
-            // Сохраняем переносы строк внутри жирного текста
-            return `<strong>${content}</strong>`;
-        });
-        
-        // Курсив (с поддержкой переносов строк)
-        // Используем [\s\S] вместо . для захвата переносов строк
-        html = html.replace(/\*([\s\S]*?)\*/g, (match, content) => {
-            // Сохраняем переносы строк внутри курсива
-            return `<em>${content}</em>`;
         });
         
         // Ссылки (формат markdown: [текст](url))
