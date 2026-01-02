@@ -54,9 +54,23 @@ function initMobileMenu() {
         // Don't return - still set up the button, menu might be populated later
     }
 
-    // ЛОГИКА: Устанавливаем начальное состояние - меню закрыто
-    // CSS только определяет стили для этого состояния
-    navMenu.classList.remove('active');
+    // ЛОГИКА: Устанавливаем начальное состояние через inline стили
+    // CSS только определяет декоративные стили (цвета, размеры, отступы)
+    // Проверяем размер экрана для определения начального состояния
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    
+    if (isDesktop) {
+        // ЛОГИКА: На десктопе меню видно по умолчанию
+        navMenu.style.display = 'flex';
+        navMenu.style.visibility = 'visible';
+        navMenu.style.opacity = '1';
+    } else {
+        // ЛОГИКА: На мобильных и планшетах меню скрыто по умолчанию
+        navMenu.style.display = 'none';
+        navMenu.style.visibility = 'hidden';
+        navMenu.style.opacity = '0';
+    }
+    
     navToggle.classList.remove('active');
 
     // Remove old listeners by cloning
@@ -82,20 +96,26 @@ function initMobileMenu() {
         
         e.stopPropagation(); // Останавливаем всплытие
         e.preventDefault(); // Предотвращаем стандартное поведение
-        console.log('Menu toggle clicked, current state:', navMenu.classList.contains('active'));
+        // ЛОГИКА: Проверяем текущее состояние через inline стили
+        const isVisible = navMenu.style.display === 'flex' && navMenu.style.visibility === 'visible';
+        console.log('Menu toggle clicked, current state:', isVisible);
         
-        // ЛОГИКА: Переключаем состояние меню через класс .active
-        const isActive = navMenu.classList.contains('active');
-        if (isActive) {
-            // ЛОГИКА: Закрываем меню - удаляем класс .active
-            navMenu.classList.remove('active');
+        // ЛОГИКА: Переключаем состояние меню через inline стили
+        // CSS только определяет декоративные стили (цвета, размеры, отступы)
+        if (isVisible) {
+            // ЛОГИКА: Закрываем меню - устанавливаем inline стили
+            navMenu.style.display = 'none';
+            navMenu.style.visibility = 'hidden';
+            navMenu.style.opacity = '0';
             newToggle.classList.remove('active');
-            console.log('Menu closed (class .active removed)');
+            console.log('Menu closed (inline styles set)');
         } else {
-            // ЛОГИКА: Открываем меню - добавляем класс .active
-            navMenu.classList.add('active');
+            // ЛОГИКА: Открываем меню - устанавливаем inline стили
+            navMenu.style.display = 'flex';
+            navMenu.style.visibility = 'visible';
+            navMenu.style.opacity = '1';
             newToggle.classList.add('active');
-            console.log('Menu opened (class .active added)');
+            console.log('Menu opened (inline styles set)');
         }
         
         console.log('Menu state after toggle:', navMenu.classList.contains('active'));
@@ -115,8 +135,10 @@ function initMobileMenu() {
         const link = e.target.closest('nav a[data-link]');
         if (link) {
             console.log('Nav link clicked, closing menu');
-            // ЛОГИКА: Закрываем меню - удаляем класс .active
-            navMenu.classList.remove('active');
+            // ЛОГИКА: Закрываем меню - устанавливаем inline стили
+            navMenu.style.display = 'none';
+            navMenu.style.visibility = 'hidden';
+            navMenu.style.opacity = '0';
             newToggle.classList.remove('active');
         }
     };
@@ -151,10 +173,12 @@ function initMobileMenu() {
             return;
         }
         
-        // ЛОГИКА: Если меню открыто и клик был вне его, закрываем - удаляем класс .active
-        if (navMenu.classList.contains('active')) {
-            console.log('Click outside menu, closing (removing .active class)');
-            navMenu.classList.remove('active');
+        // ЛОГИКА: Если меню открыто и клик был вне его, закрываем - устанавливаем inline стили
+        if (navMenu.style.display === 'flex' && navMenu.style.visibility === 'visible') {
+            console.log('Click outside menu, closing (setting inline styles)');
+            navMenu.style.display = 'none';
+            navMenu.style.visibility = 'hidden';
+            navMenu.style.opacity = '0';
             newToggle.classList.remove('active');
         }
     };
