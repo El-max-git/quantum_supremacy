@@ -54,6 +54,12 @@
             <path d="M9 18l6-6-6-6"/>
         </svg>
     </button>
+    <button class="scroll-btn scroll-btn-home" id="scroll-to-home" aria-label="К содержанию" title="Вернуться к содержанию">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+    </button>
 </div>
 
 <!-- Article Viewer Script -->
@@ -960,6 +966,11 @@
             html += '<span class="pagination-btn pagination-next pagination-disabled">' + nextText + '</span>';
         }
         
+        // Кнопка "Домой" (возврат на первую страницу с содержанием)
+        if (currentPage > 1) {
+            html += '<a href="/article?id=' + encodeURIComponent(articleId) + '&page=1" class="pagination-btn pagination-home" data-link title="Вернуться к содержанию">🏠 Домой</a>';
+        }
+        
         html += '</div>';
         
         return html;
@@ -1493,18 +1504,10 @@
             return;
         }
         
-        // Функция для показа/скрытия кнопок
+        // Функция для показа/скрытия кнопок (кнопки теперь всегда видны через CSS)
         function toggleButtons() {
-            const scrollY = window.scrollY || window.pageYOffset;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.scrollHeight;
-            
-            // Показываем кнопки, если прокрутка больше 100px или документ длиннее экрана
-            if (scrollY > 100 || documentHeight > windowHeight) {
-                scrollButtons.classList.add('visible');
-            } else {
-                scrollButtons.classList.remove('visible');
-            }
+            // Кнопки всегда видимы через CSS !important, но оставляем класс visible для совместимости
+            scrollButtons.classList.add('visible');
         }
         
         // Прокрутка наверх
@@ -1533,6 +1536,21 @@
         if (scrollToNextBtn) {
             scrollToNextBtn.addEventListener('click', () => {
                 navigateToNextPage();
+            });
+        }
+        
+        // Кнопка "Домой" (возврат на первую страницу)
+        const scrollToHomeBtn = document.getElementById('scroll-to-home');
+        if (scrollToHomeBtn) {
+            scrollToHomeBtn.addEventListener('click', () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const articleId = urlParams.get('id');
+                const url = `/article?id=${encodeURIComponent(articleId)}&page=1`;
+                if (window.router) {
+                    window.router.navigate(url);
+                } else {
+                    window.location.href = url;
+                }
             });
         }
         

@@ -1907,7 +1907,9 @@ ul.features-list li::before {
 
 /* Article Pagination */
 .article-pagination {
-    display: flex;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     justify-content: space-between;
     align-items: center;
     margin: 3rem 0;
@@ -1916,9 +1918,14 @@ ul.features-list li::before {
     border-radius: var(--border-radius);
     flex-wrap: wrap;
     gap: 1rem;
+    position: relative;
+    z-index: 100;
 }
 
 .pagination-btn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     padding: 0.75rem 1.5rem;
     background: var(--primary-color);
     color: white !important;
@@ -1926,7 +1933,6 @@ ul.features-list li::before {
     border-radius: var(--border-radius);
     transition: var(--transition);
     font-weight: 500;
-    display: inline-block;
     white-space: nowrap;
 }
 
@@ -1947,6 +1953,15 @@ ul.features-list li::before {
     color: var(--text-tertiary);
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.pagination-btn.pagination-home {
+    margin-left: auto;
+    background: var(--secondary-color);
+}
+
+.pagination-btn.pagination-home:hover {
+    background: var(--link-hover);
 }
 
 .pagination-numbers {
@@ -1999,6 +2014,11 @@ ul.features-list li::before {
     .pagination-btn {
         width: 100%;
         text-align: center;
+    }
+    
+    .pagination-btn.pagination-home {
+        margin-left: 0;
+        margin-top: 0.5rem;
     }
     
     .pagination-numbers {
@@ -2063,21 +2083,21 @@ ul.features-list li::before {
 
 /* Floating Scroll Buttons */
 .article-scroll-buttons {
-    position: fixed;
+    position: fixed !important;
     right: 2rem;
     bottom: 2rem;
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 0.75rem;
-    z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
+    z-index: 1002 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .article-scroll-buttons.visible {
-    opacity: 1;
-    visibility: visible;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .scroll-btn {
@@ -2088,7 +2108,9 @@ ul.features-list li::before {
     color: var(--bg-primary);
     border: none;
     cursor: pointer;
-    display: flex;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-lg);
@@ -2118,6 +2140,14 @@ ul.features-list li::before {
     background: var(--primary-color);
     transform: none;
     box-shadow: var(--shadow-lg);
+}
+
+.scroll-btn.scroll-btn-home {
+    background: var(--secondary-color);
+}
+
+.scroll-btn.scroll-btn-home:hover {
+    background: var(--link-hover);
 }
 
 .scroll-btn svg {
