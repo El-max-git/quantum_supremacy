@@ -7,16 +7,6 @@
     </div>
 
     <div class="article-wrapper">
-        <!-- Table of Contents -->
-        <aside class="article-toc-sidebar" id="article-toc-sidebar">
-            <div class="toc-sticky">
-                <h3 class="toc-title">Содержание</h3>
-                <div id="article-toc">
-                    <!-- TOC will be generated here -->
-                </div>
-            </div>
-        </aside>
-        
         <!-- Article Content -->
         <article class="article-content" id="article-content">
             <!-- Article Header -->
@@ -52,6 +42,16 @@
     <button class="scroll-btn scroll-btn-bottom" id="scroll-to-bottom" aria-label="Вниз документа" title="Вниз документа">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M6 9l6 6 6-6"/>
+        </svg>
+    </button>
+    <button class="scroll-btn scroll-btn-left" id="scroll-to-prev" aria-label="Предыдущая страница" title="Предыдущая страница">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    </button>
+    <button class="scroll-btn scroll-btn-right" id="scroll-to-next" aria-label="Следующая страница" title="Следующая страница">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6"/>
         </svg>
     </button>
 </div>
@@ -203,38 +203,60 @@
         // Простой markdown парсинг (базовый)
         const html = simpleMarkdownToHtml(articleContent);
         
-        // Генерируем содержание ДО пагинации
+        // Создаем временный контейнер для добавления ID к заголовкам ПЕРЕД генерацией TOC
+        const tempDivForIds = document.createElement('div');
+        tempDivForIds.innerHTML = html;
+        
+        // Добавляем ID ко всем заголовкам в временном контейнере
+        const tempHeadings = tempDivForIds.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        let tempIndex = 0;
+        tempHeadings.forEach(heading => {
+            if (!heading.id) {
+                const text = heading.textContent.trim();
+                const id = generateHeadingId(text, tempIndex);
+                heading.id = id;
+                tempIndex++;
+            }
+        });
+        
+        // Получаем HTML с ID
+        const htmlWithIds = tempDivForIds.innerHTML;
+        
+        // Генерируем содержание ДО пагинации (теперь заголовки уже имеют ID)
         let tocHtml = '';
         if (manualToc) {
             // Используем ручное содержание из markdown
             tocHtml = manualToc;
         } else if (typeof TableOfContents !== 'undefined') {
-            // Создаем временный контейнер для генерации TOC из полного HTML
+            // Создаем временный контейнер для генерации TOC из HTML с ID
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
+            tempDiv.innerHTML = htmlWithIds;
             const toc = new TableOfContents({ minHeadings: 2 });
             tocHtml = toc.generate(tempDiv);
         }
         
-        // Сохраняем TOC для sidebar
-        document.getElementById('article-toc').innerHTML = tocHtml;
-        
-        // Разбиваем статью на страницы
-        const paginatedHtml = paginateArticle(html, tocHtml);
+        // Разбиваем статью на страницы (используем HTML с ID)
+        const paginatedHtml = paginateArticle(htmlWithIds, tocHtml);
         
         document.getElementById('article-body').innerHTML = paginatedHtml;
+        
+        // Убеждаемся, что ID сохранены (добавляем ID к заголовкам, если их нет)
+        addIdsToHeadings();
+        
+        // Инициализируем интерактивность содержания (с небольшой задержкой для гарантии рендеринга)
+        setTimeout(() => {
+            initTocInteractivity();
+        }, 50);
         
         // Инициализируем пагинацию
         initPagination();
         
-        // Инициализируем отслеживание скролла для TOC
-        if (typeof TableOfContents !== 'undefined' && !manualToc) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = html;
-            const toc = new TableOfContents({ minHeadings: 2 });
-            toc.generate(tempDiv);
-            toc.initScrollTracking();
-        }
+        // Обновляем состояние кнопок навигации по страницам (после рендеринга пагинации)
+        setTimeout(() => {
+            if (typeof updatePageNavigationButtons === 'function') {
+                updatePageNavigationButtons();
+            }
+        }, 100);
         
     } catch (error) {
         console.error('Error loading article:', error);
@@ -811,9 +833,43 @@
             result += tocHtml;
             result += '</div>';
             result += '<hr style="margin: 2rem 0;">';
+            result += pages[activePage - 1].content;
+        } else if (activePage > 1) {
+            // На остальных страницах показываем только заголовок текущего раздела
+            const currentPageContent = pages[activePage - 1].content;
+            const tempPageDiv = document.createElement('div');
+            tempPageDiv.innerHTML = currentPageContent;
+            
+            // Находим первый h2 заголовок на странице
+            const firstH2 = tempPageDiv.querySelector('h2');
+            if (firstH2) {
+                const sectionTitle = firstH2.textContent.trim();
+                const sectionId = firstH2.id || '';
+                
+                // Удаляем первый h2 из content, чтобы избежать дублирования
+                firstH2.remove();
+                
+                // Обновляем content без первого h2
+                const updatedContent = tempPageDiv.innerHTML;
+                
+                result += '<div class="article-section-header">';
+                if (sectionId) {
+                    result += `<h2 id="${sectionId}" class="article-section-title">${sectionTitle}</h2>`;
+                } else {
+                    result += `<h2 class="article-section-title">${sectionTitle}</h2>`;
+                }
+                result += '</div>';
+                result += '<hr style="margin: 1.5rem 0;">';
+                
+                // Добавляем content без первого h2
+                result += updatedContent;
+            } else {
+                // Если h2 не найден, просто показываем content
+                result += currentPageContent;
+            }
+        } else {
+            result += pages[activePage - 1].content;
         }
-        
-        result += pages[activePage - 1].content;
         result += `</div>`;
         
         // Добавляем навигацию по страницам
@@ -872,11 +928,507 @@
     }
     
     /**
+     * Генерирует ID для заголовка (та же логика, что в TableOfContents)
+     */
+    function generateHeadingId(text, index) {
+        // Удаляем номера разделов в начале (например, "1.2. ")
+        let cleanText = text.replace(/^\d+\.?\s*/, '');
+        
+        let id = cleanText
+            .toLowerCase()
+            // Удаляем спецсимволы, оставляем буквы, цифры, пробелы и дефисы
+            .replace(/[^а-яa-z0-9\s-]/g, '')
+            // Заменяем пробелы на дефисы
+            .replace(/\s+/g, '-')
+            // Убираем повторяющиеся дефисы
+            .replace(/-+/g, '-')
+            // Убираем дефисы в начале и конце
+            .replace(/^-|-$/g, '');
+        
+        // Если ID пустой, используем индекс
+        if (!id) {
+            id = `section-${index}`;
+        }
+        
+        return id;
+    }
+    
+    /**
+     * Добавляет ID ко всем заголовкам для якорей
+     */
+    function addIdsToHeadings() {
+        const articleBody = document.getElementById('article-body');
+        if (!articleBody) return;
+        
+        const headings = articleBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        let index = 0;
+        
+        headings.forEach(heading => {
+            // Если ID уже есть, не меняем его
+            if (heading.id) return;
+            
+            const text = heading.textContent.trim();
+            const id = generateHeadingId(text, index);
+            heading.id = id;
+            index++;
+        });
+    }
+    
+    /**
+     * Инициализирует клики по ссылкам содержания
+     */
+    function initTocLinks(container) {
+        if (!container) {
+            console.warn('initTocLinks: container is null');
+            return;
+        }
+        
+        // Удаляем старые обработчики, если они есть (чтобы избежать дублирования)
+        const newContainer = container.cloneNode(true);
+        container.parentNode.replaceChild(newContainer, container);
+        
+        // Обрабатываем все ссылки с якорями (для ручного и автоматического содержания)
+        // Используем делегирование событий для обработки динамически добавленных ссылок
+        newContainer.addEventListener('click', (e) => {
+            const link = e.target.closest('a[href^="#"], a[data-toc-target]');
+            if (!link) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Определяем targetId из href или data-toc-target
+            let targetId = link.getAttribute('data-toc-target');
+            if (!targetId) {
+                const href = link.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    targetId = href.substring(1);
+                }
+            }
+            
+            if (targetId) {
+                console.log('TOC link clicked, targetId:', targetId);
+                scrollToHeading(targetId);
+            } else {
+                console.warn('TOC link clicked but targetId is empty', link);
+            }
+        });
+        
+        // Также обрабатываем прямые клики по ссылкам (на случай, если делегирование не сработает)
+        const links = newContainer.querySelectorAll('a[href^="#"], a[data-toc-target]');
+        links.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                let targetId = link.getAttribute('data-toc-target');
+                if (!targetId) {
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        targetId = href.substring(1);
+                    }
+                }
+                
+                if (targetId) {
+                    console.log('TOC link direct click, targetId:', targetId);
+                    scrollToHeading(targetId);
+                }
+            });
+        });
+        
+        console.log(`initTocLinks: initialized for container, found ${links.length} links`);
+    }
+    
+    /**
+     * Плавная прокрутка к заголовку по ID
+     */
+    function scrollToHeading(targetId) {
+        if (!targetId) {
+            console.warn('scrollToHeading: targetId is empty');
+            return;
+        }
+        
+        // Ищем элемент по ID во всем документе
+        let targetElement = document.getElementById(targetId);
+        
+        // Если не нашли, возможно элемент на другой странице (при пагинации)
+        // Проверяем все страницы
+        if (!targetElement) {
+            const allPages = document.querySelectorAll('.article-page');
+            for (const page of allPages) {
+                targetElement = page.querySelector(`#${targetId}`);
+                if (targetElement) {
+                    // Если элемент на другой странице, нужно перейти на эту страницу
+                    const pageNum = page.getAttribute('data-page');
+                    if (pageNum) {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const articleId = urlParams.get('id');
+                        const currentPage = parseInt(urlParams.get('page')) || 1;
+                        
+                        if (parseInt(pageNum) !== currentPage) {
+                            // Переходим на нужную страницу
+                            const url = `/article?id=${encodeURIComponent(articleId)}&page=${pageNum}#${targetId}`;
+                            if (window.router) {
+                                window.router.navigate(url);
+                            } else {
+                                window.location.href = url;
+                            }
+                            return;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
+        if (targetElement) {
+            // Плавная прокрутка к элементу
+            const headerOffset = 100; // Отступ от верха
+            const elementPosition = targetElement.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            
+            window.scrollTo({
+                top: Math.max(0, offsetPosition),
+                behavior: 'smooth'
+            });
+            
+            // Обновляем URL без перезагрузки страницы
+            if (history.pushState) {
+                const currentUrl = window.location.href.split('#')[0];
+                history.pushState(null, null, `${currentUrl}#${targetId}`);
+            }
+        } else {
+            console.warn(`scrollToHeading: Element with id "${targetId}" not found`);
+        }
+    }
+    
+    /**
+     * Обновляет активную ссылку в содержании
+     */
+    function updateActiveTocLink(activeId) {
+        if (!activeId) return;
+        
+        // Убираем активный класс у всех ссылок в содержании
+        const embeddedToc = document.querySelector('.article-toc-embedded');
+        
+        if (embeddedToc) {
+            embeddedToc.querySelectorAll('a[href^="#"], a[data-toc-target]').forEach(link => {
+                link.classList.remove('active');
+            });
+        }
+        
+        // Добавляем активный класс к текущей ссылке (проверяем и href, и data-toc-target)
+        const activeLinkByHref = document.querySelector(`.article-toc-embedded a[href="#${activeId}"]`);
+        const activeLinkByData = document.querySelector(`.article-toc-embedded a[data-toc-target="${activeId}"]`);
+        const activeLink = activeLinkByHref || activeLinkByData;
+        
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+    
+    /**
+     * Инициализирует отслеживание активного раздела при скролле
+     */
+    function initTocScrollTracking() {
+        const articleBody = document.getElementById('article-body');
+        if (!articleBody) return;
+        
+        const headings = articleBody.querySelectorAll('h1, h2, h3, h4, h5, h6');
+        
+        if (headings.length === 0) return;
+        
+        // Создаем массив заголовков с их позициями
+        const headingsArray = Array.from(headings).map(heading => ({
+            id: heading.id,
+            element: heading
+        })).filter(h => h.id); // Фильтруем только те, у которых есть ID
+        
+        if (headingsArray.length === 0) return;
+        
+        // Обработчик скролла
+        let ticking = false;
+        const scrollOffset = 100;
+        
+        const updateActive = () => {
+            const scrollPosition = window.scrollY + scrollOffset;
+            let activeHeading = null;
+            
+            // Находим текущий активный заголовок
+            for (let i = headingsArray.length - 1; i >= 0; i--) {
+                const heading = headingsArray[i];
+                if (heading.element) {
+                    const rect = heading.element.getBoundingClientRect();
+                    const elementTop = rect.top + window.pageYOffset;
+                    
+                    if (elementTop <= scrollPosition) {
+                        activeHeading = heading;
+                        break;
+                    }
+                }
+            }
+            
+            // Обновляем активную ссылку в TOC
+            if (activeHeading) {
+                updateActiveTocLink(activeHeading.id);
+            }
+        };
+        
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateActive();
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+        
+        // Начальное обновление
+        updateActive();
+    }
+    
+    /**
+     * Инициализирует интерактивность содержания (клики, прокрутка)
+     */
+    function initTocInteractivity() {
+        // Обрабатываем ссылки в embedded TOC (если есть)
+        const embeddedToc = document.querySelector('.article-toc-embedded');
+        if (embeddedToc) {
+            initTocLinks(embeddedToc);
+        }
+        
+        // Инициализируем отслеживание активного раздела
+        initTocScrollTracking();
+    }
+    
+    /**
      * Инициализирует пагинацию
      */
     function initPagination() {
         // Прокрутка вверх при смене страницы
         window.scrollTo(0, 0);
     }
+    
+    /**
+     * Получает информацию о пагинации статьи
+     */
+    function getPaginationInfo() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const articleId = urlParams.get('id');
+        const currentPage = parseInt(urlParams.get('page')) || 1;
+        
+        // Находим элементы пагинации
+        const pagination = document.querySelector('.article-pagination');
+        if (!pagination) {
+            return { articleId: articleId, currentPage: currentPage, totalPages: 1, hasPagination: false };
+        }
+        
+        // Подсчитываем общее количество страниц из номеров страниц
+        const pageNumbers = pagination.querySelectorAll('.pagination-number');
+        let totalPages = 1;
+        
+        if (pageNumbers.length > 0) {
+            // Находим максимальный номер страницы
+            pageNumbers.forEach(num => {
+                const pageNum = parseInt(num.textContent.trim());
+                if (!isNaN(pageNum) && pageNum > totalPages) {
+                    totalPages = pageNum;
+                }
+            });
+        } else {
+            // Если номеров страниц нет, проверяем наличие кнопок навигации
+            const hasPrev = pagination.querySelector('.pagination-prev:not(.pagination-disabled)');
+            const hasNext = pagination.querySelector('.pagination-next:not(.pagination-disabled)');
+            
+            // Если есть хотя бы одна активная кнопка, значит есть пагинация
+            if (hasPrev || hasNext) {
+                // Пытаемся определить количество страниц из структуры
+                // Если есть кнопка "Следующая" и мы не на последней странице, значит есть еще страницы
+                if (hasNext) {
+                    totalPages = currentPage + 1; // Минимум следующая страница существует
+                } else if (hasPrev) {
+                    totalPages = currentPage; // Текущая страница - последняя
+                }
+            } else {
+                // Нет пагинации
+                return { articleId: articleId, currentPage: currentPage, totalPages: 1, hasPagination: false };
+            }
+        }
+        
+        return {
+            articleId: articleId,
+            currentPage: currentPage,
+            totalPages: totalPages,
+            hasPagination: totalPages > 1
+        };
+    }
+    
+    /**
+     * Переход на предыдущую страницу
+     */
+    function navigateToPrevPage() {
+        const pagination = getPaginationInfo();
+        if (!pagination.hasPagination || pagination.currentPage <= 1) {
+            return;
+        }
+        
+        const prevPage = pagination.currentPage - 1;
+        const url = `/article?id=${encodeURIComponent(pagination.articleId)}&page=${prevPage}`;
+        
+        if (window.router) {
+            window.router.navigate(url);
+        } else {
+            window.location.href = url;
+        }
+    }
+    
+    /**
+     * Переход на следующую страницу
+     */
+    function navigateToNextPage() {
+        const pagination = getPaginationInfo();
+        if (!pagination.hasPagination || pagination.currentPage >= pagination.totalPages) {
+            return;
+        }
+        
+        const nextPage = pagination.currentPage + 1;
+        const url = `/article?id=${encodeURIComponent(pagination.articleId)}&page=${nextPage}`;
+        
+        if (window.router) {
+            window.router.navigate(url);
+        } else {
+            window.location.href = url;
+        }
+    }
+    
+    /**
+     * Обновляет состояние кнопок навигации по страницам
+     */
+    function updatePageNavigationButtons() {
+        const prevBtn = document.getElementById('scroll-to-prev');
+        const nextBtn = document.getElementById('scroll-to-next');
+        
+        if (!prevBtn || !nextBtn) return;
+        
+        const pagination = getPaginationInfo();
+        
+        if (!pagination.hasPagination) {
+            // Если пагинации нет, скрываем кнопки
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            return;
+        }
+        
+        // Показываем кнопки
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+        
+        // Обновляем состояние кнопок
+        if (pagination.currentPage <= 1) {
+            prevBtn.disabled = true;
+            prevBtn.classList.add('disabled');
+        } else {
+            prevBtn.disabled = false;
+            prevBtn.classList.remove('disabled');
+        }
+        
+        if (pagination.currentPage >= pagination.totalPages) {
+            nextBtn.disabled = true;
+            nextBtn.classList.add('disabled');
+        } else {
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('disabled');
+        }
+    }
+    
+    /**
+     * Инициализирует плавающие кнопки прокрутки
+     */
+    function initScrollButtons() {
+        const scrollButtons = document.getElementById('article-scroll-buttons');
+        const scrollToTopBtn = document.getElementById('scroll-to-top');
+        const scrollToBottomBtn = document.getElementById('scroll-to-bottom');
+        const scrollToPrevBtn = document.getElementById('scroll-to-prev');
+        const scrollToNextBtn = document.getElementById('scroll-to-next');
+        
+        if (!scrollButtons || !scrollToTopBtn || !scrollToBottomBtn) {
+            return;
+        }
+        
+        // Функция для показа/скрытия кнопок
+        function toggleButtons() {
+            const scrollY = window.scrollY || window.pageYOffset;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            
+            // Показываем кнопки, если прокрутка больше 100px или документ длиннее экрана
+            if (scrollY > 100 || documentHeight > windowHeight) {
+                scrollButtons.classList.add('visible');
+            } else {
+                scrollButtons.classList.remove('visible');
+            }
+        }
+        
+        // Прокрутка наверх
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Прокрутка вниз
+        scrollToBottomBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Навигация по страницам (влево/вправо)
+        if (scrollToPrevBtn) {
+            scrollToPrevBtn.addEventListener('click', () => {
+                navigateToPrevPage();
+            });
+        }
+        
+        if (scrollToNextBtn) {
+            scrollToNextBtn.addEventListener('click', () => {
+                navigateToNextPage();
+            });
+        }
+        
+        // Обновляем состояние кнопок навигации по страницам
+        updatePageNavigationButtons();
+        
+        // Отслеживание прокрутки
+        window.addEventListener('scroll', toggleButtons);
+        
+        // Проверка при загрузке
+        toggleButtons();
+        
+        // Проверка при изменении размера окна
+        window.addEventListener('resize', toggleButtons);
+        
+        // Обновляем состояние кнопок навигации при изменении URL (для SPA)
+        if (window.router) {
+            // Используем MutationObserver для отслеживания изменений в DOM пагинации
+            const paginationObserver = new MutationObserver(() => {
+                updatePageNavigationButtons();
+            });
+            
+            const paginationContainer = document.querySelector('.article-pagination');
+            if (paginationContainer) {
+                paginationObserver.observe(paginationContainer, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }
+    }
+    
+    // Инициализируем кнопки прокрутки после загрузки статьи
+    initScrollButtons();
+    
 })();
 </script>

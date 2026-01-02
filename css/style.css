@@ -1007,6 +1007,11 @@ ul.features-list li::before {
     position: relative;
 }
 
+/* Скрываем sidebar на страницах после первой */
+.article-toc-sidebar[style*="display: none"] {
+    display: none !important;
+}
+
 .toc-sticky {
     position: sticky;
     top: 100px;
@@ -1047,6 +1052,22 @@ ul.features-list li::before {
 .article-toc-embedded .toc-list {
     max-height: none;
     overflow: visible;
+}
+
+/* Заголовок раздела на страницах после первой */
+.article-section-header {
+    padding: 1.5rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.article-section-header .article-section-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--primary-color);
+    padding: 0;
+    border: none;
 }
 
 /* TOC title для TOC сверху */
@@ -1155,7 +1176,9 @@ ul.features-list li::before {
     border-left-color: var(--primary-color);
 }
 
-.toc-link.active {
+.toc-link.active,
+#article-toc a[href^="#"].active,
+.article-toc-embedded a[href^="#"].active {
     background: var(--bg-tertiary);
     color: var(--primary-color);
     border-left-color: var(--primary-color);
@@ -1959,18 +1982,24 @@ ul.features-list li::before {
     transform: translateY(0);
 }
 
+.scroll-btn.disabled,
+.scroll-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.scroll-btn.disabled:hover,
+.scroll-btn:disabled:hover {
+    background: var(--primary-color);
+    transform: none;
+    box-shadow: var(--shadow-lg);
+}
+
 .scroll-btn svg {
     width: 24px;
     height: 24px;
     stroke: currentColor;
-}
-
-.scroll-btn-top {
-    /* Кнопка наверх */
-}
-
-.scroll-btn-bottom {
-    /* Кнопка вниз */
 }
 
 /* Responsive Design */
@@ -2055,6 +2084,21 @@ ul.features-list li::before {
     .article-meta {
         flex-direction: column;
         gap: 0.5rem;
+    }
+    
+    .article-scroll-buttons {
+        right: 1rem;
+        bottom: 1rem;
+    }
+    
+    .scroll-btn {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .scroll-btn svg {
+        width: 20px;
+        height: 20px;
     }
     
     /* Таблицы на мобильных - горизонтальный скролл */
