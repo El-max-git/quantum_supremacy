@@ -64,8 +64,8 @@ class ArticleParser {
             
             // Отладочная информация
             if (window.DEBUG_ARTICLE_PARSER) {
-                // Проверяем все форматы плейсхолдеров
-                const remaining = html.match(/<!--MATH_(BLOCK|INLINE)_\d+_MATH-->|__MATH_(BLOCK|INLINE)_\d+__/g);
+                // Проверяем все форматы плейсхолдеров (ищем по data-атрибуту)
+                const remaining = html.match(/data-math-placeholder="(BLOCK|INLINE)_\d+"/g);
                 if (remaining && remaining.length > 0) {
                     console.warn(`After restoreProtectedFormulas: ${remaining.length} placeholders still remain`);
                     // Показываем первые несколько примеров
@@ -260,9 +260,24 @@ ${cleanContent}
             const formulas = [];
             let formulaIndex = 0;
             
-            // Используем HTML комментарии как плейсхолдеры - они сохраняются marked.js
+            // Используем специальные HTML теги как плейсхолдеры
+            // marked.js может удалять пустые теги или экранировать их, поэтому:
+            // 1. Используем теги с содержимым (невидимый текст)
+            // 2. Используем data-атрибуты для идентификации
+            // 3. Используем div для block формул (они должны быть на отдельной строке)
+            // 4. Используем span для inline формул
             const createPlaceholder = (type, index) => {
-                return `<!--MATH_${type}_${index}_MATH-->`;
+                // Используем невидимый символ + уникальный идентификатор
+                // Это гарантирует, что тег не будет пустым и не будет удален marked.js
+                const marker = `\u200B${type}_${index}\u200B`; // Zero-width space + идентификатор
+                if (type === 'BLOCK') {
+                    // Для block формул используем div с невидимым содержимым
+                    // div должен быть на отдельной строке для правильной обработки marked.js
+                    return `\n<div data-math-placeholder="${type}_${index}" style="display:none;">${marker}</div>\n`;
+                } else {
+                    // Для inline формул используем span с невидимым содержимым
+                    return `<span data-math-placeholder="${type}_${index}" style="display:none;">${marker}</span>`;
+                }
             };
             
             // 1. Защищаем block формулы $$...$$ (сначала, чтобы не перехватить их как inline)
@@ -353,8 +368,6 @@ ${cleanContent}
                         return;
                     }
                     
-                    const placeholder = `<!--MATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}_MATH-->`;
-                    
                     // Восстанавливаем формулу, оборачивая в правильные теги для MathJax
                     // Для block формул используем отдельный параграф или div
                     let replacement;
@@ -366,23 +379,70 @@ ${cleanContent}
                         replacement = `$${formulaObj.formula}$`;
                     }
                     
+                    // Ищем плейсхолдер в HTML
+                    // Паттерн: <div/span data-math-placeholder="TYPE_INDEX" ...>MARKER</div/span>
+                    const placeholderType = formulaObj.type === 'block' ? 'BLOCK' : 'INLINE';
+                    const tagName = formulaObj.type === 'block' ? 'div' : 'span';
+                    const marker = `\u200B${placeholderType}_${index}\u200B`;
+                    
+                    // Экранируем marker для regex (zero-width spaces и подчеркивания)
+                    const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    
+                    // Более гибкий regex, который учитывает:
+                    // - Возможные пробелы и атрибуты в открывающем теге
+                    // - Возможные пробелы и переносы строк внутри тега
+                    // - Многострочный режим для block формул
+                    const placeholderRegex = new RegExp(
+                        `<${tagName}\\s+data-math-placeholder="${placeholderType}_${index}"[^>]*>[\\s\\S]*?${escapedMarker}[\\s\\S]*?</${tagName}>`,
+                        'g'
+                    );
+                    
                     // Проверяем наличие плейсхолдера в HTML
-                    if (!html.includes(placeholder)) {
-                        console.warn(`⚠️ Плейсхолдер формулы ${index} не найден в HTML!`);
-                        console.warn(`  Placeholder: ${placeholder}`);
-                        console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
-                        console.warn(`  HTML snippet: ${html.substring(0, 200)}`);
+                    const matches = html.match(placeholderRegex);
+                    if (!matches || matches.length === 0) {
+                        // Пробуем альтернативный поиск - может быть, тег был экранирован или изменен
+                        const altPattern = new RegExp(
+                            `data-math-placeholder="${placeholderType}_${index}"`,
+                            'g'
+                        );
+                        const altMatches = html.match(altPattern);
+                        
+                        if (altMatches && altMatches.length > 0) {
+                            // Плейсхолдер найден, но структура тега изменилась
+                            console.warn(`⚠️ Плейсхолдер формулы ${index} найден, но структура тега изменена!`);
+                            console.warn(`  Pattern: data-math-placeholder="${placeholderType}_${index}"`);
+                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            // Пробуем найти контекст вокруг плейсхолдера
+                            const contextIndex = html.indexOf(altMatches[0]);
+                            if (contextIndex > 0) {
+                                const context = html.substring(
+                                    Math.max(0, contextIndex - 100),
+                                    Math.min(html.length, contextIndex + 200)
+                                );
+                                console.warn(`  Context: ${context}`);
+                            }
+                        } else {
+                            // Плейсхолдер полностью отсутствует
+                            console.warn(`⚠️ Плейсхолдер формулы ${index} НЕ НАЙДЕН в HTML!`);
+                            console.warn(`  Pattern: data-math-placeholder="${placeholderType}_${index}"`);
+                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            // Пробуем найти похожие плейсхолдеры для отладки
+                            const similarPlaceholders = html.match(/data-math-placeholder="[^"]*"/g);
+                            if (similarPlaceholders) {
+                                console.warn(`  Found similar placeholders: ${similarPlaceholders.slice(0, 5).join(', ')}`);
+                            } else {
+                                console.error(`  ❌ НИ ОДИН плейсхолдер не найден в HTML!`);
+                                console.error(`  Это означает, что marked.js удалил ВСЕ плейсхолдеры!`);
+                            }
+                        }
                     }
                     
-                    // Простая замена плейсхолдера на формулу
-                    // HTML комментарии нужно экранировать для regex
+                    // Заменяем плейсхолдер на формулу
                     try {
-                        // Экранируем специальные символы для regex
-                        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
-                        const regex = new RegExp(escapedPlaceholder, 'g');
-                        const beforeCount = (html.match(new RegExp(escapedPlaceholder, 'g')) || []).length;
-                        html = html.replace(regex, replacement);
-                        const afterCount = (html.match(new RegExp(escapedPlaceholder, 'g')) || []).length;
+                        const beforeCount = matches ? matches.length : 0;
+                        html = html.replace(placeholderRegex, replacement);
+                        const afterMatches = html.match(placeholderRegex);
+                        const afterCount = afterMatches ? afterMatches.length : 0;
                         
                         if (window.DEBUG_ARTICLE_PARSER || index < 3) {
                             console.log(`[restoreProtectedFormulas] Restored formula ${index} (${formulaObj.type}): ${beforeCount} -> ${afterCount} replacements`);
@@ -716,12 +776,16 @@ ${cleanContent}
         }
 
         // Настройка marked
+        // ВАЖНО: marked.js по умолчанию может экранировать или удалять HTML теги
+        // Используем настройки, которые сохраняют HTML
         marked.setOptions({
             breaks: true,
             gfm: true,
             headerIds: true,
             mangle: false,
-            sanitize: false
+            sanitize: false, // НЕ экранируем HTML
+            pedantic: false,
+            silent: false
         });
 
         // Кастомный рендерер для заголовков с ID
@@ -741,10 +805,48 @@ ${cleanContent}
             }
             return `<pre><code class="language-${language}">${this.escapeHtml(code)}</code></pre>`;
         };
+        
+        // Кастомный рендерер для параграфов - сохраняем HTML теги внутри
+        const originalParagraph = renderer.paragraph;
+        renderer.paragraph = (text) => {
+            // Проверяем, содержит ли параграф наши плейсхолдеры
+            // Если да, не оборачиваем в <p>, чтобы не нарушить структуру
+            if (text.includes('data-math-placeholder')) {
+                // Возвращаем как есть, без обертки в <p>
+                // Это важно для block формул, которые должны быть на отдельной строке
+                return text + '\n';
+            }
+            return originalParagraph ? originalParagraph(text) : `<p>${text}</p>\n`;
+        };
 
         marked.use({ renderer });
 
-        return marked.parse(markdownText);
+        // Парсим markdown
+        // marked.js должен сохранить HTML теги благодаря sanitize: false
+        const html = marked.parse(markdownText);
+        
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: проверяем, сохранились ли плейсхолдеры
+        const placeholderCount = (html.match(/data-math-placeholder="[^"]*"/g) || []).length;
+        const expectedCount = (markdownText.match(/data-math-placeholder="[^"]*"/g) || []).length;
+        
+        if (placeholderCount < expectedCount) {
+            console.error(`❌ КРИТИЧЕСКАЯ ПРОБЛЕМА: marked.js удалил ${expectedCount - placeholderCount} плейсхолдеров!`);
+            console.error(`  Было: ${expectedCount}, Стало: ${placeholderCount}`);
+            console.error(`  Это означает, что marked.js экранирует или удаляет HTML теги`);
+            console.error(`  Решение: нужно использовать другой метод защиты формул`);
+            
+            // Показываем примеры удаленных плейсхолдеров
+            const beforePlaceholders = markdownText.match(/data-math-placeholder="[^"]*"/g) || [];
+            const afterPlaceholders = html.match(/data-math-placeholder="[^"]*"/g) || [];
+            const missing = beforePlaceholders.filter(p => !afterPlaceholders.includes(p));
+            if (missing.length > 0) {
+                console.error(`  Примеры удаленных плейсхолдеров:`, missing.slice(0, 5));
+            }
+        } else if (window.DEBUG_ARTICLE_PARSER) {
+            console.log(`✓ Все плейсхолдеры сохранены: ${placeholderCount}/${expectedCount}`);
+        }
+        
+        return html;
     }
 
     /**
