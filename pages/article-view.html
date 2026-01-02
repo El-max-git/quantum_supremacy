@@ -312,26 +312,42 @@
         // Пятый вариант - для GitHub Pages: через raw.githubusercontent.com (fallback)
         // Если обычные пути не работают, пробуем загрузить напрямую из репозитория
         // Это работает, даже если файл не развернут на GitHub Pages
+        console.log('[ArticleView] Checking for GitHub Pages Raw URL fallback...');
+        console.log('[ArticleView] hostname:', hostname, 'includes github.io:', hostname.includes('github.io'));
+        
         if (hostname.includes('github.io')) {
+            console.log('[ArticleView] GitHub Pages detected, trying to add Raw URL fallbacks');
             // Пытаемся определить имя пользователя из hostname
             // el-max-git.github.io -> username = el-max-git
             const repoMatch = hostname.match(/^([^.]+)\.github\.io$/);
+            console.log('[ArticleView] repoMatch result:', repoMatch);
+            
             if (repoMatch) {
                 const username = repoMatch[1];
+                console.log('[ArticleView] Extracted username from hostname:', username);
                 // Используем путь из mdFile напрямую
                 // Пробуем разные ветки: main (обычно основная), master, gh-pages
                 const branches = ['main', 'master', 'gh-pages'];
+                let addedCount = 0;
                 for (const branch of branches) {
                     const rawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/${branch}/${mdFile}`;
+                    console.log('[ArticleView] Generated Raw URL for branch', branch, ':', rawUrl);
                     if (!possibleUrls.includes(rawUrl)) {
                         possibleUrls.push(rawUrl);
+                        addedCount++;
+                        console.log('[ArticleView] ✓ Added Raw URL to possibleUrls');
+                    } else {
+                        console.log('[ArticleView] ✗ Raw URL already in possibleUrls');
                     }
                 }
-                console.log('[ArticleView] Added GitHub Raw URL fallbacks for branches:', branches);
+                console.log('[ArticleView] Added', addedCount, 'GitHub Raw URL fallbacks for branches:', branches);
                 console.log('[ArticleView] Username detected from hostname:', username);
             } else {
                 console.warn('[ArticleView] Could not extract username from hostname:', hostname);
+                console.warn('[ArticleView] Hostname pattern does not match expected format: username.github.io');
             }
+        } else {
+            console.log('[ArticleView] Not GitHub Pages, skipping Raw URL fallbacks');
         }
         
         console.log('[ArticleView] Possible URLs to try:', possibleUrls);
