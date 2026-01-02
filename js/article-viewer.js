@@ -569,8 +569,15 @@ class ArticleViewer {
             const { html, metadata } = await this.parser.parse(mdText, article.path || article.mdFile);
             console.log(`[ArticleViewer] Article parsed, metadata.id=${metadata?.id}`);
             
+            // Проверяем формулы в HTML после парсинга (до вставки в DOM)
+            const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
+            const inlineFormulaPattern = /\$[^$\n]+?\$/g;
+            const blockFormulasInHtml = (html.match(blockFormulaPattern) || []).length;
+            const inlineFormulasInHtml = (html.match(inlineFormulaPattern) || []).length;
+            console.log(`[ArticleViewer] Formulas in parsed HTML: ${blockFormulasInHtml} block, ${inlineFormulasInHtml} inline`);
+            
             // Рендерим статью
-            this.renderArticleView(article, metadata, html);
+            this.renderArticleView(article, metadata, html, { blockFormulasInHtml, inlineFormulasInHtml });
             
             // Обновляем URL (без перезагрузки страницы)
             const newUrl = `${window.location.pathname}?id=${articleId}`;
@@ -587,8 +594,12 @@ class ArticleViewer {
 
     /**
      * Рендер просмотра статьи
+     * @param {Object} article - Объект статьи
+     * @param {Object} metadata - Метаданные статьи
+     * @param {string} html - HTML содержимое статьи
+     * @param {Object} formulaStats - Статистика формул (опционально)
      */
-    renderArticleView(article, metadata, html) {
+    renderArticleView(article, metadata, html, formulaStats = {}) {
         const viewer = document.getElementById(this.config.viewerContainerId);
         
         if (!viewer) return;
@@ -640,6 +651,33 @@ class ArticleViewer {
                 </article>
             </div>
         `;
+        
+        // Проверяем формулы в DOM после вставки
+        const articleBody = document.getElementById('article-body');
+        if (articleBody && formulaStats.blockFormulasInHtml !== undefined) {
+            const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
+            const inlineFormulaPattern = /\$[^$\n]+?\$/g;
+            const blockFormulasInDOM = (articleBody.innerHTML.match(blockFormulaPattern) || []).length;
+            const inlineFormulasInDOM = (articleBody.innerHTML.match(inlineFormulaPattern) || []).length;
+            
+            if (formulaStats.blockFormulasInHtml > 0 && blockFormulasInDOM === 0) {
+                console.warn(`⚠️ [ArticleViewer] Block formulas lost after DOM insertion!`);
+                console.warn(`  Before: ${formulaStats.blockFormulasInHtml} block formulas`);
+                console.warn(`  After: ${blockFormulasInDOM} block formulas`);
+                console.warn(`  This may indicate that block formulas are wrapped in HTML tags`);
+                
+                // Пытаемся найти block формулы в тегах
+                const blockFormulasInTags = (articleBody.innerHTML.match(/<[^>]+>\s*\$\$[\s\S]*?\$\$\s*<\/[^>]+>/g) || []).length;
+                if (blockFormulasInTags > 0) {
+                    console.warn(`  Found ${blockFormulasInTags} block formulas wrapped in HTML tags - extracting...`);
+                    // Извлекаем block формулы из тегов
+                    articleBody.innerHTML = articleBody.innerHTML.replace(/<[^>]+>\s*(\$\$[\s\S]*?\$\$)\s*<\/[^>]+>/g, '\n\n$1\n\n');
+                    console.log(`  ✓ Extracted block formulas from HTML tags`);
+                }
+            } else if (formulaStats.blockFormulasInHtml !== blockFormulasInDOM) {
+                console.warn(`⚠️ [ArticleViewer] Block formula count mismatch: ${formulaStats.blockFormulasInHtml} -> ${blockFormulasInDOM}`);
+            }
+        }
         
         // Генерируем содержание
         this.generateTOC();
@@ -879,24 +917,45 @@ class ArticleViewer {
             console.log(`Found ${renderedCount} rendered MathJax elements`);
             
             // Подсчитываем количество формул в HTML для сравнения
+            // Важно: используем правильный паттерн, исключая уже отрендеренные формулы
             const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
             const inlineFormulaPattern = /\$[^$\n]+?\$/g;
-            const blockFormulas = (element.innerHTML.match(blockFormulaPattern) || []).length;
-            const inlineFormulas = (element.innerHTML.match(inlineFormulaPattern) || []).length;
+            
+            // Ищем формулы в HTML (но не в уже отрендеренных MathJax элементах)
+            let htmlContent = element.innerHTML;
+            
+            // Убираем уже отрендеренные формулы из поиска
+            const renderedMathElements = element.querySelectorAll('.MathJax, .mjx-chtml, [data-mjx], mjx-container');
+            renderedMathElements.forEach(el => {
+                // Заменяем содержимое отрендеренных элементов на плейсхолдер
+                const placeholder = `__MATHJAX_RENDERED_${Math.random().toString(36).substr(2, 9)}__`;
+                el.outerHTML = placeholder;
+            });
+            
+            // Теперь ищем оставшиеся формулы
+            const blockFormulas = (htmlContent.match(blockFormulaPattern) || []).length;
+            // Для inline формул убираем block формулы из поиска
+            const htmlWithoutBlock = htmlContent.replace(/\$\$[\s\S]*?\$\$/g, '');
+            const inlineFormulas = (htmlWithoutBlock.match(inlineFormulaPattern) || []).length;
             const totalFormulas = blockFormulas + inlineFormulas;
             
             // Сравниваем количество найденных и отрендеренных формул
+            // MathJax может объединять несколько формул в один элемент, поэтому
+            // количество отрендеренных элементов может быть меньше количества формул
             if (renderedCount < totalFormulas && totalFormulas > 0) {
                 const missing = totalFormulas - renderedCount;
-                console.warn(`⚠️ [renderMathJax] ${missing} formulas were not rendered (${renderedCount}/${totalFormulas})`);
+                console.warn(`⚠️ [renderMathJax] ${missing} formulas were not rendered (${renderedCount} elements/${totalFormulas} formulas)`);
+                console.warn(`  Block: ${blockFormulas}, Inline: ${inlineFormulas}`);
                 
                 // Проверяем, нет ли поврежденных формул
-                const escapedDollars = (element.innerHTML.match(/&#36;|&amp;#36;/g) || []).length;
+                const escapedDollars = (htmlContent.match(/&#36;|&amp;#36;/g) || []).length;
                 if (escapedDollars > 0) {
                     console.warn(`  Found ${escapedDollars} escaped dollar signs - formulas may be damaged`);
                 }
-            } else if (renderedCount >= totalFormulas && totalFormulas > 0) {
-                console.log(`✓ All ${totalFormulas} formulas rendered successfully`);
+            } else if (renderedCount > 0) {
+                // MathJax может объединять формулы, поэтому сравниваем с найденными формулами
+                const successRate = totalFormulas > 0 ? Math.round((renderedCount / totalFormulas) * 100) : 100;
+                console.log(`✓ MathJax rendered ${renderedCount} elements from ${totalFormulas} formulas (${successRate}% success rate)`);
             }
             
         } catch (err) {
