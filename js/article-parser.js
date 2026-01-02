@@ -251,7 +251,8 @@ ${cleanContent}
 
     /**
      * Упрощенный механизм обработки формул: защита и восстановление
-     * Вся логика в одном месте, без сложных проверок и fallback механизмов
+     * Используем Unicode маркеры из Private Use Area (U+E000-U+F8FF)
+     * Эти символы не используются в обычном тексте и не будут удалены marked.js
      * @param {string} text - Markdown текст
      * @returns {{protectedText: string, formulas: Array}} - Защищенный текст и массив формул
      */
@@ -260,24 +261,17 @@ ${cleanContent}
             const formulas = [];
             let formulaIndex = 0;
             
-            // Используем специальные HTML теги как плейсхолдеры
-            // marked.js может удалять пустые теги или экранировать их, поэтому:
-            // 1. Используем теги с содержимым (невидимый текст)
-            // 2. Используем data-атрибуты для идентификации
-            // 3. Используем div для block формул (они должны быть на отдельной строке)
-            // 4. Используем span для inline формул
+            // Используем Unicode маркеры из Private Use Area
+            // U+E000-U+F8FF - это диапазон, зарезервированный для частного использования
+            // Эти символы точно не будут удалены marked.js, так как они являются обычными символами
+            // Формат маркера: \uE000 + тип (B/I) + индекс (3 цифры) + \uE001
+            // Например: \uE000B000\uE001 для block формулы #0
             const createPlaceholder = (type, index) => {
-                // Используем невидимый символ + уникальный идентификатор
-                // Это гарантирует, что тег не будет пустым и не будет удален marked.js
-                const marker = `\u200B${type}_${index}\u200B`; // Zero-width space + идентификатор
-                if (type === 'BLOCK') {
-                    // Для block формул используем div с невидимым содержимым
-                    // div должен быть на отдельной строке для правильной обработки marked.js
-                    return `\n<div data-math-placeholder="${type}_${index}" style="display:none;">${marker}</div>\n`;
-                } else {
-                    // Для inline формул используем span с невидимым содержимым
-                    return `<span data-math-placeholder="${type}_${index}" style="display:none;">${marker}</span>`;
-                }
+                const typeChar = type === 'BLOCK' ? 'B' : 'I';
+                // Индекс в формате 3 цифры (000-999)
+                const indexStr = String(index).padStart(3, '0');
+                // Маркер: начало (U+E000) + тип + индекс + конец (U+E001)
+                return `\uE000${typeChar}${indexStr}\uE001`;
             };
             
             // 1. Защищаем block формулы $$...$$ (сначала, чтобы не перехватить их как inline)
@@ -359,14 +353,21 @@ ${cleanContent}
                 return html || '';
             }
             
-            // Простая замена: находим плейсхолдер и заменяем на формулу
-            formulas.forEach((formulaObj, index) => {
+            // Простая замена: находим Unicode маркер и заменяем на формулу
+            // Используем обычный цикл вместо forEach для большей гибкости
+            for (let index = 0; index < formulas.length; index++) {
+                const formulaObj = formulas[index];
                 try {
                     if (!formulaObj || !formulaObj.type || !formulaObj.formula) {
                         console.error(`❌ Ошибка в restoreProtectedFormulas: некорректный объект формулы (index ${index})`);
                         console.error('  FormulaObj:', formulaObj);
-                        return;
+                        continue;
                     }
+                    
+                    // Создаем маркер точно так же, как в protectFormulas
+                    const typeChar = formulaObj.type === 'block' ? 'B' : 'I';
+                    const indexStr = String(index).padStart(3, '0');
+                    const marker = `\uE000${typeChar}${indexStr}\uE001`;
                     
                     // Восстанавливаем формулу, оборачивая в правильные теги для MathJax
                     // Для block формул используем отдельный параграф или div
@@ -379,69 +380,35 @@ ${cleanContent}
                         replacement = `$${formulaObj.formula}$`;
                     }
                     
-                    // Ищем плейсхолдер в HTML
-                    // Паттерн: <div/span data-math-placeholder="TYPE_INDEX" ...>MARKER</div/span>
-                    const placeholderType = formulaObj.type === 'block' ? 'BLOCK' : 'INLINE';
-                    const tagName = formulaObj.type === 'block' ? 'div' : 'span';
-                    const marker = `\u200B${placeholderType}_${index}\u200B`;
-                    
-                    // Экранируем marker для regex (zero-width spaces и подчеркивания)
-                    const escapedMarker = marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    
-                    // Более гибкий regex, который учитывает:
-                    // - Возможные пробелы и атрибуты в открывающем теге
-                    // - Возможные пробелы и переносы строк внутри тега
-                    // - Многострочный режим для block формул
-                    const placeholderRegex = new RegExp(
-                        `<${tagName}\\s+data-math-placeholder="${placeholderType}_${index}"[^>]*>[\\s\\S]*?${escapedMarker}[\\s\\S]*?</${tagName}>`,
+                    // Ищем маркер в HTML (экранируем специальные символы Unicode для regex)
+                    // Маркер: \uE000 + тип + индекс + \uE001
+                    const markerRegex = new RegExp(
+                        `\uE000${typeChar}${indexStr}\uE001`,
                         'g'
                     );
                     
-                    // Проверяем наличие плейсхолдера в HTML
-                    const matches = html.match(placeholderRegex);
+                    // Проверяем наличие маркера в HTML
+                    const matches = html.match(markerRegex);
                     if (!matches || matches.length === 0) {
-                        // Пробуем альтернативный поиск - может быть, тег был экранирован или изменен
-                        const altPattern = new RegExp(
-                            `data-math-placeholder="${placeholderType}_${index}"`,
-                            'g'
-                        );
-                        const altMatches = html.match(altPattern);
-                        
-                        if (altMatches && altMatches.length > 0) {
-                            // Плейсхолдер найден, но структура тега изменилась
-                            console.warn(`⚠️ Плейсхолдер формулы ${index} найден, но структура тега изменена!`);
-                            console.warn(`  Pattern: data-math-placeholder="${placeholderType}_${index}"`);
-                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
-                            // Пробуем найти контекст вокруг плейсхолдера
-                            const contextIndex = html.indexOf(altMatches[0]);
-                            if (contextIndex > 0) {
-                                const context = html.substring(
-                                    Math.max(0, contextIndex - 100),
-                                    Math.min(html.length, contextIndex + 200)
-                                );
-                                console.warn(`  Context: ${context}`);
-                            }
+                        console.warn(`⚠️ Маркер формулы ${index} НЕ НАЙДЕН в HTML!`);
+                        console.warn(`  Type: ${formulaObj.type}, Index: ${index}`);
+                        console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                        // Пробуем найти похожие маркеры для отладки
+                        const similarMarkers = html.match(/\uE000[BI]\d{3}\uE001/g);
+                        if (similarMarkers) {
+                            console.warn(`  Found similar markers: ${similarMarkers.slice(0, 5).join(', ')}`);
                         } else {
-                            // Плейсхолдер полностью отсутствует
-                            console.warn(`⚠️ Плейсхолдер формулы ${index} НЕ НАЙДЕН в HTML!`);
-                            console.warn(`  Pattern: data-math-placeholder="${placeholderType}_${index}"`);
-                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
-                            // Пробуем найти похожие плейсхолдеры для отладки
-                            const similarPlaceholders = html.match(/data-math-placeholder="[^"]*"/g);
-                            if (similarPlaceholders) {
-                                console.warn(`  Found similar placeholders: ${similarPlaceholders.slice(0, 5).join(', ')}`);
-                            } else {
-                                console.error(`  ❌ НИ ОДИН плейсхолдер не найден в HTML!`);
-                                console.error(`  Это означает, что marked.js удалил ВСЕ плейсхолдеры!`);
-                            }
+                            console.error(`  ❌ НИ ОДИН маркер не найден в HTML!`);
+                            console.error(`  Это означает, что marked.js удалил ВСЕ маркеры!`);
                         }
+                        continue; // Переходим к следующей формуле
                     }
                     
-                    // Заменяем плейсхолдер на формулу
+                    // Заменяем маркер на формулу
                     try {
-                        const beforeCount = matches ? matches.length : 0;
-                        html = html.replace(placeholderRegex, replacement);
-                        const afterMatches = html.match(placeholderRegex);
+                        const beforeCount = matches.length;
+                        html = html.replace(markerRegex, replacement);
+                        const afterMatches = html.match(markerRegex);
                         const afterCount = afterMatches ? afterMatches.length : 0;
                         
                         if (window.DEBUG_ARTICLE_PARSER || index < 3) {
@@ -449,16 +416,16 @@ ${cleanContent}
                             console.log(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
                         }
                     } catch (regexError) {
-                        console.error(`❌ Ошибка при создании regex для формулы ${index}:`, regexError);
-                        console.error('  Placeholder:', placeholder);
-                        console.error('  Formula:', formulaObj.formula.substring(0, 100));
+                        console.error(`❌ Ошибка при замене формулы ${index}:`, regexError);
+                        console.error(`  Marker: ${marker}`);
+                        console.error(`  Formula: ${formulaObj.formula.substring(0, 100)}`);
                     }
                 } catch (error) {
                     console.error(`❌ Ошибка при восстановлении формулы ${index}:`, error);
                     console.error('  FormulaObj:', formulaObj);
                     console.error('  Error stack:', error.stack);
                 }
-            });
+            }
             
             // Исправляем формулы с тремя знаками доллара ($$$...$$$) - ошибка двойного восстановления
             try {
@@ -806,12 +773,13 @@ ${cleanContent}
             return `<pre><code class="language-${language}">${this.escapeHtml(code)}</code></pre>`;
         };
         
-        // Кастомный рендерер для параграфов - сохраняем HTML теги внутри
+        // Кастомный рендерер для параграфов - сохраняем Unicode маркеры
         const originalParagraph = renderer.paragraph;
         renderer.paragraph = (text) => {
-            // Проверяем, содержит ли параграф наши плейсхолдеры
+            // Проверяем, содержит ли параграф наши Unicode маркеры (Private Use Area)
             // Если да, не оборачиваем в <p>, чтобы не нарушить структуру
-            if (text.includes('data-math-placeholder')) {
+            // Маркеры: \uE000 (начало) и \uE001 (конец)
+            if (text.includes('\uE000')) {
                 // Возвращаем как есть, без обертки в <p>
                 // Это важно для block формул, которые должны быть на отдельной строке
                 return text + '\n';
@@ -825,25 +793,27 @@ ${cleanContent}
         // marked.js должен сохранить HTML теги благодаря sanitize: false
         const html = marked.parse(markdownText);
         
-        // КРИТИЧЕСКАЯ ПРОВЕРКА: проверяем, сохранились ли плейсхолдеры
-        const placeholderCount = (html.match(/data-math-placeholder="[^"]*"/g) || []).length;
-        const expectedCount = (markdownText.match(/data-math-placeholder="[^"]*"/g) || []).length;
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: проверяем, сохранились ли Unicode маркеры
+        // Маркеры: \uE000 (начало) + тип + индекс + \uE001 (конец)
+        const markerPattern = /\uE000[BI]\d{3}\uE001/g;
+        const markerCount = (html.match(markerPattern) || []).length;
+        const expectedCount = (markdownText.match(markerPattern) || []).length;
         
-        if (placeholderCount < expectedCount) {
-            console.error(`❌ КРИТИЧЕСКАЯ ПРОБЛЕМА: marked.js удалил ${expectedCount - placeholderCount} плейсхолдеров!`);
-            console.error(`  Было: ${expectedCount}, Стало: ${placeholderCount}`);
-            console.error(`  Это означает, что marked.js экранирует или удаляет HTML теги`);
+        if (markerCount < expectedCount) {
+            console.error(`❌ КРИТИЧЕСКАЯ ПРОБЛЕМА: marked.js удалил ${expectedCount - markerCount} маркеров!`);
+            console.error(`  Было: ${expectedCount}, Стало: ${markerCount}`);
+            console.error(`  Это означает, что marked.js удаляет Unicode маркеры из Private Use Area`);
             console.error(`  Решение: нужно использовать другой метод защиты формул`);
             
-            // Показываем примеры удаленных плейсхолдеров
-            const beforePlaceholders = markdownText.match(/data-math-placeholder="[^"]*"/g) || [];
-            const afterPlaceholders = html.match(/data-math-placeholder="[^"]*"/g) || [];
-            const missing = beforePlaceholders.filter(p => !afterPlaceholders.includes(p));
+            // Показываем примеры удаленных маркеров
+            const beforeMarkers = markdownText.match(markerPattern) || [];
+            const afterMarkers = html.match(markerPattern) || [];
+            const missing = beforeMarkers.filter(m => !afterMarkers.includes(m));
             if (missing.length > 0) {
-                console.error(`  Примеры удаленных плейсхолдеров:`, missing.slice(0, 5));
+                console.error(`  Примеры удаленных маркеров:`, missing.slice(0, 5));
             }
         } else if (window.DEBUG_ARTICLE_PARSER) {
-            console.log(`✓ Все плейсхолдеры сохранены: ${placeholderCount}/${expectedCount}`);
+            console.log(`✓ Все маркеры сохранены: ${markerCount}/${expectedCount}`);
         }
         
         return html;
