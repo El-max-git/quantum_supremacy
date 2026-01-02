@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting...</title>
+    <script>
+        // Перенаправление на главную страницу с параметром redirect для SPA роутера
+        // Это предотвращает зацикливание при перезагрузке
+        const basePath = window.location.hostname.includes('github.io')
+            ? '/quantum_supremacy'
+            : '';
+        
+        window.location.replace(
+            window.location.origin + basePath + '/?redirect=' + encodeURIComponent('articles')
+        );
+    </script>
+</head>
+<body>
+    <p>Перенаправление...</p>
+</body>
+</html>

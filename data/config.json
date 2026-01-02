@@ -43,6 +43,12 @@
       }
     },
     {
+      "path": "/article",
+      "page": "article-view.html",
+      "title": "Просмотр статьи - Quantum Supremacy",
+      "inMenu": false
+    },
+    {
       "path": "/quantum-basics",
       "page": "quantum-basics.html",
       "title": "Этап 1: Квантовая механика - Quantum Supremacy",

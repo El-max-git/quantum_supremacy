@@ -138,7 +138,9 @@ def start_server():
     # Но npm скрипт использует фиксированный порт, поэтому нужно изменить команду
     try:
         # Используем npx напрямую с нужным портом
-        subprocess.run(['npx', 'http-server', '-p', str(PORT), '-o'], check=True)
+        # -d false: отключить листинг директорий
+        # -o: открыть браузер
+        subprocess.run(['npx', 'http-server', '-p', str(PORT), '-d', 'false', '-o'], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Ошибка запуска сервера: {e}")
         sys.exit(1)

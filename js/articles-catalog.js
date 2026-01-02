@@ -272,9 +272,12 @@ class ArticlesCatalog {
      * Открытие статьи
      */
     openArticle(articleId) {
-        // TODO: Реализовать открытие статьи
-        console.log('Opening article:', articleId);
-        // Можно использовать router для навигации или показать статью в viewer
+        // Навигация на страницу просмотра статьи через роутер
+        if (window.router) {
+            window.router.navigate(`/article?id=${articleId}`);
+        } else {
+            window.location.href = `/article?id=${articleId}`;
+        }
     }
 
     /**

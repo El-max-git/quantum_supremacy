@@ -24,35 +24,61 @@
 <!-- Articles Catalog Script -->
 <script>
 (function() {
-    async function initArticlesCatalog() {
+    async function initArticlesCatalog(retries = 5) {
         try {
             if (typeof ArticlesCatalog === 'undefined') {
-                console.error('ArticlesCatalog class not loaded');
-                return;
+                if (retries > 0) {
+                    console.log('ArticlesCatalog not ready, retrying in 200ms...');
+                    setTimeout(() => initArticlesCatalog(retries - 1), 200);
+                    return;
+                }
+                throw new Error('ArticlesCatalog class not loaded. Check script order in index.html');
             }
             
+            console.log('✓ ArticlesCatalog class found');
+            
             const basePath = window.router?.basePath || '';
+            console.log('ArticlesCatalog: basePath =', basePath);
+            
             const catalog = new ArticlesCatalog({
                 basePath: basePath,
                 listContainerId: 'articles-list',
                 configPath: '/articles/articles-list.json'
             });
             
+            console.log('✓ ArticlesCatalog instance created');
+            
             await catalog.init();
+            
+            console.log('✓ ArticlesCatalog initialized successfully');
             
             // Делаем доступным глобально
             window.articlesCatalog = catalog;
             
         } catch (error) {
-            console.error('Error initializing ArticlesCatalog:', error);
+            console.error('✗ Error initializing ArticlesCatalog:', error);
+            const container = document.getElementById('articles-list');
+            if (container) {
+                container.innerHTML = `
+                    <div class="article-error">
+                        <h2>❌ Ошибка инициализации</h2>
+                        <p>${error.message}</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            Проверьте консоль браузера для деталей.
+                        </p>
+                    </div>
+                `;
+            }
         }
     }
     
     // Инициализация после загрузки DOM
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initArticlesCatalog);
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => initArticlesCatalog(), 50);
+        });
     } else {
-        initArticlesCatalog();
+        setTimeout(() => initArticlesCatalog(), 50);
     }
 })();
 </script>

@@ -1,0 +1,661 @@
+<div class="container" style="padding: 2rem 1rem;">
+    <!-- Back Button -->
+    <div style="max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+        <button class="back-to-list-btn" id="back-to-articles">
+            ← Назад к каталогу
+        </button>
+    </div>
+
+    <div class="article-wrapper">
+        <!-- Table of Contents -->
+        <aside class="article-toc-sidebar" id="article-toc-sidebar">
+            <div class="toc-sticky">
+                <h3 class="toc-title">Содержание</h3>
+                <div id="article-toc">
+                    <!-- TOC will be generated here -->
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Article Content -->
+        <article class="article-content" id="article-content">
+            <!-- Article Header -->
+            <header class="article-header">
+                <div class="article-category" id="article-category"></div>
+                <h1 class="article-title" id="article-title">Загрузка...</h1>
+                <div class="article-meta">
+                    <span class="article-author" id="article-author"></span>
+                    <span class="article-date" id="article-date"></span>
+                    <span class="article-reading-time" id="article-reading-time"></span>
+                </div>
+                <div class="article-tags" id="article-tags"></div>
+            </header>
+            
+            <!-- Article Body -->
+            <div class="article-body" id="article-body">
+                <div class="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Загрузка статьи...</p>
+                </div>
+            </div>
+        </article>
+    </div>
+</div>
+
+<!-- Article Viewer Script -->
+<script>
+(async function() {
+    // Получаем ID статьи из URL параметра
+    const urlParams = new URLSearchParams(window.location.search);
+    const articleId = urlParams.get('id');
+    
+    if (!articleId) {
+        document.getElementById('article-body').innerHTML = `
+            <div class="article-error">
+                <h2>❌ Статья не указана</h2>
+                <p>Не указан ID статьи для просмотра.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    try {
+        const basePath = window.router?.basePath || '';
+        
+        // Загружаем каталог статей для поиска статьи
+        const catalogResponse = await fetch(`${basePath}/articles/articles-list.json`);
+        if (!catalogResponse.ok) {
+            throw new Error('Не удалось загрузить каталог статей');
+        }
+        
+        const catalog = await catalogResponse.json();
+        
+        // Ищем статью в каталоге
+        function findArticle(items, targetId) {
+            for (const item of items) {
+                if (item.id === targetId && item.mdFile) {
+                    return item;
+                }
+                if (item.items) {
+                    const found = findArticle(item.items, targetId);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+        
+        const article = findArticle(catalog.categories || [], articleId);
+        
+        if (!article) {
+            throw new Error(`Статья с ID "${articleId}" не найдена`);
+        }
+        
+        // Загружаем markdown файл
+        const mdResponse = await fetch(`${basePath}/${article.mdFile}`);
+        if (!mdResponse.ok) {
+            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile}`);
+        }
+        
+        const mdText = await mdResponse.text();
+        
+        // Простой парсинг frontmatter (YAML между ---)
+        let content = mdText;
+        let metadata = {};
+        
+        const frontmatterMatch = mdText.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n|$)/);
+        if (frontmatterMatch) {
+            const yamlText = frontmatterMatch[1];
+            content = mdText.substring(frontmatterMatch[0].length);
+            
+            // Простой парсер YAML
+            yamlText.split('\n').forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) return;
+                
+                const colonIndex = trimmed.indexOf(':');
+                if (colonIndex === -1) return;
+                
+                const key = trimmed.substring(0, colonIndex).trim();
+                let value = trimmed.substring(colonIndex + 1).trim();
+                
+                // Удаляем кавычки
+                if ((value.startsWith('"') && value.endsWith('"')) ||
+                    (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.substring(1, value.length - 1);
+                }
+                
+                // Парсим массивы
+                if (value.startsWith('[') && value.endsWith(']')) {
+                    value = value.substring(1, value.length - 1)
+                        .split(',')
+                        .map(item => item.trim().replace(/^["']|["']$/g, ''));
+                }
+                
+                metadata[key] = value;
+            });
+        }
+        
+        // Заполняем метаданные
+        document.getElementById('article-title').textContent = metadata.title || articleId;
+        document.getElementById('article-category').textContent = metadata.category || 'Статья';
+        document.getElementById('article-author').textContent = metadata.author || '';
+        document.getElementById('article-date').textContent = metadata.date || '';
+        
+        if (metadata.readingTime) {
+            document.getElementById('article-reading-time').textContent = `${metadata.readingTime} мин чтения`;
+        }
+        
+        if (metadata.tags && metadata.tags.length) {
+            const tagsHtml = metadata.tags.map(tag => `<span class="tag">${tag}</span>`).join('');
+            document.getElementById('article-tags').innerHTML = tagsHtml;
+        }
+        
+        // Отображаем markdown как есть (без парсинга, так как парсер удален)
+        // Можно использовать простой markdown парсер или показать как pre
+        const escapedContent = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        
+        // Простой markdown парсинг (базовый)
+        const html = simpleMarkdownToHtml(content);
+        
+        document.getElementById('article-body').innerHTML = html;
+        
+        // Генерируем содержание
+        if (typeof TableOfContents !== 'undefined') {
+            const toc = new TableOfContents({ minHeadings: 2 });
+            const tocHtml = toc.generate(document.getElementById('article-body'));
+            document.getElementById('article-toc').innerHTML = tocHtml;
+            toc.initScrollTracking();
+        }
+        
+    } catch (error) {
+        console.error('Error loading article:', error);
+        document.getElementById('article-body').innerHTML = `
+            <div class="article-error">
+                <h2>❌ Ошибка загрузки статьи</h2>
+                <p>${error.message}</p>
+            </div>
+        `;
+    }
+    
+    // Обработчик кнопки "Назад"
+    document.getElementById('back-to-articles').addEventListener('click', () => {
+        if (window.router) {
+            window.router.navigate('/articles');
+        } else {
+            window.location.href = '/articles';
+        }
+    });
+    
+    // Простая функция конвертации markdown в HTML
+    function simpleMarkdownToHtml(md) {
+        let html = md;
+        
+        // Сначала обрабатываем специальные теги формул [formula]...[/formula]
+        // Синтаксис: [formula:параметры]...[/formula]
+        // Параметры: inline (в строке), border (с рамкой)
+        // Примеры:
+        //   [formula]...[/formula] - по центру, без рамки (по умолчанию)
+        //   [formula:inline]...[/formula] - в строке
+        //   [formula:border]...[/formula] - с рамкой
+        //   [formula:inline:border]...[/formula] - в строке с рамкой
+        //   «формула» - альтернативный синтаксис для inline формул (французские кавычки)
+        const formulaBlocks = [];
+        const codeBlocks = [];
+        
+        // Обрабатываем французские кавычки «» как эквивалент [formula:inline]...[/formula]
+        html = html.replace(/«([^»]+)»/g, (match, formula) => {
+            const index = formulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            
+            // Экранируем формулу
+            const escaped = trimmedFormula
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Создаем классы для inline формулы
+            formulaBlocks.push(`<span class="formula-block formula-inline">${escaped}</span>`);
+            return `__FORMULA_BLOCK_${index}__`;
+        });
+        
+        // Обрабатываем теги [formula]...[/formula]
+        html = html.replace(/\[formula(?::([^\]]+))?\]([\s\S]*?)\[\/formula\]/g, (match, params, formula) => {
+            const index = formulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            
+            // Парсим параметры
+            const paramList = params ? params.split(':').map(p => p.trim()) : [];
+            const isInline = paramList.includes('inline');
+            const hasBorder = paramList.includes('border');
+            
+            // Экранируем формулу
+            const escaped = trimmedFormula
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Создаем классы для формулы
+            let classes = 'formula-block';
+            if (isInline) classes += ' formula-inline';
+            if (hasBorder) classes += ' formula-border';
+            
+            // Для inline формул используем span, для блочных - div
+            const tag = isInline ? 'span' : 'div';
+            formulaBlocks.push(`<${tag} class="${classes}">${escaped}</${tag}>`);
+            return `__FORMULA_BLOCK_${index}__`;
+        });
+        
+        // Обрабатываем блоки кода с тремя обратными кавычками
+        // Используем нежадный квантификатор для правильной обработки нескольких блоков
+        html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
+            const index = codeBlocks.length;
+            const trimmedCode = code.trim();
+            
+            // Определяем, является ли это формулой (содержит математические символы)
+            // НЕ формула, если содержит символы таблицы (|) - таблицы всегда обрабатываются как код
+            const codeLines = trimmedCode.split('\n');
+            const hasTableMarkers = codeLines.some(line => {
+                const trimmed = line.trim();
+                return trimmed.includes('|') && trimmed.split('|').length >= 3; // Минимум 3 части (начало, середина, конец)
+            });
+            
+            // Если содержит таблицу, обрабатываем как код (не формула)
+            if (hasTableMarkers) {
+                const escaped = trimmedCode
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+                return `\n__CODE_BLOCK_${index}__\n`;
+            }
+            
+            // Определяем, является ли это формулой
+            // Формула должна:
+            // 1. Содержать математические символы (греческие буквы, операторы) ИЛИ
+            // 2. Быть очень короткой (одна строка) с математическими операторами (=, +, -, *, /, ^, _)
+            // 3. НЕ должна содержать много обычного текста (много слов, предложения)
+            
+            const mathSymbols = /[πθφχψωαβγδεζηικλμνξοπρστυφχψω∈∉⊂⊃∪∩∅∞∑∏∫∂∇ℝℕℤℚ]/;
+            const mathOperators = /[=+\-*/^_()\[\]{}]/;
+            const hasMathSymbols = mathSymbols.test(trimmedCode);
+            
+            // Проверяем, не является ли это обычным текстом (много слов, предложения)
+            const wordCount = trimmedCode.split(/\s+/).filter(w => w.length > 2).length;
+            const hasManyWords = wordCount > 5; // Если больше 5 слов, это скорее всего текст
+            const hasSentences = trimmedCode.match(/[.!?]\s+[А-ЯA-Z]/); // Предложения с заглавными буквами
+            
+            // Формула, если:
+            // - Содержит математические символы ИЛИ
+            // - Очень короткая (одна строка) с математическими операторами и НЕ много слов
+            const isFormula = hasMathSymbols || 
+                             (trimmedCode.length < 100 && 
+                              mathOperators.test(trimmedCode) && 
+                              !hasManyWords && 
+                              !hasSentences && 
+                              !hasTableMarkers &&
+                              trimmedCode.split('\n').length <= 3); // Максимум 3 строки
+            
+            if (isFormula) {
+                // Формула - выводим с классом formula-block
+                const escaped = trimmedCode
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                codeBlocks.push(`<div class="formula-block">${escaped}</div>`);
+            } else {
+                // Обычный код
+                const escaped = trimmedCode
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+            }
+            
+            // Используем уникальный плейсхолдер с индексом
+            return `\n__CODE_BLOCK_${index}__\n`;
+        });
+        
+        // Обрабатываем незакрытые блоки кода (``` без закрывающих ```)
+        // Это может произойти, если в исходном тексте не хватает закрывающих кавычек
+        // Ищем блоки, которые начинаются с ```, но не имеют закрывающих кавычек до конца документа
+        const htmlLines = html.split('\n');
+        let inUnclosedBlock = false;
+        let unclosedBlockContent = [];
+        let unclosedBlockStartLine = -1;
+        
+        for (let i = 0; i < htmlLines.length; i++) {
+            const line = htmlLines[i];
+            const trimmedLine = line.trim();
+            
+            // Если строка содержит плейсхолдер, пропускаем
+            if (line.includes('__CODE_BLOCK_')) {
+                continue;
+            }
+            
+            // Начало незакрытого блока
+            if (trimmedLine === '```' && !inUnclosedBlock) {
+                inUnclosedBlock = true;
+                unclosedBlockContent = [];
+                unclosedBlockStartLine = i;
+                continue;
+            }
+            
+            // Если мы внутри незакрытого блока
+            if (inUnclosedBlock) {
+                // Если нашли закрывающие кавычки, блок уже обработан выше
+                if (trimmedLine === '```') {
+                    inUnclosedBlock = false;
+                    continue;
+                }
+                
+                // Собираем содержимое
+                unclosedBlockContent.push(line);
+            }
+        }
+        
+        // Если остался незакрытый блок, обрабатываем его
+        if (inUnclosedBlock && unclosedBlockContent.length > 0) {
+            const code = unclosedBlockContent.join('\n');
+            const trimmedCode = code.trim();
+            
+            if (trimmedCode) {
+                const index = codeBlocks.length;
+                
+                // НЕ формула, если содержит символы таблицы (|)
+                const codeLines = trimmedCode.split('\n');
+                const hasTableMarkers = codeLines.some(line => {
+                    const trimmed = line.trim();
+                    return trimmed.includes('|') && trimmed.split('|').length >= 3; // Минимум 3 части
+                });
+                
+                if (hasTableMarkers) {
+                    // Это таблица, обрабатываем как код (не формула)
+                    const escaped = trimmedCode
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;');
+                    codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+                    htmlLines[unclosedBlockStartLine] = `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+                    for (let j = unclosedBlockStartLine + 1; j < htmlLines.length; j++) {
+                        if (htmlLines[j].includes('__CODE_BLOCK_')) break;
+                        htmlLines[j] = '';
+                    }
+                } else {
+                // Определяем, является ли это формулой (та же логика, что и выше)
+                const mathSymbols = /[πθφχψωαβγδεζηικλμνξοπρστυφχψω∈∉⊂⊃∪∩∅∞∑∏∫∂∇ℝℕℤℚ]/;
+                const mathOperators = /[=+\-*/^_()\[\]{}]/;
+                const hasMathSymbols = mathSymbols.test(trimmedCode);
+                
+                const wordCount = trimmedCode.split(/\s+/).filter(w => w.length > 2).length;
+                const hasManyWords = wordCount > 5;
+                const hasSentences = trimmedCode.match(/[.!?]\s+[А-ЯA-Z]/);
+                
+                const isFormula = hasMathSymbols || 
+                                 (trimmedCode.length < 100 && 
+                                  mathOperators.test(trimmedCode) && 
+                                  !hasManyWords && 
+                                  !hasSentences && 
+                                  !hasTableMarkers &&
+                                  trimmedCode.split('\n').length <= 3);
+                    
+                    if (isFormula) {
+                        const escaped = trimmedCode
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;');
+                        codeBlocks.push(`<div class="formula-block">${escaped}</div>`);
+                    } else {
+                        const escaped = trimmedCode
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;');
+                        codeBlocks.push(`<pre><code>${escaped}</code></pre>`);
+                    }
+                    
+                    // Заменяем незакрытый блок на плейсхолдер
+                    htmlLines[unclosedBlockStartLine] = `__CODE_BLOCK_${index}__`;
+                    for (let j = unclosedBlockStartLine + 1; j < htmlLines.length; j++) {
+                        if (htmlLines[j].includes('__CODE_BLOCK_')) break; // Уже обработан
+                        htmlLines[j] = '';
+                    }
+                }
+            }
+        }
+        
+        html = htmlLines.join('\n');
+        
+        // Заголовки
+        html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+        
+        // Таблицы (обрабатываем до других элементов)
+        // Ищем таблицы: заголовок, разделитель, строки
+        // Регулярное выражение ищет: |заголовок|, |---|, |данные|
+        html = html.replace(/(\|[^\n]+\|\n\|[-\s|:]+\|\n(?:\|[^\n]+\|\n?)+)/g, (match) => {
+            const lines = match.trim().split('\n').filter(line => line.trim());
+            if (lines.length < 2) return match;
+            
+            const headerLine = lines[0];
+            const dataLines = lines.slice(2); // Пропускаем заголовок и разделитель
+            
+            // Парсим заголовок
+            const headers = headerLine.split('|')
+                .map(h => h.trim())
+                .filter(h => h && !h.match(/^[-:\s]+$/)); // Исключаем разделители
+            
+            if (headers.length === 0) return match;
+            
+            const headerRow = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+            
+            // Парсим строки данных
+            const bodyRows = dataLines.map(row => {
+                const cells = row.split('|')
+                    .map(c => c.trim())
+                    .filter(c => c && !c.match(/^[-:\s]+$/)); // Исключаем разделители
+                
+                if (cells.length === 0) return '';
+                return '<tr>' + cells.map(cell => `<td>${cell}</td>`).join('') + '</tr>';
+            }).filter(row => row).join('');
+            
+            if (!bodyRows) return match;
+            
+            return `<table class="article-table"><thead>${headerRow}</thead><tbody>${bodyRows}</tbody></table>`;
+        });
+        
+        // Inline код (обрабатываем ПЕРЕД ссылками, чтобы формулы не обрабатывались как ссылки)
+        const inlineCodeBlocks = [];
+        html = html.replace(/`([^`]+)`/g, (match, code) => {
+            const index = inlineCodeBlocks.length;
+            const escaped = code
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            inlineCodeBlocks.push(`<code>${escaped}</code>`);
+            return `__INLINE_CODE_${index}__`;
+        });
+        
+        // Жирный текст
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        // Курсив
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Ссылки (формат markdown: [текст](url))
+        // Обрабатываем только если содержимое в круглых скобках является валидным URL
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+            if (!url) return match;
+            
+            const trimmedUrl = url.trim();
+            const trimmedText = text.trim();
+            
+            // Строгая проверка: URL должен быть валидным
+            // Валидные форматы:
+            // - http://, https:// (с доменом)
+            // - mailto:email@domain.com
+            // - Относительные пути: /path, ./path, ../path
+            // - Якоря: #anchor
+            // - Другие протоколы: ftp://, file:// и т.д.
+            
+            let isValidUrl = false;
+            
+            // HTTP/HTTPS - должен содержать домен
+            if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
+                isValidUrl = /^https?:\/\/[^\s/$.?#]+\.[^\s]+/i.test(trimmedUrl);
+            }
+            // mailto - должен содержать @
+            else if (trimmedUrl.startsWith('mailto:')) {
+                isValidUrl = trimmedUrl.includes('@');
+            }
+            // Относительные пути
+            else if (trimmedUrl.startsWith('/') || trimmedUrl.startsWith('./') || trimmedUrl.startsWith('../')) {
+                isValidUrl = /^[./][^\s]*$/.test(trimmedUrl);
+            }
+            // Якоря
+            else if (trimmedUrl.startsWith('#')) {
+                isValidUrl = /^#[a-zA-Z0-9_-]+$/.test(trimmedUrl);
+            }
+            // Другие протоколы (ftp:, file: и т.д.)
+            else if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmedUrl)) {
+                isValidUrl = true;
+            }
+            // Простые имена файлов/якоря (без протокола и без /)
+            else if (/^[a-zA-Z0-9._-]+$/.test(trimmedUrl)) {
+                isValidUrl = true;
+            }
+            
+            if (!isValidUrl) return match;
+            
+            return `<a href="${trimmedUrl}">${trimmedText}</a>`;
+        });
+        
+        // Изображения
+        html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+        
+        // Горизонтальная линия
+        html = html.replace(/^---$/gim, '<hr>');
+        
+        // Параграфы и списки (обработка пустых строк)
+        // Разбиваем по двойным переносам строк, но сохраняем одиночные
+        const lines = html.split('\n');
+        const result = [];
+        let currentPara = [];
+        let currentList = [];
+        let currentListType = null; // 'ul' или 'ol'
+        
+        function flushList() {
+            if (currentList.length > 0) {
+                const listTag = currentListType === 'ol' ? 'ol' : 'ul';
+                result.push(`<${listTag}>${currentList.join('')}</${listTag}>`);
+                currentList = [];
+                currentListType = null;
+            }
+        }
+        
+        function flushPara() {
+            if (currentPara.length > 0) {
+                const paraText = currentPara.join('\n');
+                // Проверяем, не является ли это уже HTML тегом или плейсхолдером
+                if (paraText.includes('__CODE_BLOCK_') || paraText.includes('__FORMULA_BLOCK_')) {
+                    // Если содержит плейсхолдер, разбиваем на части
+                    const parts = paraText.split(/(__CODE_BLOCK_\d+__|__FORMULA_BLOCK_\d+__)/);
+                    parts.forEach(part => {
+                        if (part.match(/^__(CODE|FORMULA)_BLOCK_\d+__$/)) {
+                            result.push(part);
+                        } else if (part.trim()) {
+                            const paraWithBreaks = part.replace(/\n/g, '<br>');
+                            result.push(`<p>${paraWithBreaks}</p>`);
+                        }
+                    });
+                } else if (paraText.startsWith('<') && paraText.match(/^(<h[1-6]|<ul|<ol|<li|<table|<hr|<pre|<div)/)) {
+                    result.push(paraText);
+                } else {
+                    // Заменяем одиночные переносы на <br>
+                    const paraWithBreaks = paraText.replace(/\n/g, '<br>');
+                    result.push(`<p>${paraWithBreaks}</p>`);
+                }
+                currentPara = [];
+            }
+        }
+        
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            
+            // Если пустая строка - завершаем текущий параграф/список
+            if (!trimmed) {
+                flushList();
+                flushPara();
+                continue;
+            }
+            
+            // Проверяем, является ли строка элементом списка
+            const listMatch = trimmed.match(/^(\d+\.|\-|\*)\s+(.+)$/);
+            if (listMatch) {
+                flushPara(); // Завершаем параграф перед списком
+                const isOrdered = /^\d+\./.test(listMatch[1]);
+                const listType = isOrdered ? 'ol' : 'ul';
+                const content = listMatch[2];
+                
+                // Если тип списка изменился, завершаем предыдущий список
+                if (currentListType && currentListType !== listType) {
+                    flushList();
+                }
+                
+                currentListType = listType;
+                currentList.push(`<li>${content}</li>`);
+                continue;
+            }
+            
+            // Если строка содержит плейсхолдер блока кода или формулы - завершаем параграф/список и добавляем
+            if (trimmed.includes('__CODE_BLOCK_') || trimmed.includes('__FORMULA_BLOCK_')) {
+                flushList();
+                flushPara();
+                result.push(trimmed);
+                continue;
+            }
+            
+            // Если строка начинается с HTML тега - завершаем параграф/список и добавляем тег
+            if (trimmed.startsWith('<') && trimmed.match(/^<(h[1-6]|ul|ol|li|table|hr|pre|div)/)) {
+                flushList();
+                flushPara();
+                result.push(trimmed);
+                continue;
+            }
+            
+            // Обычный текст - добавляем в параграф
+            flushList(); // Завершаем список перед параграфом
+            currentPara.push(line);
+        }
+        
+        // Обрабатываем последний параграф/список
+        flushList();
+        flushPara();
+        
+        html = result.join('\n');
+        
+        // Восстанавливаем inline код (перед блоками кода)
+        inlineCodeBlocks.forEach((block, index) => {
+            html = html.replace(`__INLINE_CODE_${index}__`, block);
+        });
+        
+        // Восстанавливаем блоки кода (используем регулярное выражение для точной замены)
+        codeBlocks.forEach((block, index) => {
+            const placeholder = new RegExp(`__CODE_BLOCK_${index}__`, 'g');
+            html = html.replace(placeholder, block);
+        });
+        
+        // Восстанавливаем формулы (после всех блоков кода)
+        formulaBlocks.forEach((block, index) => {
+            const placeholder = new RegExp(`__FORMULA_BLOCK_${index}__`, 'g');
+            html = html.replace(placeholder, block);
+        });
+        
+        return html;
+    }
+})();
+</script>

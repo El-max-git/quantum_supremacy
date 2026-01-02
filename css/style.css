@@ -1302,6 +1302,18 @@ ul.features-list li::before {
     width: 100%;
     display: block;
     visibility: visible;
+    /* Автоперенос длинных строк */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    /* Явно убираем подчеркивание для всего body, кроме ссылок */
+    text-decoration: none;
+}
+
+/* Ссылки должны быть явно определены */
+.article-body > *:not(a) {
+    text-decoration: none;
 }
 
 .article-body h2 {
@@ -1311,6 +1323,9 @@ ul.features-list li::before {
     color: var(--text-primary);
     padding-bottom: 0.5rem;
     border-bottom: 2px solid var(--border-color);
+    /* Автоперенос длинных заголовков */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .article-body h3 {
@@ -1318,6 +1333,9 @@ ul.features-list li::before {
     font-weight: 600;
     margin: 2rem 0 1rem;
     color: var(--text-primary);
+    /* Автоперенос длинных заголовков */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .article-body h4 {
@@ -1325,10 +1343,18 @@ ul.features-list li::before {
     font-weight: 600;
     margin: 1.5rem 0 0.75rem;
     color: var(--text-primary);
+    /* Автоперенос длинных заголовков */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 .article-body p {
     margin: 1rem 0;
+    /* Автоперенос в параграфах */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    /* Явно убираем подчеркивание для параграфов */
+    text-decoration: none;
 }
 
 .article-body strong {
@@ -1343,6 +1369,10 @@ ul.features-list li::before {
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 0.9em;
     color: var(--text-primary);
+    /* Автоперенос для inline кода (если очень длинный) */
+    overflow-wrap: break-word;
+    word-break: break-all;
+    white-space: pre-wrap; /* Сохраняет пробелы, но переносит строки */
 }
 
 .article-body pre {
@@ -1359,6 +1389,60 @@ ul.features-list li::before {
     font-size: 0.9rem;
 }
 
+/* Формулы - специальный протокол [formula]...[/formula] */
+.article-body .formula-block {
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    font-family: 'Times New Roman', 'Georgia', serif;
+    color: #d4a574; /* Желтоватый оттенок для формул */
+    /* Автоперенос для длинных формул */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    /* По умолчанию - по центру */
+    text-align: center;
+    display: block;
+}
+
+/* Формула в строке (inline) */
+.article-body .formula-block.formula-inline {
+    display: inline;
+    text-align: left;
+    margin: 0;
+    padding: 0.2rem 0.5rem;
+    font-size: 1.1em;
+    vertical-align: baseline;
+}
+
+/* Формула с рамкой */
+.article-body .formula-block.formula-border {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+}
+
+/* Комбинация: inline + border */
+.article-body .formula-block.formula-inline.formula-border {
+    display: inline-block;
+    padding: 0.3rem 0.6rem;
+    margin: 0 0.2rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Темная тема - более светлый желтоватый оттенок */
+@media (prefers-color-scheme: dark) {
+    .article-body .formula-block {
+        color: #e6c896; /* Более светлый желтоватый для темной темы */
+    }
+    
+    .article-body .formula-block.formula-border {
+        border-color: var(--border-color);
+        background: var(--bg-tertiary);
+    }
+}
+
 .article-body ul,
 .article-body ol {
     margin: 1rem 0;
@@ -1367,12 +1451,44 @@ ul.features-list li::before {
 
 .article-body li {
     margin: 0.5rem 0;
+    /* Автоперенос в списках */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
+/* Ссылки в статье - только явные теги <a> */
 .article-body a {
     color: var(--primary-color);
     text-decoration: underline;
     transition: var(--transition);
+    /* Автоперенос длинных URL */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-all; /* Для URL лучше агрессивный перенос */
+}
+
+/* Явно убираем подчеркивание для всех остальных элементов */
+.article-body p,
+.article-body h1,
+.article-body h2,
+.article-body h3,
+.article-body h4,
+.article-body h5,
+.article-body h6,
+.article-body li,
+.article-body td,
+.article-body th,
+.article-body code,
+.article-body strong,
+.article-body em,
+.article-body span,
+.article-body div {
+    text-decoration: none !important;
+}
+
+/* Убираем подчеркивание для всех дочерних элементов, кроме ссылок */
+.article-body *:not(a) {
+    text-decoration: none !important;
 }
 
 .article-body a:hover {
@@ -1392,6 +1508,8 @@ ul.features-list li::before {
     border-collapse: collapse;
     margin: 1.5rem 0;
     font-size: 0.95rem;
+    table-layout: auto; /* Автоматическая ширина колонок с учетом содержимого */
+    overflow-wrap: break-word;
 }
 
 .article-body table th,
@@ -1399,6 +1517,11 @@ ul.features-list li::before {
     padding: 0.75rem;
     border: 1px solid var(--border-color);
     text-align: left;
+    /* Автоперенос в ячейках таблиц */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-width: 100px; /* Минимальная ширина для читаемости */
 }
 
 .article-body table th {
@@ -1409,6 +1532,38 @@ ul.features-list li::before {
 
 .article-body table tr:hover {
     background: var(--bg-secondary);
+}
+
+.article-body .article-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.95rem;
+    overflow-x: auto;
+    table-layout: auto; /* Автоматическая ширина колонок с учетом содержимого */
+    display: block; /* Для горизонтального скролла на мобильных */
+}
+
+.article-body .article-table th,
+.article-body .article-table td {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    text-align: left;
+    /* Автоперенос в ячейках таблиц */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-width: 100px; /* Минимальная ширина для читаемости */
+}
+
+.article-body .article-table th {
+    background: var(--bg-secondary);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.article-body .article-table tr:hover {
+    background: var(--bg-tertiary);
 }
 
 .article-body hr {
@@ -1701,6 +1856,8 @@ ul.features-list li::before {
     
     .article-body {
         padding: 1.5rem;
+        /* Более агрессивный перенос на мобильных */
+        word-break: break-word;
     }
     
     .article-header {
@@ -1718,6 +1875,32 @@ ul.features-list li::before {
     .article-meta {
         flex-direction: column;
         gap: 0.5rem;
+    }
+    
+    /* Таблицы на мобильных - горизонтальный скролл */
+    .article-body table,
+    .article-body .article-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+    
+    .article-body table thead,
+    .article-body table tbody,
+    .article-body .article-table thead,
+    .article-body .article-table tbody {
+        display: table;
+        width: 100%;
+        white-space: normal;
+    }
+    
+    .article-body table th,
+    .article-body table td,
+    .article-body .article-table th,
+    .article-body .article-table td {
+        white-space: normal;
+        word-break: break-word;
     }
     
     .article-meta span:not(:last-child)::after {

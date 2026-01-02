@@ -53,7 +53,9 @@ class Router {
             if (this.basePath && pathname.startsWith(this.basePath)) {
                 pathname = pathname.substring(this.basePath.length) || '/';
             }
-            this.loadRoute(pathname);
+            // Сохраняем query параметры
+            const query = window.location.search;
+            this.loadRoute(pathname + query);
         });
 
         // Handle link clicks
@@ -89,14 +91,17 @@ class Router {
 
     /**
      * Load a route
-     * @param {string} path - Route path
+     * @param {string} path - Route path (may include query parameters)
      */
     async loadRoute(path) {
         console.log(`Router.loadRoute() called with path: "${path}"`);
         
+        // Извлекаем путь без query параметров для поиска маршрута
+        const pathWithoutQuery = path.split('?')[0];
+        
         // Find matching route
-        let handler = this.routes[path];
-        console.log(`Router: Handler found: ${handler ? 'YES' : 'NO'}`);
+        let handler = this.routes[pathWithoutQuery];
+        console.log(`Router: Handler found: ${handler ? 'YES' : 'NO'} (searched for: "${pathWithoutQuery}")`);
         
         // If no exact match, try 404
         if (!handler) {
@@ -224,8 +229,12 @@ class Router {
             pathname = pathname.substring(this.basePath.length) || '/';
         }
         
+        // Сохраняем query параметры
+        const query = window.location.search;
+        const fullPath = pathname + query;
+        
         // Load initial route
-        this.loadRoute(pathname);
+        this.loadRoute(fullPath);
     }
 }
 
@@ -239,7 +248,16 @@ class Router {
  */
 async function loadPage(pagePath) {
     try {
-        const response = await fetch(pagePath);
+        // Добавляем timestamp для предотвращения кэширования
+        const separator = pagePath.includes('?') ? '&' : '?';
+        const url = `${pagePath}${separator}v=${Date.now()}`;
+        
+        const response = await fetch(url, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
         if (!response.ok) throw new Error('Page not found');
         return await response.text();
     } catch (error) {
