@@ -949,8 +949,8 @@ ${cleanContent}
         
         // Восстанавливаем обратные слеши в формулах MathJax
         // Проверяем формулы и восстанавливаем экранированные \text, \left, \right и т.д.
-        // Паттерн: внутри формул $...$ или $$...$$ восстанавливаем экранированные \
-        html = html.replace(/(\$\$?)([\s\S]*?)(\$\$?)/g, (match, start, formula, end) => {
+        // Сначала block формулы: $$...$$
+        html = html.replace(/(\$\$)([\s\S]*?)(\$\$)/g, (match, start, formula, end) => {
             // Пропускаем, если это не формула (слишком короткая или содержит только пробелы)
             if (formula.trim().length < 1) {
                 return match;
@@ -973,6 +973,32 @@ ${cleanContent}
                 .replace(/&amp;#92;&amp;#92;/g, '\\\\')
                 .replace(/&#92;&#92;/g, '\\\\');
             return start + restored + end;
+        });
+        
+        // Затем inline формулы: $...$ (но не $$)
+        html = html.replace(/([^$])(\$)([^$\n]+?)(\$)([^$])/g, (match, before, start, formula, end, after) => {
+            // Пропускаем, если это не формула (слишком короткая или содержит только пробелы)
+            if (formula.trim().length < 1) {
+                return match;
+            }
+            
+            // Восстанавливаем экранированные обратные слеши в формуле
+            let restored = formula
+                .replace(/&amp;#92;/g, '\\')
+                .replace(/&#92;/g, '\\')
+                .replace(/&amp;lt;/g, '<')
+                .replace(/&lt;/g, '<')
+                .replace(/&amp;gt;/g, '>')
+                .replace(/&gt;/g, '>')
+                // Восстанавливаем другие экранированные символы
+                .replace(/&amp;#123;/g, '{')
+                .replace(/&#123;/g, '{')
+                .replace(/&amp;#125;/g, '}')
+                .replace(/&#125;/g, '}')
+                // Восстанавливаем двойные обратные слеши
+                .replace(/&amp;#92;&amp;#92;/g, '\\\\')
+                .replace(/&#92;&#92;/g, '\\\\');
+            return before + start + restored + end + after;
         });
         
         return html;
@@ -1045,53 +1071,69 @@ ${cleanContent}
             return originalParagraph ? originalParagraph(text) : `<p>${text}</p>\n`;
         };
 
-        // Кастомный extension для формул - пропускаем их (подход GitHub)
-        // Это гарантирует, что marked.js не будет обрабатывать формулы как markdown
-        const mathExtension = {
-            name: 'math',
+        // Кастомные extensions для формул - пропускаем их (подход GitHub)
+        // Block формулы
+        const mathBlockExtension = {
+            name: 'mathBlock',
             level: 'block',
             start(src) {
-                // Ищем начало block формулы $$
                 const index = src.indexOf('$$');
                 return index >= 0 ? index : undefined;
             },
             tokenizer(src, tokens) {
-                // Block формулы: $$...$$
                 const blockMatch = src.match(/^\$\$([\s\S]*?)\$\$/);
                 if (blockMatch) {
                     return {
-                        type: 'math',
+                        type: 'mathBlock',
                         raw: blockMatch[0],
-                        text: blockMatch[1],
-                        block: true
+                        text: blockMatch[1].trim()
                     };
                 }
+                return false;
+            },
+            renderer(token) {
+                return `\n\n$$${token.text}$$\n\n`;
+            }
+        };
+        
+        // Inline формулы
+        const mathInlineExtension = {
+            name: 'mathInline',
+            level: 'inline',
+            start(src) {
+                // Ищем $, но не $$
+                const index = src.indexOf('$');
+                if (index >= 0) {
+                    // Проверяем, что это не начало block формулы
+                    if (src.substring(index, index + 2) !== '$$') {
+                        return index;
+                    }
+                }
+                return undefined;
+            },
+            tokenizer(src, tokens) {
                 // Inline формулы: $...$ (но не $$)
                 const inlineMatch = src.match(/^\$([^$\n]+?)\$/);
                 if (inlineMatch) {
                     // Проверяем, что это не часть block формулы
                     const before = src.substring(Math.max(0, src.indexOf(inlineMatch[0]) - 1), src.indexOf(inlineMatch[0]));
-                    if (before !== '$') {
+                    const after = src.substring(src.indexOf(inlineMatch[0]) + inlineMatch[0].length, src.indexOf(inlineMatch[0]) + inlineMatch[0].length + 1);
+                    if (before !== '$' && after !== '$') {
                         return {
-                            type: 'math',
+                            type: 'mathInline',
                             raw: inlineMatch[0],
-                            text: inlineMatch[1],
-                            block: false
+                            text: inlineMatch[1].trim()
                         };
                     }
                 }
                 return false;
             },
             renderer(token) {
-                // Возвращаем формулу как есть, без обработки
-                if (token.block) {
-                    return `\n\n$$${token.text}$$\n\n`;
-                }
                 return `$${token.text}$`;
             }
         };
 
-        marked.use({ renderer, extensions: [mathExtension] });
+        marked.use({ renderer, extensions: [mathBlockExtension, mathInlineExtension] });
 
         // Парсим markdown
         // marked.js настроен так, чтобы не трогать формулы (подход GitHub)
