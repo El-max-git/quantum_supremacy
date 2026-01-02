@@ -671,11 +671,15 @@ class ArticleViewer {
                            articleBody.innerHTML.includes('\\[');
         
         if (!hasFormulas) {
-            console.log('No formulas found in article');
+            console.log('[renderMathJax] No formulas found in article');
             return;
         }
         
-        console.log('Rendering MathJax formulas...');
+        // Подсчитываем количество формул для отладки
+        const blockFormulas = (articleBody.innerHTML.match(/\$\$[^$]+\$\$/g) || []).length;
+        const inlineFormulas = (articleBody.innerHTML.match(/\$[^$\n]+\$/g) || []).length;
+        console.log(`[renderMathJax] Found formulas: ${blockFormulas} block, ${inlineFormulas} inline`);
+        console.log('[renderMathJax] Starting MathJax rendering...');
         
         // Ждем загрузки MathJax
         if (typeof MathJax === 'undefined') {

@@ -65,7 +65,7 @@ class ArticleParser {
             // Отладочная информация
             if (window.DEBUG_ARTICLE_PARSER) {
                 // Проверяем все форматы плейсхолдеров
-                const remaining = html.match(/\u200B\u200B\u200BMATH_(BLOCK|INLINE)_\d+_MATH\u200B\u200B\u200B|<!--MATH_(BLOCK|INLINE)_\d+-->|__MATH_(BLOCK|INLINE)_\d+__/g);
+                const remaining = html.match(/<!--MATH_(BLOCK|INLINE)_\d+_MATH-->|__MATH_(BLOCK|INLINE)_\d+__/g);
                 if (remaining && remaining.length > 0) {
                     console.warn(`After restoreProtectedFormulas: ${remaining.length} placeholders still remain`);
                     // Показываем первые несколько примеров
@@ -260,19 +260,26 @@ ${cleanContent}
             const formulas = [];
             let formulaIndex = 0;
             
-            // Простой плейсхолдер с zero-width spaces (невидимые символы, которые не обрабатываются marked.js)
+            // Используем HTML комментарии как плейсхолдеры - они сохраняются marked.js
             const createPlaceholder = (type, index) => {
-                return `\u200B\u200B\u200BMATH_${type}_${index}_MATH\u200B\u200B\u200B`;
+                return `<!--MATH_${type}_${index}_MATH-->`;
             };
             
             // 1. Защищаем block формулы $$...$$ (сначала, чтобы не перехватить их как inline)
-            let protectedText = text.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+            // Используем более надежный паттерн, который работает с многострочными формулами
+            // Поддерживаем варианты: $$...$$, $$\n...\n$$, $$ ... $$ (с пробелами)
+            let protectedText = text.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => {
                 try {
                     const trimmedFormula = formula.trim();
                     if (!trimmedFormula) return match; // Пропускаем пустые формулы
                     
                     const placeholder = createPlaceholder('BLOCK', formulaIndex);
                     formulas.push({ type: 'block', formula: trimmedFormula, index: formulaIndex });
+                    
+                    if (window.DEBUG_ARTICLE_PARSER || formulas.length <= 3) {
+                        console.log(`[protectFormulas] Protected block formula ${formulaIndex}:`, trimmedFormula.substring(0, 50));
+                    }
+                    
                     formulaIndex++;
                     return placeholder;
                 } catch (error) {
@@ -346,16 +353,41 @@ ${cleanContent}
                         return;
                     }
                     
-                    const placeholder = `\u200B\u200B\u200BMATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}_MATH\u200B\u200B\u200B`;
-                    const replacement = formulaObj.type === 'block' 
-                        ? `$$${formulaObj.formula}$$` 
-                        : `$${formulaObj.formula}$`;
+                    const placeholder = `<!--MATH_${formulaObj.type === 'block' ? 'BLOCK' : 'INLINE'}_${index}_MATH-->`;
+                    
+                    // Восстанавливаем формулу, оборачивая в правильные теги для MathJax
+                    // Для block формул используем отдельный параграф или div
+                    let replacement;
+                    if (formulaObj.type === 'block') {
+                        // Block формулы должны быть на отдельной строке
+                        replacement = `\n\n$$${formulaObj.formula}$$\n\n`;
+                    } else {
+                        // Inline формулы вставляем как есть
+                        replacement = `$${formulaObj.formula}$`;
+                    }
+                    
+                    // Проверяем наличие плейсхолдера в HTML
+                    if (!html.includes(placeholder)) {
+                        console.warn(`⚠️ Плейсхолдер формулы ${index} не найден в HTML!`);
+                        console.warn(`  Placeholder: ${placeholder}`);
+                        console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                        console.warn(`  HTML snippet: ${html.substring(0, 200)}`);
+                    }
                     
                     // Простая замена плейсхолдера на формулу
+                    // HTML комментарии нужно экранировать для regex
                     try {
-                        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        // Экранируем специальные символы для regex
+                        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
                         const regex = new RegExp(escapedPlaceholder, 'g');
+                        const beforeCount = (html.match(new RegExp(escapedPlaceholder, 'g')) || []).length;
                         html = html.replace(regex, replacement);
+                        const afterCount = (html.match(new RegExp(escapedPlaceholder, 'g')) || []).length;
+                        
+                        if (window.DEBUG_ARTICLE_PARSER || index < 3) {
+                            console.log(`[restoreProtectedFormulas] Restored formula ${index} (${formulaObj.type}): ${beforeCount} -> ${afterCount} replacements`);
+                            console.log(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                        }
                     } catch (regexError) {
                         console.error(`❌ Ошибка при создании regex для формулы ${index}:`, regexError);
                         console.error('  Placeholder:', placeholder);
