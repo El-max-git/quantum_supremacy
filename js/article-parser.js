@@ -122,11 +122,45 @@ class ArticleParser {
                     : `\u200B\u200B\u200BMATH_INLINE_${problemFormulaIndex}_MATH\u200B\u200B\u200B`;
                 const placeholderInHtml = html.includes(placeholder);
                 console.log('🔍 STEP 5 (convertMarkdownToHtml): Placeholder in HTML after marked.js:', placeholderInHtml);
-                if (!placeholderInHtml) {
+                
+                // Всегда логируем HTML вокруг плейсхолдера для проблемной формулы
+                if (placeholderInHtml) {
+                    const index = html.indexOf(placeholder);
+                    const context = html.substring(Math.max(0, index - 200), Math.min(html.length, index + placeholder.length + 200));
+                    console.log('  Placeholder context in HTML:', context);
+                } else {
+                    console.warn('  ⚠ Placeholder NOT found in HTML after marked.js!');
                     // Проверяем, что marked.js сделал с формулой
                     const formulaText = formulas[problemFormulaIndex].formula;
                     const formulaInHtml = html.includes(formulaText);
                     console.log('  Formula text found directly in HTML:', formulaInHtml);
+                    
+                    // Проверяем, есть ли формула без \text (marked.js мог обработать \text)
+                    const formulaWithoutText = formulaText.replace(/\\text\{[^}]+\}/g, '');
+                    const formulaWithoutTextInHtml = html.includes(formulaWithoutText);
+                    console.log('  Formula without \\text{} found in HTML:', formulaWithoutTextInHtml);
+                    
+                    // Проверяем, есть ли формула с экранированными обратными слешами
+                    const formulaWithEscapedBackslashes = formulaText.replace(/\\/g, '\\\\');
+                    const formulaWithEscapedBackslashesInHtml = html.includes(formulaWithEscapedBackslashes);
+                    console.log('  Formula with escaped backslashes found in HTML:', formulaWithEscapedBackslashesInHtml);
+                    
+                    // Ищем формулу в разных вариантах
+                    const searchVariants = [
+                        formulaText,
+                        formulaText.replace(/\\text\{/g, 'text{'),
+                        formulaText.replace(/\\/g, ''),
+                        'div(g) = 2',
+                        'text{div}(g) = 2',
+                    ];
+                    
+                    searchVariants.forEach((variant, idx) => {
+                        if (html.includes(variant)) {
+                            const index = html.indexOf(variant);
+                            const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + variant.length + 100));
+                            console.log(`  Found variant ${idx} ("${variant.substring(0, 50)}..."):`, context);
+                        }
+                    });
                     if (formulaInHtml) {
                         const index = html.indexOf(formulaText);
                         const context = html.substring(Math.max(0, index - 100), Math.min(html.length, index + formulaText.length + 100));
@@ -1071,8 +1105,20 @@ ${cleanContent}
         const problemFormulaText = '\\text{div}(g) = 2';
         const fullProblemFormula = '\\text{div}(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)';
         
+        // Всегда проверяем проблемную формулу (не только для DEBUG режима)
+        const hasFullFormula = html.includes(fullProblemFormula);
+        const hasFullFormulaWithDollars = html.includes(`$$${fullProblemFormula}$$`);
+        const hasPartialFormula = html.includes(problemFormulaText);
+        
+        console.log(`[ArticleParser] Problem formula check:`, {
+            hasFullFormula,
+            hasFullFormulaWithDollars,
+            hasPartialFormula,
+            htmlLength: html.length
+        });
+        
         // Проверяем полную формулу
-        if (html.includes(fullProblemFormula) && !html.includes(`$$${fullProblemFormula}$$`)) {
+        if (hasFullFormula && !hasFullFormulaWithDollars) {
             console.warn(`⚠ Full problem formula found in HTML but not in MathJax format!`);
             // Ищем контекст вокруг формулы
             const index = html.indexOf(fullProblemFormula);
@@ -1089,12 +1135,74 @@ ${cleanContent}
         }
         
         // Проверяем часть формулы
-        if (html.includes(problemFormulaText) && !html.includes(`$$${problemFormulaText}`) && !html.includes(`$$${fullProblemFormula}$$`)) {
+        if (hasPartialFormula && !hasFullFormulaWithDollars && !html.includes(`$$${problemFormulaText}`)) {
             console.warn(`⚠ Problem formula (partial) found in HTML but not in MathJax format!`);
             // Ищем контекст вокруг формулы
             const index = html.indexOf(problemFormulaText);
             const context = html.substring(Math.max(0, index - 200), Math.min(html.length, index + problemFormulaText.length + 200));
             console.warn(`  Context: ${context.substring(0, 300)}...`);
+        }
+        
+        // Финальная проверка: ищем формулу в разных форматах
+        const finalCheckPatterns = [
+            `$$${fullProblemFormula}$$`,
+            `$${fullProblemFormula}$`,
+            fullProblemFormula,
+            problemFormulaText
+        ];
+        
+        finalCheckPatterns.forEach((pattern, index) => {
+            if (html.includes(pattern)) {
+                console.log(`[ArticleParser] Final check pattern ${index} found: ${pattern.substring(0, 80)}...`);
+            }
+        });
+        
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: ищем формулу, где \text был удален marked.js
+        // Формула может быть в формате: $div(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$
+        // или: $$div(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$$
+        // или с лишним долларом: $div(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$\n$
+        const formulaWithoutText = 'div(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)';
+        const formulaWithoutTextPatterns = [
+            `$$${formulaWithoutText}$$`,
+            `$${formulaWithoutText}$`,
+            `$div(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)$`,
+            `$$div(g) = 2 \\times \\left(\\frac{\\dot{V}}{V}\\right)$$`,
+        ];
+        
+        let foundWithoutText = false;
+        formulaWithoutTextPatterns.forEach((pattern, index) => {
+            if (html.includes(pattern)) {
+                console.warn(`⚠ Found problem formula WITHOUT \\text{} (pattern ${index}):`, pattern);
+                // Заменяем на правильный формат с \text{}
+                const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escaped, 'gi');
+                html = html.replace(regex, `$$${fullProblemFormula}$$`);
+                foundWithoutText = true;
+                console.log(`✓ Restored problem formula with \\text{} from pattern ${index}`);
+            }
+        });
+        
+        // Также проверяем, есть ли формула с одним долларом в начале и одним в конце на отдельной строке
+        // Это может произойти, если marked.js разбил формулу на части
+        // Паттерн: $div(g) = 2 \times \left(\frac{\dot{V}}{V}\right)$\n$ или подобное
+        const brokenFormulaPattern = /\$div\(g\)\s*=\s*2\s*\\times\s*\\left\(\\frac\{\\dot\{V\}\}\{V\}\\right\)\$\s*\$/g;
+        if (brokenFormulaPattern.test(html)) {
+            console.warn(`⚠ Found broken problem formula with extra dollar sign!`);
+            html = html.replace(brokenFormulaPattern, `$$${fullProblemFormula}$$`);
+            console.log(`✓ Fixed broken problem formula`);
+        }
+        
+        // Также проверяем, есть ли формула в формате с экранированными обратными слешами
+        // marked.js может экранировать обратные слеши
+        const escapedFormulaPattern = /div\(g\)\s*=\s*2\s*\\\\times\s*\\\\left\(\\\\frac\{\\\\dot\{V\}\}\{V\}\\\\right\)/g;
+        if (escapedFormulaPattern.test(html)) {
+            console.warn(`⚠ Found problem formula with escaped backslashes!`);
+            html = html.replace(escapedFormulaPattern, fullProblemFormula);
+            // Затем оборачиваем в $$
+            const escapedFullPattern = fullProblemFormula.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedFullPattern, 'gi');
+            html = html.replace(regex, `$$${fullProblemFormula}$$`);
+            console.log(`✓ Fixed problem formula with escaped backslashes`);
         }
         
         return html;
