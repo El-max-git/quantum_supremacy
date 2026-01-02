@@ -677,14 +677,46 @@ class ArticleViewer {
         
         // Подсчитываем количество формул для отладки
         // Используем более точный паттерн для поиска формул
+        // Важно: block формулы могут быть обернуты в теги или иметь переносы строк
         const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
         const inlineFormulaPattern = /\$[^$\n]+?\$/g;
         
-        const blockFormulas = (articleBody.innerHTML.match(blockFormulaPattern) || []).length;
-        const inlineFormulas = (articleBody.innerHTML.match(inlineFormulaPattern) || []).length;
+        // Ищем формулы в HTML (innerHTML может содержать теги)
+        let htmlContent = articleBody.innerHTML;
+        
+        // Проверяем, не обернуты ли block формулы в теги
+        // Например: <p>$$...$$</p> или <div>$$...$$</div>
+        const blockFormulasInTags = (htmlContent.match(/<[^>]+>\s*\$\$[\s\S]*?\$\$\s*<\/[^>]+>/g) || []).length;
+        
+        // Ищем block формулы (включая те, что могут быть в тегах)
+        const blockFormulas = (htmlContent.match(blockFormulaPattern) || []).length;
+        
+        // Для inline формул нужно быть осторожнее - не захватывать часть block формул
+        // Сначала убираем block формулы из поиска
+        const htmlWithoutBlock = htmlContent.replace(/\$\$[\s\S]*?\$\$/g, '');
+        const inlineFormulas = (htmlWithoutBlock.match(inlineFormulaPattern) || []).length;
+        
         const totalFormulas = blockFormulas + inlineFormulas;
         
+        // Логируем дополнительную информацию
+        if (blockFormulasInTags > 0) {
+            console.warn(`⚠️ [renderMathJax] Found ${blockFormulasInTags} block formulas wrapped in HTML tags`);
+        }
+        
         console.log(`[renderMathJax] Found formulas: ${blockFormulas} block, ${inlineFormulas} inline (total: ${totalFormulas})`);
+        
+        // Если block формулы не найдены, но должны быть, проверяем, не обернуты ли они в теги
+        if (blockFormulas === 0 && blockFormulasInTags > 0) {
+            console.warn(`⚠️ [renderMathJax] Block formulas are wrapped in HTML tags - extracting them...`);
+            // Извлекаем block формулы из тегов
+            htmlContent = htmlContent.replace(/<[^>]+>\s*(\$\$[\s\S]*?\$\$)\s*<\/[^>]+>/g, '\n\n$1\n\n');
+            articleBody.innerHTML = htmlContent;
+            // Пересчитываем
+            const newBlockFormulas = (htmlContent.match(blockFormulaPattern) || []).length;
+            if (newBlockFormulas > 0) {
+                console.log(`✓ Extracted ${newBlockFormulas} block formulas from HTML tags`);
+            }
+        }
         
         // Проверяем, нет ли поврежденных формул (например, с экранированными символами)
         const escapedDollars = (articleBody.innerHTML.match(/&#36;|&amp;#36;/g) || []).length;
