@@ -181,21 +181,32 @@
     try {
         // Определяем basePath так же, как в router.js
         let basePath = '';
-        if (window.router && window.router.basePath) {
-            basePath = window.router.basePath;
+        if (window.router && window.router.basePath !== undefined) {
+            basePath = window.router.basePath || '';
+            console.log('[ArticleView] basePath from router:', basePath);
         } else {
             // Если router еще не инициализирован, определяем сами
             const hostname = window.location.hostname;
+            const port = window.location.port;
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || 
+                              hostname.startsWith('192.168.') || hostname.startsWith('10.') || 
+                              hostname.startsWith('172.') || hostname === '';
+            
             console.log('[ArticleView] hostname:', hostname);
+            console.log('[ArticleView] port:', port);
             console.log('[ArticleView] full location:', window.location.href);
             console.log('[ArticleView] pathname:', window.location.pathname);
+            console.log('[ArticleView] isLocalhost:', isLocalhost);
             
             // Проверяем, работаем ли мы на GitHub Pages или локально
-            if (hostname.includes('github.io')) {
+            // Для локальной разработки (localhost, IP адреса, пустой hostname) basePath должен быть пустым
+            if (hostname.includes('github.io') && !isLocalhost) {
                 basePath = '/quantum_supremacy';
+                console.log('[ArticleView] Detected GitHub Pages, using basePath:', basePath);
             } else {
                 // Для локальной разработки basePath пустой
                 basePath = '';
+                console.log('[ArticleView] Detected local development, using basePath: "" (empty)');
             }
         }
         console.log('[ArticleView] Final basePath:', basePath);

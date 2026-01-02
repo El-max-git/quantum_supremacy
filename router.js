@@ -9,9 +9,19 @@ class Router {
         this.rootElement = document.getElementById('app');
         
         // Detect base path for GitHub Pages
-        this.basePath = window.location.hostname.includes('github.io') 
+        // Для локальной разработки (localhost, IP адреса) basePath должен быть пустым
+        const hostname = window.location.hostname;
+        const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || 
+                          hostname.startsWith('192.168.') || hostname.startsWith('10.') || 
+                          hostname.startsWith('172.') || hostname === '';
+        
+        this.basePath = (hostname.includes('github.io') && !isLocalhost)
             ? '/quantum_supremacy' 
             : '';
+        
+        console.log('[Router] hostname:', hostname);
+        console.log('[Router] isLocalhost:', isLocalhost);
+        console.log('[Router] basePath determined:', this.basePath);
         
         // Handle initial redirect from 404.html
         this.handleInitialRedirect();
