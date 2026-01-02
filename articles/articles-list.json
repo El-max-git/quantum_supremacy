@@ -14,6 +14,19 @@
       ]
     },
     {
+      "id": "theory",
+      "title": "Теория",
+      "description": "Теоретические статьи по физике и математике",
+      "icon": "📚",
+      "order": 2,
+      "items": [
+        {
+          "id": "vector-potential-field",
+          "mdFile": "articles/VECTOR_POTENTIAL_FIELD/VECTOR_POTENTIAL_FIELD_.md"
+        }
+      ]
+    },
+    {
       "id": "test",
       "title": "Тестовые статьи",
       "description": "Тестовые и примеры статей",
