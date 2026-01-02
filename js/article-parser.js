@@ -1081,17 +1081,14 @@ ${cleanContent}
         
         // Дополнительная проверка: ищем экранированные формулы (на случай, если что-то пошло не так)
         const escapedDollar = (html.match(/&#36;|&amp;#36;/g) || []).length;
-            if (escapedDollar > 0) {
-                console.warn(`  Найдено ${escapedDollar} экранированных символов $ - будет восстановлено`);
-            }
-            
-            // Проверяем, не обернуты ли формулы в <code>
-            const formulasInCode = (html.match(/<code>.*?\$.*?\$.*?<\/code>/g) || []).length;
-            if (formulasInCode > 0) {
-                console.warn(`  Найдено ${formulasInCode} формул внутри <code> тегов - это может мешать MathJax`);
-            }
-        } else if (window.DEBUG_ARTICLE_PARSER || expectedCount > 0) {
-            console.log(`✓ Все формулы сохранены: ${formulaCount}/${expectedCount}`);
+        if (escapedDollar > 0) {
+            console.warn(`  Найдено ${escapedDollar} экранированных символов $ - будет восстановлено`);
+        }
+        
+        // Проверяем, не обернуты ли формулы в <code>
+        const formulasInCode = (html.match(/<code>.*?\$.*?\$.*?<\/code>/g) || []).length;
+        if (formulasInCode > 0) {
+            console.warn(`  Найдено ${formulasInCode} формул внутри <code> тегов - это может мешать MathJax`);
         }
         
         return html;
