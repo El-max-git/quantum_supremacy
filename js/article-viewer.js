@@ -114,6 +114,13 @@ class ArticleViewer {
             if (response.ok) {
                 const data = await response.json();
                 
+                // КРИТИЧЕСКАЯ ПРОВЕРКА: GitHub Pages может вернуть README.md вместо JSON при ошибке
+                // Проверяем, что загруженный файл действительно JSON, а не README.md
+                if (typeof data === 'string' && (data.includes('# 📚 Директория статей') || data.includes('Эта директория содержит все научные статьи'))) {
+                    console.error('⚠️ ERROR: Loaded README.md instead of articles-list.json!');
+                    throw new Error('Файл articles-list.json не найден. GitHub Pages вернул README.md вместо JSON.');
+                }
+                
                 // Проверяем структуру: tree или flat
                 if (data.structure === 'tree' && data.categories) {
                     // Древовидная структура
@@ -515,6 +522,13 @@ class ArticleViewer {
             
             // Загружаем markdown с fallback на GitHub Raw API
             const mdText = await this.fetchArticleFile(article.mdFile);
+            
+            // КРИТИЧЕСКАЯ ПРОВЕРКА: GitHub Pages может вернуть README.md вместо статьи при ошибке
+            // Проверяем, что загруженный файл не является README.md
+            if (mdText.includes('# 📚 Директория статей') || mdText.includes('Эта директория содержит все научные статьи')) {
+                console.error('⚠️ ERROR: Loaded README.md instead of article! This usually means the article file was not found.');
+                throw new Error(`Статья "${article.id}" не найдена. Файл ${article.mdFile} не существует или недоступен.`);
+            }
             
             // Парсим статью
             console.log(`[ArticleViewer] Parsing article: id=${article.id}, path=${article.path || article.mdFile}`);
