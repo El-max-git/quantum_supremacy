@@ -157,16 +157,68 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
         
+        // Извлекаем ручное содержание из markdown (если есть)
+        let manualToc = null;
+        let articleContent = content;
+        
+        // Ищем раздел "Содержание" (может быть с эмодзи или без)
+        // Формат: ## 📑 Содержание ... ---
+        const tocHeaderPattern = /^##\s*[📑]?\s*Содержание\s*\n/;
+        const tocMatch = content.match(tocHeaderPattern);
+        
+        if (tocMatch) {
+            // Находим начало содержания
+            const tocStart = tocMatch.index + tocMatch[0].length;
+            // Ищем конец содержания (следующий разделитель ---)
+            const tocEndMatch = content.substring(tocStart).match(/^\n---\n/);
+            const tocEnd = tocEndMatch ? tocStart + tocEndMatch.index : content.length;
+            
+            // Извлекаем содержание
+            const tocContent = content.substring(tocStart, tocEnd).trim();
+            
+            if (tocContent) {
+                // Преобразуем содержание в HTML
+                manualToc = simpleMarkdownToHtml(tocContent);
+                // Удаляем раздел содержания из основного контента (включая заголовок и разделитель)
+                const tocSectionEnd = tocEndMatch ? tocEnd + tocEndMatch[0].length : content.length;
+                articleContent = content.substring(0, tocMatch.index).trim() + 
+                                (tocSectionEnd < content.length ? '\n\n' + content.substring(tocSectionEnd).trim() : '');
+            }
+        }
+        
         // Простой markdown парсинг (базовый)
-        const html = simpleMarkdownToHtml(content);
+        const html = simpleMarkdownToHtml(articleContent);
         
-        document.getElementById('article-body').innerHTML = html;
-        
-        // Генерируем содержание
-        if (typeof TableOfContents !== 'undefined') {
+        // Генерируем содержание ДО пагинации
+        let tocHtml = '';
+        if (manualToc) {
+            // Используем ручное содержание из markdown
+            tocHtml = manualToc;
+        } else if (typeof TableOfContents !== 'undefined') {
+            // Создаем временный контейнер для генерации TOC из полного HTML
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
             const toc = new TableOfContents({ minHeadings: 2 });
-            const tocHtml = toc.generate(document.getElementById('article-body'));
-            document.getElementById('article-toc').innerHTML = tocHtml;
+            tocHtml = toc.generate(tempDiv);
+        }
+        
+        // Сохраняем TOC для sidebar
+        document.getElementById('article-toc').innerHTML = tocHtml;
+        
+        // Разбиваем статью на страницы
+        const paginatedHtml = paginateArticle(html, tocHtml);
+        
+        document.getElementById('article-body').innerHTML = paginatedHtml;
+        
+        // Инициализируем пагинацию
+        initPagination();
+        
+        // Инициализируем отслеживание скролла для TOC
+        if (typeof TableOfContents !== 'undefined' && !manualToc) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const toc = new TableOfContents({ minHeadings: 2 });
+            toc.generate(tempDiv);
             toc.initScrollTracking();
         }
         
@@ -479,11 +531,19 @@
             return `__INLINE_CODE_${index}__`;
         });
         
-        // Жирный текст
-        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Жирный текст (с поддержкой переносов строк)
+        // Используем [\s\S] вместо . для захвата переносов строк
+        html = html.replace(/\*\*([\s\S]*?)\*\*/g, (match, content) => {
+            // Сохраняем переносы строк внутри жирного текста
+            return `<strong>${content}</strong>`;
+        });
         
-        // Курсив
-        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Курсив (с поддержкой переносов строк)
+        // Используем [\s\S] вместо . для захвата переносов строк
+        html = html.replace(/\*([\s\S]*?)\*/g, (match, content) => {
+            // Сохраняем переносы строк внутри курсива
+            return `<em>${content}</em>`;
+        });
         
         // Ссылки (формат markdown: [текст](url))
         // Обрабатываем только если содержимое в круглых скобках является валидным URL
@@ -550,7 +610,7 @@
         function flushList() {
             if (currentList.length > 0) {
                 const listTag = currentListType === 'ol' ? 'ol' : 'ul';
-                result.push(`<${listTag}>${currentList.join('')}</${listTag}>`);
+                result.push(`<${listTag}>${currentList.join('\n')}</${listTag}>`);
                 currentList = [];
                 currentListType = null;
             }
@@ -567,6 +627,7 @@
                         if (part.match(/^__(CODE|FORMULA)_BLOCK_\d+__$/)) {
                             result.push(part);
                         } else if (part.trim()) {
+                            // Сохраняем переносы строк, заменяя их на <br>
                             const paraWithBreaks = part.replace(/\n/g, '<br>');
                             result.push(`<p>${paraWithBreaks}</p>`);
                         }
@@ -574,7 +635,8 @@
                 } else if (paraText.startsWith('<') && paraText.match(/^(<h[1-6]|<ul|<ol|<li|<table|<hr|<pre|<div)/)) {
                     result.push(paraText);
                 } else {
-                    // Заменяем одиночные переносы на <br>
+                    // ВАЖНО: Заменяем одиночные переносы на <br> для сохранения структуры
+                    // Используем глобальную замену, чтобы сохранить все переносы
                     const paraWithBreaks = paraText.replace(/\n/g, '<br>');
                     result.push(`<p>${paraWithBreaks}</p>`);
                 }
@@ -628,6 +690,7 @@
             }
             
             // Обычный текст - добавляем в параграф
+            // ВАЖНО: Добавляем исходную строку (с переносами), а не trimmed
             flushList(); // Завершаем список перед параграфом
             currentPara.push(line);
         }
@@ -656,6 +719,152 @@
         });
         
         return html;
+    }
+    
+    /**
+     * Разбивает статью на страницы по разделам (h2)
+     * @param {string} html - HTML содержимое статьи
+     * @param {string} tocHtml - HTML содержания для вставки на первую страницу
+     * @returns {string} - HTML с разбивкой на страницы
+     */
+    function paginateArticle(html, tocHtml) {
+        // Создаем временный контейнер для парсинга
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Находим все h2 заголовки
+        const h2Elements = tempDiv.querySelectorAll('h2');
+        
+        if (h2Elements.length <= 1) {
+            // Если разделов мало, не разбиваем на страницы, но добавляем содержание на первую страницу
+            let result = '';
+            if (tocHtml) {
+                result += '<div class="article-toc-embedded">';
+                result += '<h2>Содержание</h2>';
+                result += tocHtml;
+                result += '</div>';
+                result += '<hr style="margin: 2rem 0;">';
+            }
+            result += html;
+            return result;
+        }
+        
+        const pages = [];
+        let currentPage = [];
+        let pageNumber = 1;
+        
+        // Проходим по всем элементам
+        const allElements = Array.from(tempDiv.children);
+        
+        for (let i = 0; i < allElements.length; i++) {
+            const element = allElements[i];
+            
+            // Если это h2 и не первый элемент, создаем новую страницу
+            if (element.tagName === 'H2' && currentPage.length > 0) {
+                // Сохраняем текущую страницу
+                pages.push({
+                    number: pageNumber++,
+                    content: currentPage.map(el => el.outerHTML).join('')
+                });
+                // Начинаем новую страницу
+                currentPage = [element];
+            } else {
+                currentPage.push(element);
+            }
+        }
+        
+        // Добавляем последнюю страницу
+        if (currentPage.length > 0) {
+            pages.push({
+                number: pageNumber,
+                content: currentPage.map(el => el.outerHTML).join('')
+            });
+        }
+        
+        // Получаем текущую страницу из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentPageNum = parseInt(urlParams.get('page')) || 1;
+        const activePage = Math.max(1, Math.min(currentPageNum, pages.length));
+        
+        // Генерируем HTML с пагинацией
+        let result = '';
+        
+        // Добавляем содержимое активной страницы
+        result += `<div class="article-page" data-page="${activePage}">`;
+        
+        // На первой странице добавляем полное содержание в начало
+        if (activePage === 1 && tocHtml) {
+            result += '<div class="article-toc-embedded">';
+            result += '<h2>Содержание</h2>';
+            result += tocHtml;
+            result += '</div>';
+            result += '<hr style="margin: 2rem 0;">';
+        }
+        
+        result += pages[activePage - 1].content;
+        result += `</div>`;
+        
+        // Добавляем навигацию по страницам
+        result += generatePagination(pages, activePage, articleId);
+        
+        return result;
+    }
+    
+    /**
+     * Генерирует HTML навигации по страницам
+     * @param {Array} pages - Массив страниц
+     * @param {number} currentPage - Текущая страница
+     * @param {string} articleId - ID статьи
+     * @returns {string} - HTML навигации
+     */
+    function generatePagination(pages, currentPage, articleId) {
+        if (!pages || pages.length === 0) {
+            return '';
+        }
+        
+        let html = '<div class="article-pagination">';
+        
+        // Кнопка "Предыдущая"
+        const prevText = '← Предыдущая';
+        if (currentPage > 1) {
+            const prevPage = String(currentPage - 1);
+            html += '<a href="/article?id=' + encodeURIComponent(articleId) + '&page=' + prevPage + '" class="pagination-btn pagination-prev" data-link>' + prevText + '</a>';
+        } else {
+            html += '<span class="pagination-btn pagination-prev pagination-disabled">' + prevText + '</span>';
+        }
+        
+        // Номера страниц
+        html += '<div class="pagination-numbers">';
+        for (let i = 1; i <= pages.length; i++) {
+            const pageNum = String(i);
+            if (i === currentPage) {
+                html += '<span class="pagination-number pagination-active">' + pageNum + '</span>';
+            } else {
+                html += '<a href="/article?id=' + encodeURIComponent(articleId) + '&page=' + pageNum + '" class="pagination-number" data-link>' + pageNum + '</a>';
+            }
+        }
+        html += '</div>';
+        
+        // Кнопка "Следующая"
+        const nextText = 'Следующая →';
+        if (currentPage < pages.length) {
+            const nextPage = String(currentPage + 1);
+            html += '<a href="/article?id=' + encodeURIComponent(articleId) + '&page=' + nextPage + '" class="pagination-btn pagination-next" data-link>' + nextText + '</a>';
+        } else {
+            html += '<span class="pagination-btn pagination-next pagination-disabled">' + nextText + '</span>';
+        }
+        
+        html += '</div>';
+        
+        return html;
+    }
+    
+    /**
+     * Инициализирует пагинацию
+     */
+    function initPagination() {
+        // Прокрутка вверх при смене страницы
+        window.scrollTo(0, 0);
     }
 })();
 </script>

@@ -1025,6 +1025,30 @@ ul.features-list li::before {
     color: var(--text-primary);
 }
 
+/* Встроенное содержание на первой странице статьи */
+.article-toc-embedded {
+    padding: 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.article-toc-embedded h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.article-toc-embedded .toc-nav,
+.article-toc-embedded .toc-list {
+    max-height: none;
+    overflow: visible;
+}
+
 /* TOC title для TOC сверху */
 .article-toc-top .toc-title {
     margin-top: 0;
@@ -1737,6 +1761,103 @@ ul.features-list li::before {
     font-family: 'Consolas', 'Monaco', monospace;
     font-size: 0.85rem;
     line-height: 1.4;
+}
+
+/* Article Pagination */
+.article-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3rem 0;
+    padding: 2rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-color);
+    color: white !important;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    font-weight: 500;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.article-body .pagination-btn,
+.article-body a.pagination-btn {
+    color: white !important;
+    text-decoration: none;
+}
+
+.pagination-btn:hover {
+    background: var(--link-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.pagination-btn.pagination-disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination-number {
+    padding: 0.5rem 1rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    min-width: 2.5rem;
+    text-align: center;
+    display: inline-block;
+}
+
+.pagination-number:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+}
+
+.pagination-number.pagination-active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.article-page {
+    min-height: 400px;
+}
+
+@media (max-width: 768px) {
+    .article-pagination {
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    
+    .pagination-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .pagination-numbers {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* Article Footer (скрыт) */
