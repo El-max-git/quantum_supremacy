@@ -288,12 +288,30 @@
         // На разных серверах может быть разная чувствительность к регистру
         // Определяем массив URL-ов ДО использования в цикле
         let possibleUrls = [mdUrl]; // Первый вариант - как есть (оригинальный путь)
+        
+        // Второй вариант - нижний регистр (для Windows-серверов и GitHub Pages)
         const lowerUrl = mdUrl.toLowerCase();
-        if (lowerUrl !== mdUrl) {
-            possibleUrls.push(lowerUrl); // Второй вариант - нижний регистр (для Windows-серверов)
+        if (lowerUrl !== mdUrl && !possibleUrls.includes(lowerUrl)) {
+            possibleUrls.push(lowerUrl);
         }
+        
+        // Третий вариант - без basePath (на случай, если файл доступен напрямую)
+        if (basePath && mdUrl.startsWith(basePath)) {
+            const urlWithoutBasePath = mdUrl.substring(basePath.length);
+            if (urlWithoutBasePath && !possibleUrls.includes(urlWithoutBasePath)) {
+                possibleUrls.push(urlWithoutBasePath);
+            }
+        }
+        
+        // Четвертый вариант - относительный путь от корня (без начального слэша)
+        const relativeUrl = mdUrl.startsWith('/') ? mdUrl.substring(1) : mdUrl;
+        if (relativeUrl && !possibleUrls.includes(relativeUrl) && relativeUrl !== mdUrl) {
+            possibleUrls.push(relativeUrl);
+        }
+        
         console.log('[ArticleView] Possible URLs to try:', possibleUrls);
         console.log('[ArticleView] possibleUrls type:', typeof possibleUrls, 'is array:', Array.isArray(possibleUrls));
+        console.log('[ArticleView] Total URLs to try:', possibleUrls.length);
         
         let mdResponse = null;
         let lastError = null;
