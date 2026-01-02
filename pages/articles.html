@@ -353,7 +353,15 @@
         }
     }
     
-    // Запускаем инициализацию
-    setTimeout(() => initArticleViewer(), 100);
+    // Запускаем инициализацию сразу после загрузки DOM
+    // Используем DOMContentLoaded для гарантии, что DOM готов
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => initArticleViewer(), 50);
+        });
+    } else {
+        // DOM уже загружен
+        setTimeout(() => initArticleViewer(), 50);
+    }
 })();
 </script>

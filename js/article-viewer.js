@@ -112,13 +112,25 @@ class ArticleViewer {
             console.log('Response status:', response.status, response.statusText);
             
             if (response.ok) {
-                const data = await response.json();
-                
                 // КРИТИЧЕСКАЯ ПРОВЕРКА: GitHub Pages может вернуть README.md вместо JSON при ошибке
-                // Проверяем, что загруженный файл действительно JSON, а не README.md
-                if (typeof data === 'string' && (data.includes('# 📚 Директория статей') || data.includes('Эта директория содержит все научные статьи'))) {
+                // Сначала получаем текст, чтобы проверить содержимое
+                const responseText = await response.text();
+                
+                // Проверяем, что это не README.md
+                if (responseText.includes('# 📚 Директория статей') || responseText.includes('Эта директория содержит все научные статьи')) {
                     console.error('⚠️ ERROR: Loaded README.md instead of articles-list.json!');
+                    console.error('Response text (first 500 chars):', responseText.substring(0, 500));
                     throw new Error('Файл articles-list.json не найден. GitHub Pages вернул README.md вместо JSON.');
+                }
+                
+                // Парсим JSON только если это не README.md
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    console.error('⚠️ ERROR: Failed to parse articles-list.json as JSON!');
+                    console.error('Response text (first 500 chars):', responseText.substring(0, 500));
+                    throw new Error('Файл articles-list.json не является валидным JSON. Возможно, GitHub Pages вернул README.md.');
                 }
                 
                 // Проверяем структуру: tree или flat
