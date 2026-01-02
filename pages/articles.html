@@ -1,3 +1,34 @@
+<!-- КРИТИЧЕСКАЯ ПРОВЕРКА: Проверяем параметр ?id ДО отображения содержимого -->
+<script>
+(function() {
+    // Проверяем параметр ?id сразу при загрузке страницы
+    const urlParams = new URLSearchParams(window.location.search);
+    const articleId = urlParams.get('id');
+    
+    if (articleId) {
+        // Если есть articleId, сразу скрываем заголовок и показываем индикатор загрузки
+        // Это предотвращает показ README.md при перезагрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            const header = document.querySelector('.page-header');
+            const list = document.getElementById('articles-list');
+            const viewer = document.getElementById('article-viewer');
+            
+            if (header) header.style.display = 'none';
+            if (list) list.style.display = 'none';
+            if (viewer) {
+                viewer.style.display = 'block';
+                viewer.innerHTML = `
+                    <div class="loading-indicator">
+                        <div class="spinner"></div>
+                        <p>Загрузка статьи...</p>
+                    </div>
+                `;
+            }
+        });
+    }
+})();
+</script>
+
 <div class="container" style="padding: 2rem 1rem;">
     <!-- Page Header -->
     <header class="page-header" style="text-align: center; margin-bottom: 3rem;">

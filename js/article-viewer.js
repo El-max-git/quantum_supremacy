@@ -24,17 +24,39 @@ class ArticleViewer {
      */
     async init() {
         try {
-            // Загружаем конфигурацию
-            await this.loadArticles();
-            
-            // Отображаем список статей
-            this.renderArticlesList();
-            
-            // Проверяем, есть ли articleId в URL (для прямых ссылок)
+            // КРИТИЧЕСКАЯ ПРОВЕРКА: Проверяем параметр ?id ДО загрузки статей
+            // Это нужно для того, чтобы сразу показать статью при перезагрузке страницы
             const urlParams = new URLSearchParams(window.location.search);
             const articleId = urlParams.get('id');
             
             if (articleId) {
+                console.log(`[ArticleViewer] Article ID found in URL: ${articleId}, will load article after articles list`);
+                // Показываем индикатор загрузки сразу
+                const viewer = document.getElementById(this.config.viewerContainerId);
+                const list = document.getElementById(this.config.listContainerId);
+                if (viewer) {
+                    viewer.style.display = 'block';
+                    viewer.innerHTML = `
+                        <div class="loading-indicator">
+                            <div class="spinner"></div>
+                            <p>Загрузка статьи...</p>
+                        </div>
+                    `;
+                }
+                if (list) list.style.display = 'none';
+            }
+            
+            // Загружаем конфигурацию
+            await this.loadArticles();
+            
+            // Отображаем список статей (если нет articleId)
+            if (!articleId) {
+                this.renderArticlesList();
+            }
+            
+            // Если есть articleId, загружаем статью сразу после загрузки списка
+            if (articleId) {
+                console.log(`[ArticleViewer] Loading article ${articleId} after articles list loaded`);
                 await this.viewArticle(articleId);
             }
             
