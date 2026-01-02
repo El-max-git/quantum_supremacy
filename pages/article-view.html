@@ -239,10 +239,39 @@
             ? `${basePath}/${mdFile}`.replace(/([^:]\/)\/+/g, '$1')
             : `/${mdFile}`.replace(/\/+/g, '/');
         
-        // Попробуем несколько вариантов пути, если первый не сработает
-        // На разных серверах может быть разная чувствительность к регистру
-        // Определяем массив URL-ов ДО использования в цикле
-        let possibleUrls = [mdUrl]; // Первый вариант - как есть (оригинальный путь)
+        // Определяем массив URL-ов для попыток загрузки
+        // ПРИОРИТЕТ: GitHub Raw URL (main) - самый надежный источник для GitHub Pages
+        let possibleUrls = [];
+        
+        // ПЕРВЫЙ ПРИОРИТЕТ - GitHub Raw URL (самый успешный вариант для GitHub Pages)
+        // Если обычные пути не работают, пробуем загрузить напрямую из репозитория
+        // Это работает, даже если файл не развернут на GitHub Pages
+        if (hostname.includes('github.io')) {
+            // Пытаемся определить имя пользователя из hostname
+            // el-max-git.github.io -> username = el-max-git
+            const repoMatch = hostname.match(/^([^.]+)\.github\.io$/);
+            
+            if (repoMatch) {
+                const username = repoMatch[1];
+                // Используем путь из mdFile напрямую
+                // main - самая распространенная ветка, пробуем первой
+                const mainRawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/main/${mdFile}`;
+                possibleUrls.push(mainRawUrl);
+                
+                // Добавляем другие ветки после main
+                const otherBranches = ['master', 'gh-pages'];
+                for (const branch of otherBranches) {
+                    const rawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/${branch}/${mdFile}`;
+                    if (!possibleUrls.includes(rawUrl)) {
+                        possibleUrls.push(rawUrl);
+                    }
+                }
+            }
+        }
+        
+        // ВТОРОЙ ПРИОРИТЕТ - обычные пути (на случай, если файл развернут на GitHub Pages)
+        // Первый вариант - как есть (оригинальный путь)
+        possibleUrls.push(mdUrl);
         
         // Второй вариант - нижний регистр (для Windows-серверов и GitHub Pages)
         const lowerUrl = mdUrl.toLowerCase();
@@ -262,28 +291,6 @@
         const relativeUrl = mdUrl.startsWith('/') ? mdUrl.substring(1) : mdUrl;
         if (relativeUrl && !possibleUrls.includes(relativeUrl) && relativeUrl !== mdUrl) {
             possibleUrls.push(relativeUrl);
-        }
-        
-        // Пятый вариант - для GitHub Pages: через raw.githubusercontent.com (fallback)
-        // Если обычные пути не работают, пробуем загрузить напрямую из репозитория
-        // Это работает, даже если файл не развернут на GitHub Pages
-        if (hostname.includes('github.io')) {
-            // Пытаемся определить имя пользователя из hostname
-            // el-max-git.github.io -> username = el-max-git
-            const repoMatch = hostname.match(/^([^.]+)\.github\.io$/);
-            
-            if (repoMatch) {
-                const username = repoMatch[1];
-                // Используем путь из mdFile напрямую
-                // Пробуем разные ветки: main (обычно основная), master, gh-pages
-                const branches = ['main', 'master', 'gh-pages'];
-                for (const branch of branches) {
-                    const rawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/${branch}/${mdFile}`;
-                    if (!possibleUrls.includes(rawUrl)) {
-                        possibleUrls.push(rawUrl);
-                    }
-                }
-            }
         }
         
         let mdResponse = null;
