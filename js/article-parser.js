@@ -44,40 +44,20 @@ class ArticleParser {
                 console.log(`[ArticleParser] DEBUG mode NOT enabled: metadata.id=${metadata?.id}, articlePath includes test-formula=${articlePath.includes('test-formula')}`);
             }
             
-            // 1. Защитить формулы от обработки marked.js
-            const { protectedText, formulas } = this.protectFormulas(content);
+            // Подход GitHub: НЕ защищаем формулы, просто парсим markdown
+            // marked.js настроен так, чтобы не трогать формулы (см. convertMarkdownToHtml)
             
-            // 2. Pre-process: специальные блоки
-            let processed = this.preprocessSpecialBlocks(protectedText);
+            // 1. Pre-process: специальные блоки
+            let processed = this.preprocessSpecialBlocks(content);
             
-            // 3. Pre-process: формулы в блоках кода (преобразование в MathJax)
+            // 2. Pre-process: формулы в блоках кода (преобразование в MathJax)
             processed = this.preprocessCodeBlockFormulas(processed);
             
-            // 4. Pre-process: рамки для формул
+            // 3. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
             
-            // 5. Parse markdown to HTML
+            // 4. Parse markdown to HTML (формулы остаются как есть, как в GitHub)
             let html = await this.convertMarkdownToHtml(processed);
-            
-            // 6. Восстановить защищенные формулы
-            html = this.restoreProtectedFormulas(html, formulas);
-            
-            // Отладочная информация
-            if (window.DEBUG_ARTICLE_PARSER) {
-                // Проверяем все форматы плейсхолдеров (ищем по data-атрибуту)
-                const remaining = html.match(/data-math-placeholder="(BLOCK|INLINE)_\d+"/g);
-                if (remaining && remaining.length > 0) {
-                    console.warn(`After restoreProtectedFormulas: ${remaining.length} placeholders still remain`);
-                    // Показываем первые несколько примеров
-                    console.warn('Sample remaining placeholders:', remaining.slice(0, 5));
-                    // Показываем контекст вокруг первого плейсхолдера
-                    const firstIndex = html.indexOf(remaining[0]);
-                    if (firstIndex > 0) {
-                        const context = html.substring(Math.max(0, firstIndex - 50), firstIndex + remaining[0].length + 50);
-                        console.warn('Context around first placeholder:', context);
-                    }
-                }
-            }
             
             // 5. Post-process: изображения
             html = this.processImages(html, articlePath);
@@ -251,10 +231,16 @@ ${cleanContent}
 
     /**
      * Упрощенный механизм обработки формул: защита и восстановление
+     * ИСПОЛЬЗУЕТСЯ ПОДХОД GITHUB: формулы не защищаются, остаются как есть
+     * 
+     * ⚠️ ЭТОТ МЕТОД БОЛЬШЕ НЕ ИСПОЛЬЗУЕТСЯ
+     * Оставлен для справки или возможного использования в будущем
+     * 
      * Используем Unicode маркеры из Private Use Area (U+E000-U+F8FF)
      * Эти символы не используются в обычном тексте и не будут удалены marked.js
      * @param {string} text - Markdown текст
      * @returns {{protectedText: string, formulas: Array}} - Защищенный текст и массив формул
+     * @deprecated Используется подход GitHub - формулы не защищаются
      */
     protectFormulas(text) {
         try {
@@ -336,10 +322,16 @@ ${cleanContent}
     
     /**
      * Упрощенное восстановление формул после парсинга
+     * ИСПОЛЬЗУЕТСЯ ПОДХОД GITHUB: формулы не защищаются, остаются как есть
+     * 
+     * ⚠️ ЭТОТ МЕТОД БОЛЬШЕ НЕ ИСПОЛЬЗУЕТСЯ
+     * Оставлен для справки или возможного использования в будущем
+     * 
      * Простая замена плейсхолдеров на формулы - вся логика в одном месте
      * @param {string} html - HTML после парсинга
      * @param {Array} formulas - Массив формул
      * @returns {string} - HTML с восстановленными формулами
+     * @deprecated Используется подход GitHub - формулы не защищаются
      */
     restoreProtectedFormulas(html, formulas) {
         try {
@@ -390,16 +382,47 @@ ${cleanContent}
                     // Проверяем наличие маркера в HTML
                     const matches = html.match(markerRegex);
                     if (!matches || matches.length === 0) {
-                        console.warn(`⚠️ Маркер формулы ${index} НЕ НАЙДЕН в HTML!`);
-                        console.warn(`  Type: ${formulaObj.type}, Index: ${index}`);
-                        console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
-                        // Пробуем найти похожие маркеры для отладки
-                        const similarMarkers = html.match(/\uE000[BI]\d{3}\uE001/g);
-                        if (similarMarkers) {
-                            console.warn(`  Found similar markers: ${similarMarkers.slice(0, 5).join(', ')}`);
+                        // Пробуем найти маркер в экранированном виде (HTML entities)
+                        // marked.js может экранировать Unicode символы как &#57344; или \uE000
+                        const escapedMarkerPattern = new RegExp(
+                            `&#57344;|&#xE000;|\\\\uE000|\\uE000`,
+                            'g'
+                        );
+                        const escapedMatches = html.match(escapedMarkerPattern);
+                        
+                        if (escapedMatches && escapedMatches.length > 0) {
+                            console.warn(`⚠️ Маркер формулы ${index} найден в экранированном виде!`);
+                            console.warn(`  Type: ${formulaObj.type}, Index: ${index}`);
+                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            console.warn(`  Пробуем восстановить из экранированного маркера...`);
+                            
+                            // Пробуем найти контекст вокруг экранированного маркера
+                            const contextIndex = html.indexOf(escapedMatches[0]);
+                            if (contextIndex > 0) {
+                                const context = html.substring(
+                                    Math.max(0, contextIndex - 100),
+                                    Math.min(html.length, contextIndex + 200)
+                                );
+                                console.warn(`  Context: ${context.substring(0, 150)}`);
+                            }
                         } else {
-                            console.error(`  ❌ НИ ОДИН маркер не найден в HTML!`);
-                            console.error(`  Это означает, что marked.js удалил ВСЕ маркеры!`);
+                            console.warn(`⚠️ Маркер формулы ${index} НЕ НАЙДЕН в HTML!`);
+                            console.warn(`  Type: ${formulaObj.type}, Index: ${index}`);
+                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            // Пробуем найти похожие маркеры для отладки
+                            const similarMarkers = html.match(/\uE000[BI]\d{3}\uE001/g);
+                            if (similarMarkers) {
+                                console.warn(`  Found similar markers: ${similarMarkers.slice(0, 5).join(', ')}`);
+                            } else {
+                                // Проверяем, есть ли вообще Unicode символы в HTML
+                                const unicodeChars = html.match(/[\uE000-\uF8FF]/g);
+                                if (unicodeChars) {
+                                    console.warn(`  Found Unicode Private Use Area chars: ${unicodeChars.length} total`);
+                                } else {
+                                    console.error(`  ❌ НИ ОДИН маркер не найден в HTML!`);
+                                    console.error(`  Это означает, что marked.js удалил ВСЕ маркеры!`);
+                                }
+                            }
                         }
                         continue; // Переходим к следующей формуле
                     }
@@ -414,6 +437,14 @@ ${cleanContent}
                         if (window.DEBUG_ARTICLE_PARSER || index < 3) {
                             console.log(`[restoreProtectedFormulas] Restored formula ${index} (${formulaObj.type}): ${beforeCount} -> ${afterCount} replacements`);
                             console.log(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            if (beforeCount > 0 && afterCount === 0) {
+                                // Успешная замена - маркер был заменен на формулу
+                                // Проверяем, что формула действительно вставлена
+                                const formulaCheck = html.includes(`$$${formulaObj.formula.substring(0, 20)}`);
+                                if (!formulaCheck) {
+                                    console.warn(`  ⚠️ Формула не найдена в HTML после замены!`);
+                                }
+                            }
                         }
                     } catch (regexError) {
                         console.error(`❌ Ошибка при замене формулы ${index}:`, regexError);
@@ -773,47 +804,36 @@ ${cleanContent}
             return `<pre><code class="language-${language}">${this.escapeHtml(code)}</code></pre>`;
         };
         
-        // Кастомный рендерер для параграфов - сохраняем Unicode маркеры
+        // Кастомный рендерер для параграфов - пропускаем формулы (подход GitHub)
         const originalParagraph = renderer.paragraph;
         renderer.paragraph = (text) => {
-            // Проверяем, содержит ли параграф наши Unicode маркеры (Private Use Area)
-            // Если да, не оборачиваем в <p>, чтобы не нарушить структуру
-            // Маркеры: \uE000 (начало) и \uE001 (конец)
-            if (text.includes('\uE000')) {
+            // Если параграф содержит block формулы ($$...$$), не обрабатываем его
+            // Block формулы должны быть на отдельной строке
+            if (text.includes('$$')) {
                 // Возвращаем как есть, без обертки в <p>
-                // Это важно для block формул, которые должны быть на отдельной строке
                 return text + '\n';
             }
+            // Для inline формул ($...$) оставляем в параграфе, но не экранируем
             return originalParagraph ? originalParagraph(text) : `<p>${text}</p>\n`;
         };
 
         marked.use({ renderer });
 
         // Парсим markdown
-        // marked.js должен сохранить HTML теги благодаря sanitize: false
+        // marked.js настроен так, чтобы не трогать формулы (подход GitHub)
+        // Формулы остаются как $...$ или $$...$$ в HTML, а потом MathJax их обработает
         const html = marked.parse(markdownText);
         
-        // КРИТИЧЕСКАЯ ПРОВЕРКА: проверяем, сохранились ли Unicode маркеры
-        // Маркеры: \uE000 (начало) + тип + индекс + \uE001 (конец)
-        const markerPattern = /\uE000[BI]\d{3}\uE001/g;
-        const markerCount = (html.match(markerPattern) || []).length;
-        const expectedCount = (markdownText.match(markerPattern) || []).length;
-        
-        if (markerCount < expectedCount) {
-            console.error(`❌ КРИТИЧЕСКАЯ ПРОБЛЕМА: marked.js удалил ${expectedCount - markerCount} маркеров!`);
-            console.error(`  Было: ${expectedCount}, Стало: ${markerCount}`);
-            console.error(`  Это означает, что marked.js удаляет Unicode маркеры из Private Use Area`);
-            console.error(`  Решение: нужно использовать другой метод защиты формул`);
-            
-            // Показываем примеры удаленных маркеров
-            const beforeMarkers = markdownText.match(markerPattern) || [];
-            const afterMarkers = html.match(markerPattern) || [];
-            const missing = beforeMarkers.filter(m => !afterMarkers.includes(m));
-            if (missing.length > 0) {
-                console.error(`  Примеры удаленных маркеров:`, missing.slice(0, 5));
+        // Проверяем, что формулы сохранились (для отладки)
+        if (window.DEBUG_ARTICLE_PARSER) {
+            const formulaCount = (html.match(/\$\$[^$]+\$\$|\$[^$\n]+\$/g) || []).length;
+            const expectedCount = (markdownText.match(/\$\$[^$]+\$\$|\$[^$\n]+\$/g) || []).length;
+            if (formulaCount < expectedCount) {
+                console.warn(`⚠️ marked.js удалил ${expectedCount - formulaCount} формул!`);
+                console.warn(`  Было: ${expectedCount}, Стало: ${formulaCount}`);
+            } else {
+                console.log(`✓ Все формулы сохранены: ${formulaCount}/${expectedCount}`);
             }
-        } else if (window.DEBUG_ARTICLE_PARSER) {
-            console.log(`✓ Все маркеры сохранены: ${markerCount}/${expectedCount}`);
         }
         
         return html;
