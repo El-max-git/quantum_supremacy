@@ -11,7 +11,7 @@
     <div id="articles-list">
         <div class="loading-indicator">
             <div class="spinner"></div>
-            <p>Загрузка статей...</p>
+            <p>Загрузка каталога статей...</p>
         </div>
     </div>
 
@@ -20,3 +20,39 @@
         <!-- Article content will be dynamically loaded here -->
     </div>
 </div>
+
+<!-- Articles Catalog Script -->
+<script>
+(function() {
+    async function initArticlesCatalog() {
+        try {
+            if (typeof ArticlesCatalog === 'undefined') {
+                console.error('ArticlesCatalog class not loaded');
+                return;
+            }
+            
+            const basePath = window.router?.basePath || '';
+            const catalog = new ArticlesCatalog({
+                basePath: basePath,
+                listContainerId: 'articles-list',
+                configPath: '/articles/articles-list.json'
+            });
+            
+            await catalog.init();
+            
+            // Делаем доступным глобально
+            window.articlesCatalog = catalog;
+            
+        } catch (error) {
+            console.error('Error initializing ArticlesCatalog:', error);
+        }
+    }
+    
+    // Инициализация после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initArticlesCatalog);
+    } else {
+        initArticlesCatalog();
+    }
+})();
+</script>

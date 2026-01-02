@@ -1,7 +1,4 @@
 {
-  "structure": "tree",
-  "version": "2.0",
-  "lastUpdated": "2025-01-01T00:00:00.000Z",
   "categories": [
     {
       "id": "cosmology",
@@ -11,12 +8,10 @@
       "order": 1,
       "items": [
         {
-          "type": "article",
           "id": "expanding-universe-hypersphere",
           "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md"
         },
         {
-          "type": "category",
           "id": "big-bang",
           "title": "Теория Большого Взрыва",
           "description": "Статьи о происхождении Вселенной",
@@ -50,31 +45,14 @@
       "order": 99,
       "items": [
         {
-          "type": "article",
           "id": "test-simple",
           "mdFile": "articles/test-simple/article.md"
         },
         {
-          "type": "article",
           "id": "test-formula",
           "mdFile": "articles/test-formula/article.md"
         }
       ]
     }
-  ],
-  "articles": [
-    {
-      "id": "expanding-universe-hypersphere",
-      "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md"
-    },
-    {
-      "id": "test-simple",
-      "mdFile": "articles/test-simple/article.md"
-    },
-    {
-      "id": "test-formula",
-      "mdFile": "articles/test-formula/article.md"
-    }
-  ],
-  "count": 3
+  ]
 }
