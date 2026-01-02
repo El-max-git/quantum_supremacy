@@ -309,6 +309,31 @@
             possibleUrls.push(relativeUrl);
         }
         
+        // Пятый вариант - для GitHub Pages: через raw.githubusercontent.com (fallback)
+        // Если обычные пути не работают, пробуем загрузить напрямую из репозитория
+        // Это работает, даже если файл не развернут на GitHub Pages
+        if (hostname.includes('github.io')) {
+            // Пытаемся определить имя пользователя из hostname
+            // el-max-git.github.io -> username = el-max-git
+            const repoMatch = hostname.match(/^([^.]+)\.github\.io$/);
+            if (repoMatch) {
+                const username = repoMatch[1];
+                // Используем путь из mdFile напрямую
+                // Пробуем разные ветки: main (обычно основная), master, gh-pages
+                const branches = ['main', 'master', 'gh-pages'];
+                for (const branch of branches) {
+                    const rawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/${branch}/${mdFile}`;
+                    if (!possibleUrls.includes(rawUrl)) {
+                        possibleUrls.push(rawUrl);
+                    }
+                }
+                console.log('[ArticleView] Added GitHub Raw URL fallbacks for branches:', branches);
+                console.log('[ArticleView] Username detected from hostname:', username);
+            } else {
+                console.warn('[ArticleView] Could not extract username from hostname:', hostname);
+            }
+        }
+        
         console.log('[ArticleView] Possible URLs to try:', possibleUrls);
         console.log('[ArticleView] possibleUrls type:', typeof possibleUrls, 'is array:', Array.isArray(possibleUrls));
         console.log('[ArticleView] Total URLs to try:', possibleUrls.length);
@@ -325,9 +350,18 @@
             console.log('[ArticleView] Trying to fetch from:', tryUrl);
             
             try {
-                mdResponse = await fetch(tryUrl, { cache: 'no-store' });
+                // Для GitHub Raw URL может потребоваться CORS
+                // Для обычных URL (относительных) mode может быть 'same-origin'
+                const isExternalUrl = tryUrl.startsWith('http://') || tryUrl.startsWith('https://');
+                const fetchOptions = { 
+                    cache: 'no-store',
+                    mode: isExternalUrl ? 'cors' : 'same-origin' // CORS для внешних URL (raw.githubusercontent.com)
+                };
+                
+                mdResponse = await fetch(tryUrl, fetchOptions);
                 console.log('[ArticleView] Response status:', mdResponse.status, mdResponse.statusText);
                 console.log('[ArticleView] Response ok:', mdResponse.ok);
+                console.log('[ArticleView] Response URL:', mdResponse.url);
                 
                 if (mdResponse.ok) {
                     console.log('[ArticleView] ✓ Successfully loaded from:', tryUrl);
