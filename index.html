@@ -79,9 +79,6 @@
     <!-- Articles Catalog -->
     <script src="js/articles-catalog.js"></script>
     
-    <!-- Debug Logger (для мобильных устройств) -->
-    <script src="js/debug-logger.js"></script>
-    
     <!-- Router Script -->
     <script src="router.js"></script>
     <script src="js/main.js"></script>
@@ -109,11 +106,7 @@
             // Получаем маршруты для меню через NavUtils
             const menuRoutes = NavUtils.getMenuRoutes();
             
-            console.log('Menu routes:', menuRoutes);
-            console.log('Number of menu items:', menuRoutes.length);
-            
             if (!menuRoutes || menuRoutes.length === 0) {
-                console.warn('No menu routes found! Navigation will be empty.');
                 // Добавляем хотя бы одну ссылку для отладки
                 const li = document.createElement('li');
                 const a = document.createElement('a');
@@ -122,10 +115,8 @@
                 a.setAttribute('data-link', '');
                 li.appendChild(a);
                 nav.appendChild(li);
-                console.warn('Added fallback navigation item');
             } else {
                 menuRoutes.forEach(route => {
-                    console.log('Adding menu item:', route.path, route.title);
                     const li = document.createElement('li');
                     // Используем NavUtils для создания ссылки
                     const a = NavUtils.createLink(route.path, route.title.split(' - ')[0]);
@@ -133,9 +124,6 @@
                     nav.appendChild(li);
                 });
             }
-            
-            console.log('Navigation generated:', nav.innerHTML);
-            console.log('Navigation has', nav.children.length, 'items');
         }
 
         // Динамическая загрузка маршрутов из config.json
@@ -143,7 +131,6 @@
             try {
                 // Добавляем timestamp чтобы избежать кэширования
                 const configUrl = `${basePath}/data/config.json?v=${Date.now()}`;
-                console.log('Loading config from:', configUrl);
                 
                 // Загружаем конфигурацию
                 const response = await fetch(configUrl);
@@ -153,14 +140,11 @@
                 }
                 
                 const config = await response.json();
-                console.log('Config loaded:', config);
 
                 // Проверяем наличие маршрутов
                 if (!config.routes || !Array.isArray(config.routes) || config.routes.length === 0) {
                     throw new Error('No routes found in config.json');
                 }
-
-                console.log('Found routes:', config.routes.length);
 
                 // Инициализируем NavUtils с конфигом
                 NavUtils.init(config, basePath);
@@ -168,39 +152,21 @@
                 // Генерируем навигацию из конфига (через NavUtils)
                 generateNavigation();
 
-                // Проверяем, что навигация сгенерирована
-                const nav = document.getElementById('main-nav');
-                if (nav && nav.children.length === 0) {
-                    console.warn('Navigation is empty after generation!');
-                } else {
-                    console.log('Navigation generated successfully with', nav?.children.length || 0, 'items');
-                }
-
                 // Инициализируем мобильное меню после генерации навигации
                 // Используем setTimeout чтобы убедиться, что DOM обновлен
                 setTimeout(() => {
-                    console.log('Attempting to initialize mobile menu...');
-                    console.log('initMobileMenu available:', typeof initMobileMenu);
-                    console.log('initializePageComponents available:', typeof initializePageComponents);
-                    
                     if (typeof initMobileMenu === 'function') {
-                        console.log('Calling initMobileMenu after navigation generation');
                         try {
                             initMobileMenu();
-                            console.log('initMobileMenu called successfully');
                         } catch (error) {
                             console.error('Error calling initMobileMenu:', error);
                         }
                     } else if (typeof initializePageComponents === 'function') {
-                        console.log('Calling initializePageComponents after navigation generation');
                         try {
                             initializePageComponents();
-                            console.log('initializePageComponents called successfully');
                         } catch (error) {
                             console.error('Error calling initializePageComponents:', error);
                         }
-                    } else {
-                        console.warn('Neither initMobileMenu nor initializePageComponents is available!');
                     }
                 }, 100);
 
@@ -211,12 +177,8 @@
                     );
                 });
 
-                console.log('Starting router...');
-                
                 // Запускаем роутер после регистрации маршрутов
                 router.start();
-                
-                console.log('Router started successfully');
 
             } catch (error) {
                 console.error('Error loading routes config:', error);

@@ -65,36 +65,24 @@
 <!-- Article Viewer Script -->
 <script>
 (function() {
-    console.log('[ArticleView] Script initialized');
-    
     // Функция для получения ID статьи с повторными попытками (для SPA навигации)
     function getArticleId() {
-        console.log('[ArticleView] getArticleId() called');
-        console.log('[ArticleView] window.location.href:', window.location.href);
-        console.log('[ArticleView] window.location.search:', window.location.search);
-        console.log('[ArticleView] window.location.pathname:', window.location.pathname);
-        console.log('[ArticleView] window.router:', window.router);
-        console.log('[ArticleView] window.router?.currentRoute:', window.router?.currentRoute);
-        
         let articleId = null;
         
         // Метод 1: Пробуем получить из window.location.search (самый надежный)
         if (window.location.search) {
             const urlParams = new URLSearchParams(window.location.search);
             articleId = urlParams.get('id');
-            console.log('[ArticleView] articleId from window.location.search:', articleId);
         }
         
         // Метод 2: Пробуем получить из router.currentRoute (для SPA навигации)
         if (!articleId && window.router && window.router.currentRoute) {
             const routeUrl = window.router.currentRoute;
-            console.log('[ArticleView] Trying router.currentRoute:', routeUrl);
             if (routeUrl.includes('?')) {
                 try {
                     const queryPart = routeUrl.split('?')[1];
                     const routeParams = new URLSearchParams(queryPart);
                     articleId = routeParams.get('id');
-                    console.log('[ArticleView] articleId from router.currentRoute:', articleId);
                 } catch (e) {
                     console.error('[ArticleView] Error parsing router.currentRoute:', e);
                 }
@@ -104,13 +92,11 @@
         // Метод 3: Пробуем получить из window.location.href напрямую
         if (!articleId) {
             const fullUrl = window.location.href;
-            console.log('[ArticleView] Trying window.location.href:', fullUrl);
             if (fullUrl.includes('?')) {
                 try {
                     const queryPart = fullUrl.split('?')[1].split('#')[0]; // Убираем хеш, если есть
                     const hrefParams = new URLSearchParams(queryPart);
                     articleId = hrefParams.get('id');
-                    console.log('[ArticleView] articleId from href:', articleId);
                 } catch (e) {
                     console.error('[ArticleView] Error parsing window.location.href:', e);
                 }
@@ -122,21 +108,17 @@
             const pathParts = window.location.pathname.split('/article/');
             if (pathParts.length > 1) {
                 articleId = pathParts[1].split('?')[0].split('#')[0];
-                console.log('[ArticleView] articleId from pathname:', articleId);
             }
         }
         
         // Метод 5: Последняя попытка: парсим хеш, если есть
         if (!articleId && window.location.hash) {
             const hash = window.location.hash.substring(1);
-            console.log('[ArticleView] Trying hash:', hash);
             if (hash.startsWith('id=')) {
                 articleId = hash.substring(3).split('&')[0];
-                console.log('[ArticleView] articleId from hash:', articleId);
             }
         }
         
-        console.log('[ArticleView] Final articleId:', articleId);
         return articleId;
     }
     
@@ -149,8 +131,6 @@
     
     // Функция загрузки статьи
     async function loadArticle(articleId) {
-        console.log('[ArticleView] loadArticle() called with articleId:', articleId);
-        
         if (!articleId) {
             console.error('[ArticleView] No articleId provided');
             const errorHtml = `
@@ -191,54 +171,39 @@
                           hostname.startsWith('172.') || hostname === '' ||
                           /^\d+\.\d+\.\d+\.\d+$/.test(hostname); // Проверка на IP адрес
         
-        console.log('[ArticleView] hostname:', hostname);
-        console.log('[ArticleView] pathname:', pathname);
-        console.log('[ArticleView] isLocalhost:', isLocalhost);
-        console.log('[ArticleView] isPathGitHubPages:', isPathGitHubPages);
-        
         // Определяем basePath с приоритетом: isLocalhost > pathname > hostname
         if (isLocalhost) {
             // Локальная разработка - basePath ВСЕГДА пустой, независимо от router.basePath
             basePath = '';
-            console.log('[ArticleView] Force basePath = "" because isLocalhost = true');
         } else if (window.router && window.router.basePath !== undefined) {
             // Используем basePath из router, но только если это не localhost
             if (isPathGitHubPages && !window.router.basePath) {
                 // Если pathname указывает на GitHub Pages, но router.basePath пустой, используем pathname
                 basePath = '/quantum_supremacy';
-                console.log('[ArticleView] Overriding router.basePath because pathname indicates GitHub Pages');
             } else {
                 basePath = window.router.basePath || '';
             }
-            console.log('[ArticleView] basePath from router:', basePath);
         } else {
             // Если router еще не инициализирован, определяем сами
             // Приоритет: pathname > hostname
             if (isPathGitHubPages) {
                 basePath = '/quantum_supremacy';
-                console.log('[ArticleView] Detected GitHub Pages from pathname, using basePath:', basePath);
             } else if (hostname.includes('github.io') && !isLocalhost) {
                 basePath = '/quantum_supremacy';
-                console.log('[ArticleView] Detected GitHub Pages from hostname, using basePath:', basePath);
             } else {
                 // Для локальной разработки basePath пустой
                 basePath = '';
-                console.log('[ArticleView] Detected local development, using basePath: "" (empty)');
             }
         }
         
-        console.log('[ArticleView] Final basePath:', basePath);
-        
         // Загружаем каталог статей для поиска статьи
         const catalogUrl = `${basePath}/articles/articles-list.json`;
-        console.log('[ArticleView] Fetching catalog from:', catalogUrl);
         const catalogResponse = await fetch(catalogUrl, { cache: 'no-store' });
         if (!catalogResponse.ok) {
             throw new Error(`Не удалось загрузить каталог статей: ${catalogResponse.status} ${catalogResponse.statusText}`);
         }
         
         const catalog = await catalogResponse.json();
-        console.log('[ArticleView] Catalog loaded:', catalog);
         
         // Ищем статью в каталоге
         function findArticle(items, targetId) {
@@ -255,7 +220,6 @@
         }
         
         const article = findArticle(catalog.categories || [], articleId);
-        console.log('[ArticleView] Article found:', article);
         
         if (!article) {
             console.error('[ArticleView] Article not found in catalog. Available IDs:', 
@@ -274,15 +238,6 @@
         let mdUrl = basePath 
             ? `${basePath}/${mdFile}`.replace(/([^:]\/)\/+/g, '$1')
             : `/${mdFile}`.replace(/\/+/g, '/');
-        
-        console.log('[ArticleView] Original mdFile:', article.mdFile);
-        console.log('[ArticleView] Normalized mdFile:', mdFile);
-        console.log('[ArticleView] basePath:', basePath);
-        console.log('[ArticleView] Final mdUrl:', mdUrl);
-        console.log('[ArticleView] Full URL will be:', window.location.origin + mdUrl);
-        console.log('[ArticleView] Current location:', window.location.href);
-        console.log('[ArticleView] Hostname:', window.location.hostname);
-        console.log('[ArticleView] Is GitHub Pages:', window.location.hostname.includes('github.io'));
         
         // Попробуем несколько вариантов пути, если первый не сработает
         // На разных серверах может быть разная чувствительность к регистру
@@ -312,47 +267,24 @@
         // Пятый вариант - для GitHub Pages: через raw.githubusercontent.com (fallback)
         // Если обычные пути не работают, пробуем загрузить напрямую из репозитория
         // Это работает, даже если файл не развернут на GitHub Pages
-        console.log('[ArticleView] Checking for GitHub Pages Raw URL fallback...');
-        console.log('[ArticleView] hostname:', hostname, 'includes github.io:', hostname.includes('github.io'));
-        
         if (hostname.includes('github.io')) {
-            console.log('[ArticleView] GitHub Pages detected, trying to add Raw URL fallbacks');
             // Пытаемся определить имя пользователя из hostname
             // el-max-git.github.io -> username = el-max-git
             const repoMatch = hostname.match(/^([^.]+)\.github\.io$/);
-            console.log('[ArticleView] repoMatch result:', repoMatch);
             
             if (repoMatch) {
                 const username = repoMatch[1];
-                console.log('[ArticleView] Extracted username from hostname:', username);
                 // Используем путь из mdFile напрямую
                 // Пробуем разные ветки: main (обычно основная), master, gh-pages
                 const branches = ['main', 'master', 'gh-pages'];
-                let addedCount = 0;
                 for (const branch of branches) {
                     const rawUrl = `https://raw.githubusercontent.com/${username}/quantum_supremacy/${branch}/${mdFile}`;
-                    console.log('[ArticleView] Generated Raw URL for branch', branch, ':', rawUrl);
                     if (!possibleUrls.includes(rawUrl)) {
                         possibleUrls.push(rawUrl);
-                        addedCount++;
-                        console.log('[ArticleView] ✓ Added Raw URL to possibleUrls');
-                    } else {
-                        console.log('[ArticleView] ✗ Raw URL already in possibleUrls');
                     }
                 }
-                console.log('[ArticleView] Added', addedCount, 'GitHub Raw URL fallbacks for branches:', branches);
-                console.log('[ArticleView] Username detected from hostname:', username);
-            } else {
-                console.warn('[ArticleView] Could not extract username from hostname:', hostname);
-                console.warn('[ArticleView] Hostname pattern does not match expected format: username.github.io');
             }
-        } else {
-            console.log('[ArticleView] Not GitHub Pages, skipping Raw URL fallbacks');
         }
-        
-        console.log('[ArticleView] Possible URLs to try:', possibleUrls);
-        console.log('[ArticleView] possibleUrls type:', typeof possibleUrls, 'is array:', Array.isArray(possibleUrls));
-        console.log('[ArticleView] Total URLs to try:', possibleUrls.length);
         
         let mdResponse = null;
         let lastError = null;
@@ -363,7 +295,6 @@
         for (let i = 0; i < possibleUrls.length; i++) {
             const tryUrl = possibleUrls[i];
             triedUrl = tryUrl;
-            console.log('[ArticleView] Trying to fetch from:', tryUrl);
             
             try {
                 // Для GitHub Raw URL может потребоваться CORS
@@ -375,28 +306,22 @@
                 };
                 
                 mdResponse = await fetch(tryUrl, fetchOptions);
-                console.log('[ArticleView] Response status:', mdResponse.status, mdResponse.statusText);
-                console.log('[ArticleView] Response ok:', mdResponse.ok);
-                console.log('[ArticleView] Response URL:', mdResponse.url);
                 
                 if (mdResponse.ok) {
-                    console.log('[ArticleView] ✓ Successfully loaded from:', tryUrl);
                     successUrl = tryUrl;
                     break; // Успешно загрузили, выходим из цикла
                 } else if (mdResponse.status === 404) {
                     // 404 - файл не найден, пробуем следующий вариант
-                    console.log('[ArticleView] ✗ 404 for:', tryUrl);
                     const errorText = await mdResponse.text().catch(() => '');
                     lastError = `404 Not Found: ${tryUrl}. ${errorText.substring(0, 100)}`;
                     continue;
                 } else {
                     // Другая ошибка - останавливаемся
                     const errorText = await mdResponse.text().catch(() => 'Не удалось прочитать текст ошибки');
-                    console.error('[ArticleView] Response error text:', errorText);
+                    console.error('[ArticleView] Response error:', errorText);
                     throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText}). URL: ${tryUrl}. Error: ${errorText.substring(0, 200)}`);
                 }
             } catch (fetchError) {
-                console.error('[ArticleView] Fetch error for:', tryUrl, fetchError);
                 lastError = `Ошибка сети: ${fetchError.message}. URL: ${tryUrl}`;
                 // Пробуем следующий вариант, если это не последний
                 if (i === possibleUrls.length - 1) {
@@ -415,12 +340,10 @@
         }
         
         // Успешно загрузили файл
-        console.log('[ArticleView] ✓ Article file loaded successfully from:', successUrl || triedUrl);
         
         let mdText;
         try {
             mdText = await mdResponse.text();
-            console.log('[ArticleView] Article loaded, length:', mdText.length, 'chars');
             if (mdText.length === 0) {
                 throw new Error('Файл статьи пуст');
             }
@@ -652,11 +575,8 @@
     
     // Функция инициализации - пытается загрузить статью
     function initArticleView() {
-        console.log('[ArticleView] initArticleView() called');
-        
         // Проверяем, что DOM готов
         if (!document.getElementById('article-body')) {
-            console.warn('[ArticleView] article-body element not found, waiting for DOM...');
             setTimeout(initArticleView, 100);
             return;
         }
@@ -666,21 +586,17 @@
         
         // Вызываем загрузку статьи, если ID найден сразу
         if (articleId) {
-            console.log('[ArticleView] Article ID found immediately, loading...');
             loadArticle(articleId);
         } else {
-            console.warn('[ArticleView] Article ID not found immediately, retrying...');
             // Если ID не найден сразу, пробуем ещё раз через небольшую задержку (для SPA)
             let retryCount = 0;
             const maxRetries = 5;
             
             const retryInterval = setInterval(() => {
                 retryCount++;
-                console.log(`[ArticleView] Retry ${retryCount}/${maxRetries}`);
                 
                 articleId = getArticleId();
                 if (articleId) {
-                    console.log('[ArticleView] Article ID found on retry, loading...');
                     clearInterval(retryInterval);
                     loadArticle(articleId);
                 } else if (retryCount >= maxRetries) {
@@ -1442,7 +1358,6 @@
     function addIdsToHeadings() {
         const articleBody = document.getElementById('article-body');
         if (!articleBody) {
-            console.warn('addIdsToHeadings: article-body not found');
             return;
         }
         
@@ -1499,11 +1414,6 @@
             index++;
         });
         
-        console.log(`addIdsToHeadings: processed ${headings.length} headings, added ${addedCount} IDs, skipped ${skippedCount} (already had ID)`);
-        
-        // Для отладки: показываем все ID заголовков
-        const allIds = Array.from(headings).map(h => h.id).filter(id => id);
-        console.log(`All heading IDs (${allIds.length}):`, allIds.slice(0, 10));
     }
     
     /**
@@ -1511,7 +1421,6 @@
      */
     function initTocLinks(container) {
         if (!container) {
-            console.warn('initTocLinks: container is null');
             return;
         }
         
@@ -1534,16 +1443,9 @@
             }
             
             if (targetId) {
-                console.log('TOC link clicked, targetId:', targetId);
                 scrollToHeading(targetId);
-            } else {
-                console.warn('TOC link clicked but targetId is empty', link);
             }
         });
-        
-        // Подсчитываем ссылки для отладки
-        const links = container.querySelectorAll('a[href^="#"], a[data-toc-target]');
-        console.log(`initTocLinks: initialized for container, found ${links.length} links`);
     }
     
     /**
@@ -1551,11 +1453,8 @@
      */
     function scrollToHeading(targetId) {
         if (!targetId) {
-            console.warn('scrollToHeading: targetId is empty');
             return;
         }
-        
-        console.log('scrollToHeading: searching for id:', targetId);
         
         // Ищем элемент по ID во всем документе
         let targetElement = document.getElementById(targetId);
@@ -1564,14 +1463,12 @@
         // Если не нашли, проверяем все страницы при пагинации
         if (!targetElement) {
             const allPages = document.querySelectorAll('.article-page');
-            console.log(`scrollToHeading: checking ${allPages.length} pages for id "${targetId}"`);
             
             for (const page of allPages) {
                 const foundElement = document.getElementById(targetId);
                 if (foundElement && page.contains(foundElement)) {
                     targetElement = foundElement;
                     targetPage = page;
-                    console.log(`scrollToHeading: found element on page ${page.getAttribute('data-page')}`);
                     break;
                 }
             }
@@ -1587,7 +1484,6 @@
         }
         
         if (!targetElement) {
-            console.warn(`scrollToHeading: Element with id "${targetId}" not found`);
             return;
         }
         
@@ -1599,7 +1495,6 @@
             const currentPage = parseInt(urlParams.get('page')) || 1;
             
             if (pageNum !== currentPage) {
-                console.log(`scrollToHeading: navigating to page ${pageNum}`);
                 const url = `/article?id=${encodeURIComponent(articleId)}&page=${pageNum}#${targetId}`;
                 if (window.router) {
                     window.router.navigate(url);
@@ -1612,11 +1507,8 @@
             // Если элемент на текущей странице, но страница скрыта, показываем её
             if (targetPage.style.display === 'none') {
                 targetPage.style.display = '';
-                console.log(`scrollToHeading: showing page ${pageNum}`);
             }
         }
-        
-        console.log('scrollToHeading: element found, scrolling to:', targetElement);
         
         // Ждём, пока элемент станет видимым
         const performScroll = () => {
