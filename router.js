@@ -81,16 +81,21 @@ class Router {
         console.log('[Router] User Agent:', navigator.userAgent);
         console.log('[Router] Is Mobile:', /Mobile|Android|iPhone|iPad/.test(navigator.userAgent));
         
+        // Сохраняем path с query параметрами для передачи в loadRoute
+        const pathWithQuery = path;
+        
         // Add base path if needed
         const fullPath = this.basePath + path;
-        console.log('[Router] Full path:', fullPath);
+        console.log('[Router] Full path (with basePath):', fullPath);
+        console.log('[Router] Path with query for loadRoute:', pathWithQuery);
         
-        // Update browser history
+        // Update browser history - важно: используем fullPath с query параметрами
         window.history.pushState({}, '', fullPath);
         console.log('[Router] History updated, current URL:', window.location.href);
+        console.log('[Router] window.location.search after pushState:', window.location.search);
         
-        // Load the route (without base path)
-        this.loadRoute(path);
+        // Load the route (передаем path С query параметрами)
+        this.loadRoute(pathWithQuery);
         
         // Scroll to top
         window.scrollTo(0, 0);
@@ -102,6 +107,10 @@ class Router {
      */
     async loadRoute(path) {
         console.log(`Router.loadRoute() called with path: "${path}"`);
+        
+        // Сохраняем ПОЛНЫЙ путь с query параметрами в currentRoute ДО обработки
+        this.currentRoute = path;
+        console.log(`Router: currentRoute set to: "${this.currentRoute}"`);
         
         // Извлекаем путь без query параметров для поиска маршрута
         const pathWithoutQuery = path.split('?')[0];
@@ -115,8 +124,6 @@ class Router {
             handler = this.routes['/404'] || (() => '<h1>404 - Page Not Found</h1>');
             console.log('Router: Using 404 handler');
         }
-
-        this.currentRoute = path;
 
         try {
             // Add loading class to prevent flash

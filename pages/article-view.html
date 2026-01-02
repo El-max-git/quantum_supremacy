@@ -72,42 +72,66 @@
         console.log('[ArticleView] getArticleId() called');
         console.log('[ArticleView] window.location.href:', window.location.href);
         console.log('[ArticleView] window.location.search:', window.location.search);
+        console.log('[ArticleView] window.location.pathname:', window.location.pathname);
         console.log('[ArticleView] window.router:', window.router);
         console.log('[ArticleView] window.router?.currentRoute:', window.router?.currentRoute);
         
-        // Пробуем получить из window.location.search
-        const urlParams = new URLSearchParams(window.location.search);
-        let articleId = urlParams.get('id');
-        console.log('[ArticleView] articleId from search:', articleId);
+        let articleId = null;
         
-        // Если ID не найден, пробуем получить из router.currentRoute
+        // Метод 1: Пробуем получить из window.location.search (самый надежный)
+        if (window.location.search) {
+            const urlParams = new URLSearchParams(window.location.search);
+            articleId = urlParams.get('id');
+            console.log('[ArticleView] articleId from window.location.search:', articleId);
+        }
+        
+        // Метод 2: Пробуем получить из router.currentRoute (для SPA навигации)
         if (!articleId && window.router && window.router.currentRoute) {
             const routeUrl = window.router.currentRoute;
             console.log('[ArticleView] Trying router.currentRoute:', routeUrl);
             if (routeUrl.includes('?')) {
-                const routeParams = new URLSearchParams(routeUrl.split('?')[1]);
-                articleId = routeParams.get('id');
-                console.log('[ArticleView] articleId from router.currentRoute:', articleId);
+                try {
+                    const queryPart = routeUrl.split('?')[1];
+                    const routeParams = new URLSearchParams(queryPart);
+                    articleId = routeParams.get('id');
+                    console.log('[ArticleView] articleId from router.currentRoute:', articleId);
+                } catch (e) {
+                    console.error('[ArticleView] Error parsing router.currentRoute:', e);
+                }
             }
         }
         
-        // Если ID всё ещё не найден, пробуем получить из window.location.href напрямую
+        // Метод 3: Пробуем получить из window.location.href напрямую
         if (!articleId) {
             const fullUrl = window.location.href;
             console.log('[ArticleView] Trying window.location.href:', fullUrl);
             if (fullUrl.includes('?')) {
-                const hrefParams = new URLSearchParams(fullUrl.split('?')[1]);
-                articleId = hrefParams.get('id');
-                console.log('[ArticleView] articleId from href:', articleId);
+                try {
+                    const queryPart = fullUrl.split('?')[1].split('#')[0]; // Убираем хеш, если есть
+                    const hrefParams = new URLSearchParams(queryPart);
+                    articleId = hrefParams.get('id');
+                    console.log('[ArticleView] articleId from href:', articleId);
+                } catch (e) {
+                    console.error('[ArticleView] Error parsing window.location.href:', e);
+                }
             }
         }
         
-        // Последняя попытка: парсим хеш, если есть
+        // Метод 4: Пробуем получить из pathname, если там есть параметры (нестандартный случай)
+        if (!articleId && window.location.pathname.includes('/article/')) {
+            const pathParts = window.location.pathname.split('/article/');
+            if (pathParts.length > 1) {
+                articleId = pathParts[1].split('?')[0].split('#')[0];
+                console.log('[ArticleView] articleId from pathname:', articleId);
+            }
+        }
+        
+        // Метод 5: Последняя попытка: парсим хеш, если есть
         if (!articleId && window.location.hash) {
             const hash = window.location.hash.substring(1);
             console.log('[ArticleView] Trying hash:', hash);
             if (hash.startsWith('id=')) {
-                articleId = hash.substring(3);
+                articleId = hash.substring(3).split('&')[0];
                 console.log('[ArticleView] articleId from hash:', articleId);
             }
         }
@@ -207,24 +231,16 @@
         // Формируем правильный путь: убираем лишние слэши и нормализуем путь
         let mdFile = article.mdFile.startsWith('/') ? article.mdFile.substring(1) : article.mdFile;
         
-        // Разбиваем путь на сегменты и кодируем каждый сегмент отдельно
-        // Это важно для мобильных устройств, которые могут по-разному обрабатывать URL
-        const pathSegments = mdFile.split('/');
-        const encodedSegments = pathSegments.map(segment => {
-            // Кодируем каждый сегмент пути отдельно (но не кодируем слэши)
-            return encodeURIComponent(segment);
-        });
-        const encodedPath = encodedSegments.join('/');
+        // НЕ кодируем путь - файлы на сервере имеют реальные имена с подчеркиваниями и заглавными буквами
+        // Кодирование может привести к 404, так как сервер не найдет файл по закодированному пути
+        // Для статических файлов лучше использовать путь как есть
         
         let mdUrl = basePath 
-            ? `${basePath}/${encodedPath}`.replace(/([^:]\/)\/+/g, '$1')
-            : `/${encodedPath}`.replace(/\/+/g, '/');
+            ? `${basePath}/${mdFile}`.replace(/([^:]\/)\/+/g, '$1')
+            : `/${mdFile}`.replace(/\/+/g, '/');
         
         console.log('[ArticleView] Original mdFile:', article.mdFile);
         console.log('[ArticleView] Normalized mdFile:', mdFile);
-        console.log('[ArticleView] Path segments:', pathSegments);
-        console.log('[ArticleView] Encoded segments:', encodedSegments);
-        console.log('[ArticleView] Encoded path:', encodedPath);
         console.log('[ArticleView] basePath:', basePath);
         console.log('[ArticleView] Final mdUrl:', mdUrl);
         console.log('[ArticleView] Full URL will be:', window.location.origin + mdUrl);
@@ -233,20 +249,48 @@
         console.log('[ArticleView] Is GitHub Pages:', window.location.hostname.includes('github.io'));
         
         let mdResponse;
-        try {
-            mdResponse = await fetch(mdUrl, { cache: 'no-store' });
-            console.log('[ArticleView] Response status:', mdResponse.status, mdResponse.statusText);
-            console.log('[ArticleView] Response ok:', mdResponse.ok);
-            console.log('[ArticleView] Response headers:', Object.fromEntries(mdResponse.headers.entries()));
-        } catch (fetchError) {
-            console.error('[ArticleView] Fetch error:', fetchError);
-            throw new Error(`Ошибка сети при загрузке файла статьи: ${fetchError.message}. URL: ${mdUrl}`);
+        let lastError = null;
+        let triedUrl = null;
+        
+        // Пробуем загрузить файл по разным вариантам пути
+        for (const tryUrl of possibleUrls) {
+            triedUrl = tryUrl;
+            console.log('[ArticleView] Trying to fetch from:', tryUrl);
+            
+            try {
+                mdResponse = await fetch(tryUrl, { cache: 'no-store' });
+                console.log('[ArticleView] Response status:', mdResponse.status, mdResponse.statusText);
+                console.log('[ArticleView] Response ok:', mdResponse.ok);
+                
+                if (mdResponse.ok) {
+                    console.log('[ArticleView] ✓ Successfully loaded from:', tryUrl);
+                    break; // Успешно загрузили, выходим из цикла
+                } else if (mdResponse.status === 404) {
+                    // 404 - файл не найден, пробуем следующий вариант
+                    console.log('[ArticleView] ✗ 404 for:', tryUrl);
+                    const errorText = await mdResponse.text().catch(() => '');
+                    lastError = `404 Not Found: ${tryUrl}. ${errorText.substring(0, 100)}`;
+                    continue;
+                } else {
+                    // Другая ошибка - останавливаемся
+                    const errorText = await mdResponse.text().catch(() => 'Не удалось прочитать текст ошибки');
+                    console.error('[ArticleView] Response error text:', errorText);
+                    throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText}). URL: ${tryUrl}. Error: ${errorText.substring(0, 200)}`);
+                }
+            } catch (fetchError) {
+                console.error('[ArticleView] Fetch error for:', tryUrl, fetchError);
+                lastError = `Ошибка сети: ${fetchError.message}. URL: ${tryUrl}`;
+                // Пробуем следующий вариант, если это не последний
+                if (tryUrl === possibleUrls[possibleUrls.length - 1]) {
+                    throw new Error(lastError);
+                }
+                continue;
+            }
         }
         
-        if (!mdResponse.ok) {
-            const errorText = await mdResponse.text().catch(() => 'Не удалось прочитать текст ошибки');
-            console.error('[ArticleView] Response error text:', errorText);
-            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile} (${mdResponse.status} ${mdResponse.statusText}). URL: ${mdUrl}. Error: ${errorText.substring(0, 200)}`);
+        // Если ни один вариант не сработал
+        if (!mdResponse || !mdResponse.ok) {
+            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile}. Попробованы URL: ${possibleUrls.join(', ')}. Последняя ошибка: ${lastError || 'Unknown error'}`);
         }
         
         let mdText;
