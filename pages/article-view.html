@@ -65,19 +65,47 @@
 <!-- Article Viewer Script -->
 <script>
 (async function() {
-    // Получаем ID статьи из URL параметра
-    const urlParams = new URLSearchParams(window.location.search);
-    const articleId = urlParams.get('id');
-    
-    if (!articleId) {
-        document.getElementById('article-body').innerHTML = `
-            <div class="article-error">
-                <h2>❌ Статья не указана</h2>
-                <p>Не указан ID статьи для просмотра.</p>
-            </div>
-        `;
-        return;
+    // Функция для получения ID статьи с повторными попытками (для SPA навигации)
+    function getArticleId() {
+        // Пробуем получить из window.location.search
+        const urlParams = new URLSearchParams(window.location.search);
+        let articleId = urlParams.get('id');
+        
+        // Если ID не найден, пробуем получить из router.currentRoute
+        if (!articleId && window.router && window.router.currentRoute) {
+            const routeUrl = window.router.currentRoute;
+            if (routeUrl.includes('?')) {
+                const routeParams = new URLSearchParams(routeUrl.split('?')[1]);
+                articleId = routeParams.get('id');
+            }
+        }
+        
+        // Если ID всё ещё не найден, пробуем получить из window.location.href напрямую
+        if (!articleId) {
+            const fullUrl = window.location.href;
+            if (fullUrl.includes('?')) {
+                const hrefParams = new URLSearchParams(fullUrl.split('?')[1]);
+                articleId = hrefParams.get('id');
+            }
+        }
+        
+        return articleId;
     }
+    
+    // Функция загрузки статьи
+    async function loadArticle(articleId) {
+        if (!articleId) {
+            document.getElementById('article-body').innerHTML = `
+                <div class="article-error">
+                    <h2>❌ Статья не указана</h2>
+                    <p>Не указан ID статьи для просмотра.</p>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                        URL: ${window.location.href}
+                    </p>
+                </div>
+            `;
+            return;
+        }
     
     try {
         const basePath = window.router?.basePath || '';
@@ -303,6 +331,37 @@
                 <p>${error.message}</p>
             </div>
         `;
+    }
+    }
+    
+    // Получаем ID статьи
+    let articleId = getArticleId();
+    
+    // Вызываем загрузку статьи, если ID найден сразу
+    if (articleId) {
+        loadArticle(articleId);
+    } else {
+        // Если ID не найден сразу, пробуем ещё раз через небольшую задержку (для SPA)
+        setTimeout(() => {
+            articleId = getArticleId();
+            if (articleId) {
+                loadArticle(articleId);
+            } else {
+                // Если после задержки ID всё ещё не найден, показываем ошибку
+                document.getElementById('article-body').innerHTML = `
+                    <div class="article-error">
+                        <h2>❌ Статья не указана</h2>
+                        <p>Не указан ID статьи для просмотра.</p>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            URL: ${window.location.href}
+                        </p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            Search: ${window.location.search}
+                        </p>
+                    </div>
+                `;
+            }
+        }, 300);
     }
     
     // Обработчик кнопки "Назад"

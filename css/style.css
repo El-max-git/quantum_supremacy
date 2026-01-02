@@ -2243,11 +2243,18 @@ ul.features-list li::before {
     .article-scroll-buttons {
         right: 1rem;
         bottom: 1rem;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 1002 !important;
     }
     
     .scroll-btn {
         width: 44px;
         height: 44px;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
     }
     
     .scroll-btn svg {
