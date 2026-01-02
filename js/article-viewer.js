@@ -676,9 +676,34 @@ class ArticleViewer {
         }
         
         // Подсчитываем количество формул для отладки
-        const blockFormulas = (articleBody.innerHTML.match(/\$\$[^$]+\$\$/g) || []).length;
-        const inlineFormulas = (articleBody.innerHTML.match(/\$[^$\n]+\$/g) || []).length;
-        console.log(`[renderMathJax] Found formulas: ${blockFormulas} block, ${inlineFormulas} inline`);
+        // Используем более точный паттерн для поиска формул
+        const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
+        const inlineFormulaPattern = /\$[^$\n]+?\$/g;
+        
+        const blockFormulas = (articleBody.innerHTML.match(blockFormulaPattern) || []).length;
+        const inlineFormulas = (articleBody.innerHTML.match(inlineFormulaPattern) || []).length;
+        const totalFormulas = blockFormulas + inlineFormulas;
+        
+        console.log(`[renderMathJax] Found formulas: ${blockFormulas} block, ${inlineFormulas} inline (total: ${totalFormulas})`);
+        
+        // Проверяем, нет ли поврежденных формул (например, с экранированными символами)
+        const escapedDollars = (articleBody.innerHTML.match(/&#36;|&amp;#36;/g) || []).length;
+        if (escapedDollars > 0) {
+            console.warn(`⚠️ [renderMathJax] Found ${escapedDollars} escaped dollar signs - formulas may not render correctly`);
+        }
+        
+        // Проверяем формулы внутри <code> тегов (они могут не обрабатываться MathJax)
+        const formulasInCode = articleBody.querySelectorAll('code');
+        let formulasInCodeCount = 0;
+        formulasInCode.forEach(code => {
+            if (code.textContent.includes('$')) {
+                formulasInCodeCount++;
+            }
+        });
+        if (formulasInCodeCount > 0) {
+            console.warn(`⚠️ [renderMathJax] Found ${formulasInCodeCount} formulas inside <code> tags - these may not render`);
+        }
+        
         console.log('[renderMathJax] Starting MathJax rendering...');
         
         // Ждем загрузки MathJax
@@ -817,8 +842,30 @@ class ArticleViewer {
             console.log('✓ MathJax formulas rendered successfully');
             
             // Проверяем, что формулы действительно отрендерились
-            const mathElements = element.querySelectorAll('.MathJax, mjx-container');
-            console.log(`Found ${mathElements.length} rendered MathJax elements`);
+            const mathElements = element.querySelectorAll('.MathJax, .mjx-chtml, [data-mjx], mjx-container');
+            const renderedCount = mathElements.length;
+            console.log(`Found ${renderedCount} rendered MathJax elements`);
+            
+            // Подсчитываем количество формул в HTML для сравнения
+            const blockFormulaPattern = /\$\$[\s\S]*?\$\$/g;
+            const inlineFormulaPattern = /\$[^$\n]+?\$/g;
+            const blockFormulas = (element.innerHTML.match(blockFormulaPattern) || []).length;
+            const inlineFormulas = (element.innerHTML.match(inlineFormulaPattern) || []).length;
+            const totalFormulas = blockFormulas + inlineFormulas;
+            
+            // Сравниваем количество найденных и отрендеренных формул
+            if (renderedCount < totalFormulas && totalFormulas > 0) {
+                const missing = totalFormulas - renderedCount;
+                console.warn(`⚠️ [renderMathJax] ${missing} formulas were not rendered (${renderedCount}/${totalFormulas})`);
+                
+                // Проверяем, нет ли поврежденных формул
+                const escapedDollars = (element.innerHTML.match(/&#36;|&amp;#36;/g) || []).length;
+                if (escapedDollars > 0) {
+                    console.warn(`  Found ${escapedDollars} escaped dollar signs - formulas may be damaged`);
+                }
+            } else if (renderedCount >= totalFormulas && totalFormulas > 0) {
+                console.log(`✓ All ${totalFormulas} formulas rendered successfully`);
+            }
             
         } catch (err) {
             console.error('MathJax rendering error:', err);

@@ -44,20 +44,27 @@ class ArticleParser {
                 console.log(`[ArticleParser] DEBUG mode NOT enabled: metadata.id=${metadata?.id}, articlePath includes test-formula=${articlePath.includes('test-formula')}`);
             }
             
-            // Подход GitHub: НЕ защищаем формулы, просто парсим markdown
-            // marked.js настроен так, чтобы не трогать формулы (см. convertMarkdownToHtml)
+            // Подход GitHub: защищаем формулы от экранирования marked.js
+            // Временно заменяем формулы на HTML комментарии, которые marked.js не трогает
+            // После парсинга восстанавливаем формулы обратно
             
-            // 1. Pre-process: специальные блоки
-            let processed = this.preprocessSpecialBlocks(content);
+            // 1. Защищаем формулы от экранирования (временная замена на HTML комментарии)
+            const { protectedText, formulas } = this.protectFormulasAsComments(content);
             
-            // 2. Pre-process: формулы в блоках кода (преобразование в MathJax)
+            // 2. Pre-process: специальные блоки
+            let processed = this.preprocessSpecialBlocks(protectedText);
+            
+            // 3. Pre-process: формулы в блоках кода (преобразование в MathJax)
             processed = this.preprocessCodeBlockFormulas(processed);
             
-            // 3. Pre-process: рамки для формул
+            // 4. Pre-process: рамки для формул
             processed = this.preprocessFormulaBoxes(processed);
             
-            // 4. Parse markdown to HTML (формулы остаются как есть, как в GitHub)
+            // 5. Parse markdown to HTML
             let html = await this.convertMarkdownToHtml(processed);
+            
+            // 6. Восстанавливаем формулы из HTML комментариев
+            html = this.restoreFormulasFromComments(html, formulas);
             
             // 5. Post-process: изображения
             html = this.processImages(html, articlePath);
@@ -75,6 +82,9 @@ class ArticleParser {
             
             // 9. Post-process: восстановить экранированные формулы
             html = this.restoreEscapedFormulas(html);
+            
+            // 9.5. Post-process: финальная очистка формул от лишних оберток
+            html = this.cleanupFormulas(html);
             
             // 10. Инициализировать MathJax если есть формулы
             if (html.includes('$') || html.includes('\\(') || html.includes('\\[')) {
@@ -229,6 +239,158 @@ ${cleanContent}
         return text;
     }
 
+    /**
+     * Защита формул через HTML комментарии (подход GitHub-совместимый)
+     * marked.js не трогает HTML комментарии, поэтому формулы сохраняются
+     * @param {string} text - Markdown текст
+     * @returns {{protectedText: string, formulas: Array}} - Защищенный текст и массив формул
+     */
+    protectFormulasAsComments(text) {
+        try {
+            const formulas = [];
+            let formulaIndex = 0;
+            
+            // Заменяем формулы на HTML комментарии
+            // Формат: <!--MATH_BLOCK_0--> или <!--MATH_INLINE_0-->
+            const createComment = (type, index) => {
+                return `<!--MATH_${type}_${index}-->`;
+            };
+            
+            // 1. Защищаем block формулы $$...$$ (сначала, чтобы не перехватить их как inline)
+            let protectedText = text.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, (match, formula) => {
+                try {
+                    const trimmedFormula = formula.trim();
+                    if (!trimmedFormula) return match; // Пропускаем пустые формулы
+                    
+                    const comment = createComment('BLOCK', formulaIndex);
+                    formulas.push({ type: 'block', formula: trimmedFormula, index: formulaIndex });
+                    
+                    if (window.DEBUG_ARTICLE_PARSER || formulas.length <= 3) {
+                        console.log(`[protectFormulasAsComments] Protected block formula ${formulaIndex}:`, trimmedFormula.substring(0, 50));
+                    }
+                    
+                    formulaIndex++;
+                    return comment;
+                } catch (error) {
+                    console.error('❌ Ошибка при защите block формулы:', error);
+                    return match;
+                }
+            });
+            
+            // 2. Защищаем inline формулы $...$ (но не $$)
+            protectedText = protectedText.replace(/\$([^$\n]+?)\$/g, (match, formula, offset, string) => {
+                try {
+                    // Проверяем, что это не часть $$...$$
+                    const before = string.substring(Math.max(0, offset - 1), offset);
+                    const after = string.substring(offset + match.length, offset + match.length + 1);
+                    if (before === '$' || after === '$') {
+                        return match; // Это часть block формулы, пропускаем
+                    }
+                    
+                    const trimmedFormula = formula.trim();
+                    if (!trimmedFormula) return match; // Пропускаем пустые формулы
+                    
+                    const comment = createComment('INLINE', formulaIndex);
+                    formulas.push({ type: 'inline', formula: trimmedFormula, index: formulaIndex });
+                    formulaIndex++;
+                    return comment;
+                } catch (error) {
+                    console.error('❌ Ошибка при защите inline формулы:', error);
+                    return match;
+                }
+            });
+            
+            return { protectedText, formulas };
+        } catch (error) {
+            console.error('❌ Критическая ошибка в protectFormulasAsComments:', error);
+            return { protectedText: text, formulas: [] };
+        }
+    }
+    
+    /**
+     * Восстановление формул из HTML комментариев
+     * @param {string} html - HTML после парсинга
+     * @param {Array} formulas - Массив формул
+     * @returns {string} - HTML с восстановленными формулами
+     */
+    restoreFormulasFromComments(html, formulas) {
+        try {
+            if (!formulas || formulas.length === 0) {
+                return html;
+            }
+            
+            if (!html || typeof html !== 'string') {
+                return html || '';
+            }
+            
+            // Заменяем комментарии на формулы
+            let restoredCount = 0;
+            let missingCount = 0;
+            
+            for (let index = 0; index < formulas.length; index++) {
+                const formulaObj = formulas[index];
+                try {
+                    if (!formulaObj || !formulaObj.type || !formulaObj.formula) {
+                        continue;
+                    }
+                    
+                    const placeholderType = formulaObj.type === 'block' ? 'BLOCK' : 'INLINE';
+                    const comment = `<!--MATH_${placeholderType}_${index}-->`;
+                    
+                    // Проверяем наличие комментария в HTML
+                    if (!html.includes(comment)) {
+                        missingCount++;
+                        if (window.DEBUG_ARTICLE_PARSER || index < 5) {
+                            console.warn(`⚠️ Комментарий формулы ${index} НЕ НАЙДЕН в HTML!`);
+                            console.warn(`  Type: ${formulaObj.type}, Index: ${index}`);
+                            console.warn(`  Formula: ${formulaObj.formula.substring(0, 50)}`);
+                            // Пробуем найти похожие комментарии
+                            const similarComments = html.match(/<!--MATH_[BI][A-Z]+_\d+-->/g);
+                            if (similarComments) {
+                                console.warn(`  Found similar comments: ${similarComments.slice(0, 3).join(', ')}`);
+                            }
+                        }
+                        continue;
+                    }
+                    
+                    // Восстанавливаем формулу
+                    let replacement;
+                    if (formulaObj.type === 'block') {
+                        replacement = `\n\n$$${formulaObj.formula}$$\n\n`;
+                    } else {
+                        replacement = `$${formulaObj.formula}$`;
+                    }
+                    
+                    // Заменяем комментарий на формулу (все вхождения)
+                    const beforeCount = (html.match(new RegExp(comment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+                    html = html.replace(new RegExp(comment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), replacement);
+                    const afterCount = (html.match(new RegExp(comment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+                    
+                    if (beforeCount > 0 && afterCount === 0) {
+                        restoredCount++;
+                        if (window.DEBUG_ARTICLE_PARSER || index < 3) {
+                            console.log(`[restoreFormulasFromComments] ✓ Restored formula ${index} (${formulaObj.type}): ${beforeCount} replacements`);
+                        }
+                    } else if (afterCount > 0) {
+                        console.warn(`⚠️ Комментарий формулы ${index} не был полностью заменен! Осталось: ${afterCount}`);
+                    }
+                } catch (error) {
+                    console.error(`❌ Ошибка при восстановлении формулы ${index}:`, error);
+                }
+            }
+            
+            // Итоговая статистика
+            if (window.DEBUG_ARTICLE_PARSER || missingCount > 0) {
+                console.log(`[restoreFormulasFromComments] Итого: восстановлено ${restoredCount}/${formulas.length}, пропущено ${missingCount}`);
+            }
+            
+            return html;
+        } catch (error) {
+            console.error('❌ Критическая ошибка в restoreFormulasFromComments:', error);
+            return html || '';
+        }
+    }
+    
     /**
      * Упрощенный механизм обработки формул: защита и восстановление
      * ИСПОЛЬЗУЕТСЯ ПОДХОД GITHUB: формулы не защищаются, остаются как есть
@@ -697,6 +859,51 @@ ${cleanContent}
     }
     
     /**
+     * Финальная очистка формул от лишних оберток и исправление структуры
+     * @param {string} html - HTML после парсинга
+     * @returns {string} - HTML с очищенными формулами
+     */
+    cleanupFormulas(html) {
+        // 1. Убираем лишние пробелы и переносы строк вокруг block формул
+        // Исправляем случаи, когда формулы обернуты в несколько тегов
+        html = html.replace(/(<p>\s*)?(\$\$[\s\S]*?\$\$)(\s*<\/p>)?/g, (match, pOpen, formula, pClose) => {
+            // Если формула обернута в <p>, убираем обертку
+            return '\n\n' + formula + '\n\n';
+        });
+        
+        // 2. Убираем двойные переносы строк вокруг формул
+        html = html.replace(/\n{3,}/g, '\n\n');
+        
+        // 3. Исправляем случаи, когда формулы находятся внутри <code> тегов
+        // (это должно было быть исправлено в restoreEscapedFormulas, но на всякий случай)
+        html = html.replace(/<code>(\$\$?)([\s\S]*?)(\$\$?)<\/code>/g, '$1$2$3');
+        
+        // 4. Исправляем поврежденные формулы (например, с разорванными границами)
+        // Паттерн: $...$ или $$...$$, но с возможными пробелами внутри границ
+        html = html.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, '$$$1$$');
+        html = html.replace(/\$\s*([^$\n]+?)\s*\$/g, '$$1$');
+        
+        // 5. Исправляем формулы, которые были разорваны на несколько строк
+        // Объединяем формулы, которые разорваны переносами строк внутри
+        html = html.replace(/\$\$([\s\S]*?)\n+([\s\S]*?)\$\$/g, '$$$1 $2$$');
+        
+        // 6. Убираем пустые формулы ($$$$ или $$ $$)
+        html = html.replace(/\$\$\s*\$\$/g, '');
+        html = html.replace(/\$\s*\$/g, '');
+        
+        // 7. Исправляем формулы внутри <pre> тегов (они могут мешать MathJax)
+        html = html.replace(/<pre[^>]*>(\$\$?)([\s\S]*?)(\$\$?)<\/pre>/g, (match, start, formula, end) => {
+            // Если это формула, убираем <pre> тег
+            if (formula.trim().length > 0 && !formula.includes('\n```')) {
+                return start + formula + end;
+            }
+            return match; // Оставляем как есть, если это не формула
+        });
+        
+        return html;
+    }
+    
+    /**
      * Восстановление экранированных формул (после парсинга markdown)
      * @param {string} html - HTML после парсинга
      * @returns {string} - HTML с восстановленными формулами
@@ -704,6 +911,7 @@ ${cleanContent}
     restoreEscapedFormulas(html) {
         // Восстанавливаем экранированные символы $ в формулах
         // marked.js может экранировать $ как &#36; или &amp;#36;
+        // Важно: восстанавливаем ДО обработки формул, чтобы не сломать структуру
         html = html.replace(/&amp;#36;/g, '$');
         html = html.replace(/&#36;/g, '$');
         
@@ -723,10 +931,37 @@ ${cleanContent}
         html = html.replace(/&amp;#92;&amp;#92;/g, '\\\\');
         html = html.replace(/&#92;&#92;/g, '\\\\');
         
+        // КРИТИЧНО: Восстанавливаем формулы, которые были обернуты в <code> теги
+        // marked.js может оборачивать формулы в <code>, что мешает MathJax
+        // Паттерн: <code>$...$</code> или <code>$$...$$</code>
+        html = html.replace(/<code>(\$\$?)([\s\S]*?)(\$\$?)<\/code>/g, (match, start, formula, end) => {
+            // Восстанавливаем экранированные символы в формуле
+            let restored = formula
+                .replace(/&amp;#92;/g, '\\')
+                .replace(/&#92;/g, '\\')
+                .replace(/&amp;lt;/g, '<')
+                .replace(/&lt;/g, '<')
+                .replace(/&amp;gt;/g, '>')
+                .replace(/&gt;/g, '>')
+                .replace(/&amp;#123;/g, '{')
+                .replace(/&#123;/g, '{')
+                .replace(/&amp;#125;/g, '}')
+                .replace(/&#125;/g, '}')
+                .replace(/&amp;#92;&amp;#92;/g, '\\\\')
+                .replace(/&#92;&#92;/g, '\\\\');
+            // Возвращаем формулу БЕЗ <code> тегов
+            return start + restored + end;
+        });
+        
         // Восстанавливаем обратные слеши в формулах MathJax
         // Проверяем формулы и восстанавливаем экранированные \text, \left, \right и т.д.
         // Паттерн: внутри формул $...$ или $$...$$ восстанавливаем экранированные \
-        html = html.replace(/(\$\$?)([^$]+?)(\$\$?)/g, (match, start, formula, end) => {
+        html = html.replace(/(\$\$?)([\s\S]*?)(\$\$?)/g, (match, start, formula, end) => {
+            // Пропускаем, если это не формула (слишком короткая или содержит только пробелы)
+            if (formula.trim().length < 1) {
+                return match;
+            }
+            
             // Восстанавливаем экранированные обратные слеши в формуле
             let restored = formula
                 .replace(/&amp;#92;/g, '\\')
@@ -743,20 +978,6 @@ ${cleanContent}
                 // Восстанавливаем двойные обратные слеши
                 .replace(/&amp;#92;&amp;#92;/g, '\\\\')
                 .replace(/&#92;&#92;/g, '\\\\');
-            return start + restored + end;
-        });
-        
-        // Дополнительная проверка: ищем формулы, которые могли быть экранированы по-другому
-        // Например, если формула была обернута в <code> или <pre> теги
-        html = html.replace(/<code>(\$\$?)([^$]+?)(\$\$?)<\/code>/g, (match, start, formula, end) => {
-            // Восстанавливаем экранированные символы
-            let restored = formula
-                .replace(/&amp;#92;/g, '\\')
-                .replace(/&#92;/g, '\\')
-                .replace(/&amp;lt;/g, '<')
-                .replace(/&lt;/g, '<')
-                .replace(/&amp;gt;/g, '>')
-                .replace(/&gt;/g, '>');
             return start + restored + end;
         });
         
@@ -810,8 +1031,21 @@ ${cleanContent}
             // Если параграф содержит block формулы ($$...$$), не обрабатываем его
             // Block формулы должны быть на отдельной строке
             if (text.includes('$$')) {
-                // Возвращаем как есть, без обертки в <p>
-                return text + '\n';
+                // Разделяем текст на части: до формулы, формула, после формулы
+                // Это нужно, чтобы правильно обработать текст вокруг формул
+                const parts = text.split(/(\$\$[\s\S]*?\$\$)/);
+                let result = '';
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (part.startsWith('$$') && part.endsWith('$$')) {
+                        // Это формула - оставляем как есть
+                        result += part + '\n';
+                    } else if (part.trim()) {
+                        // Это обычный текст - оборачиваем в <p>
+                        result += `<p>${part.trim()}</p>\n`;
+                    }
+                }
+                return result || text + '\n';
             }
             // Для inline формул ($...$) оставляем в параграфе, но не экранируем
             return originalParagraph ? originalParagraph(text) : `<p>${text}</p>\n`;
@@ -820,20 +1054,44 @@ ${cleanContent}
         marked.use({ renderer });
 
         // Парсим markdown
-        // marked.js настроен так, чтобы не трогать формулы (подход GitHub)
-        // Формулы остаются как $...$ или $$...$$ в HTML, а потом MathJax их обработает
+        // marked.js настроен так, чтобы не трогать HTML комментарии
+        // Формулы защищены через HTML комментарии <!--MATH_BLOCK_X--> или <!--MATH_INLINE_X-->
         const html = marked.parse(markdownText);
         
-        // Проверяем, что формулы сохранились (для отладки)
-        if (window.DEBUG_ARTICLE_PARSER) {
-            const formulaCount = (html.match(/\$\$[^$]+\$\$|\$[^$\n]+\$/g) || []).length;
-            const expectedCount = (markdownText.match(/\$\$[^$]+\$\$|\$[^$\n]+\$/g) || []).length;
-            if (formulaCount < expectedCount) {
-                console.warn(`⚠️ marked.js удалил ${expectedCount - formulaCount} формул!`);
-                console.warn(`  Было: ${expectedCount}, Стало: ${formulaCount}`);
-            } else {
-                console.log(`✓ Все формулы сохранены: ${formulaCount}/${expectedCount}`);
+        // Проверяем, что HTML комментарии сохранились (для отладки)
+        const commentPattern = /<!--MATH_(BLOCK|INLINE)_\d+-->/g;
+        const commentCount = (html.match(commentPattern) || []).length;
+        const expectedCount = (markdownText.match(commentPattern) || []).length;
+        
+        if (commentCount < expectedCount) {
+            console.warn(`⚠️ marked.js удалил ${expectedCount - commentCount} HTML комментариев!`);
+            console.warn(`  Было: ${expectedCount}, Стало: ${commentCount}`);
+            console.warn(`  Это означает, что marked.js удаляет HTML комментарии!`);
+            
+            // Показываем примеры удаленных комментариев
+            const beforeComments = markdownText.match(commentPattern) || [];
+            const afterComments = html.match(commentPattern) || [];
+            const missing = beforeComments.filter(c => !afterComments.includes(c));
+            if (missing.length > 0 && window.DEBUG_ARTICLE_PARSER) {
+                console.warn(`  Примеры удаленных комментариев:`, missing.slice(0, 3));
             }
+        } else if (expectedCount > 0 && window.DEBUG_ARTICLE_PARSER) {
+            console.log(`✓ Все HTML комментарии сохранены: ${commentCount}/${expectedCount}`);
+        }
+        
+        // Дополнительная проверка: ищем экранированные формулы (на случай, если что-то пошло не так)
+        const escapedDollar = (html.match(/&#36;|&amp;#36;/g) || []).length;
+            if (escapedDollar > 0) {
+                console.warn(`  Найдено ${escapedDollar} экранированных символов $ - будет восстановлено`);
+            }
+            
+            // Проверяем, не обернуты ли формулы в <code>
+            const formulasInCode = (html.match(/<code>.*?\$.*?\$.*?<\/code>/g) || []).length;
+            if (formulasInCode > 0) {
+                console.warn(`  Найдено ${formulasInCode} формул внутри <code> тегов - это может мешать MathJax`);
+            }
+        } else if (window.DEBUG_ARTICLE_PARSER || expectedCount > 0) {
+            console.log(`✓ Все формулы сохранены: ${formulaCount}/${expectedCount}`);
         }
         
         return html;
