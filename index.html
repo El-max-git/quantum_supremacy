@@ -146,6 +146,11 @@
                 // Генерируем навигацию из конфига (через NavUtils)
                 generateNavigation();
 
+                // Инициализируем мобильное меню после генерации навигации
+                if (typeof initializePageComponents === 'function') {
+                    initializePageComponents();
+                }
+
                 // Регистрируем маршруты из конфига
                 config.routes.forEach(route => {
                     router.addRoute(route.path, () => 

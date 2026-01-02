@@ -763,6 +763,12 @@ ul.features-list li::before {
     /* Header & Navigation */
     .header {
         padding: 1rem 0;
+        position: relative; /* Для позиционирования выпадающего меню */
+    }
+    
+    nav {
+        width: 100%;
+        order: 3; /* Перемещаем навигацию после кнопки меню */
     }
     
     nav ul {
@@ -779,6 +785,7 @@ ul.features-list li::before {
         left: 0;
         right: 0;
         z-index: 1000;
+        margin-top: 0.5rem;
     }
     
     nav ul.active {
@@ -1864,6 +1871,11 @@ ul.features-list li::before {
 
 .article-page {
     min-height: 400px;
+}
+
+/* Скрытые страницы (неактивные) */
+.article-page[style*="display: none"] {
+    display: none !important;
 }
 
 @media (max-width: 768px) {

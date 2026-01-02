@@ -14,6 +14,9 @@ function initializePageComponents() {
 // Mobile Menu Toggle
 // ========================================
 
+// Store reference to outside click handler for cleanup
+let mobileMenuOutsideClickHandler = null;
+
 function initMobileMenu() {
     const navToggle = document.querySelector('.mobile-menu-toggle');
     const navMenu = document.querySelector('nav ul');
@@ -23,26 +26,42 @@ function initMobileMenu() {
         const newToggle = navToggle.cloneNode(true);
         navToggle.parentNode.replaceChild(newToggle, navToggle);
 
-        newToggle.addEventListener('click', () => {
+        // Remove old outside click handler if exists
+        if (mobileMenuOutsideClickHandler) {
+            document.removeEventListener('click', mobileMenuOutsideClickHandler);
+            mobileMenuOutsideClickHandler = null;
+        }
+
+        // Toggle menu on button click
+        newToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
             navMenu.classList.toggle('active');
             newToggle.classList.toggle('active');
         });
 
         // Close menu when clicking nav link
-        document.querySelectorAll('nav a[data-link]').forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                newToggle.classList.remove('active');
-            });
-        });
-
-        // Close menu when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+        // Use event delegation to handle dynamically added links
+        const handleNavLinkClick = (e) => {
+            const link = e.target.closest('nav a[data-link]');
+            if (link) {
                 navMenu.classList.remove('active');
                 newToggle.classList.remove('active');
             }
-        });
+        };
+
+        // Remove old listener if exists
+        navMenu.removeEventListener('click', handleNavLinkClick);
+        // Add new listener with event delegation
+        navMenu.addEventListener('click', handleNavLinkClick);
+
+        // Close menu when clicking outside
+        mobileMenuOutsideClickHandler = (e) => {
+            if (!newToggle.contains(e.target) && !navMenu.contains(e.target)) {
+                navMenu.classList.remove('active');
+                newToggle.classList.remove('active');
+            }
+        };
+        document.addEventListener('click', mobileMenuOutsideClickHandler);
     }
 }
 
