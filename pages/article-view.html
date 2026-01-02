@@ -257,19 +257,23 @@
         
         // Попробуем несколько вариантов пути, если первый не сработает
         // На разных серверах может быть разная чувствительность к регистру
-        const possibleUrls = [mdUrl]; // Первый вариант - как есть (оригинальный путь)
+        // Определяем массив URL-ов ДО использования в цикле
+        let possibleUrls = [mdUrl]; // Первый вариант - как есть (оригинальный путь)
         const lowerUrl = mdUrl.toLowerCase();
         if (lowerUrl !== mdUrl) {
             possibleUrls.push(lowerUrl); // Второй вариант - нижний регистр (для Windows-серверов)
         }
         console.log('[ArticleView] Possible URLs to try:', possibleUrls);
+        console.log('[ArticleView] possibleUrls type:', typeof possibleUrls, 'is array:', Array.isArray(possibleUrls));
         
-        let mdResponse;
+        let mdResponse = null;
         let lastError = null;
         let triedUrl = null;
+        let successUrl = null;
         
         // Пробуем загрузить файл по разным вариантам пути
-        for (const tryUrl of possibleUrls) {
+        for (let i = 0; i < possibleUrls.length; i++) {
+            const tryUrl = possibleUrls[i];
             triedUrl = tryUrl;
             console.log('[ArticleView] Trying to fetch from:', tryUrl);
             
@@ -280,6 +284,7 @@
                 
                 if (mdResponse.ok) {
                     console.log('[ArticleView] ✓ Successfully loaded from:', tryUrl);
+                    successUrl = tryUrl;
                     break; // Успешно загрузили, выходим из цикла
                 } else if (mdResponse.status === 404) {
                     // 404 - файл не найден, пробуем следующий вариант
@@ -297,17 +302,23 @@
                 console.error('[ArticleView] Fetch error for:', tryUrl, fetchError);
                 lastError = `Ошибка сети: ${fetchError.message}. URL: ${tryUrl}`;
                 // Пробуем следующий вариант, если это не последний
-                if (tryUrl === possibleUrls[possibleUrls.length - 1]) {
+                if (i === possibleUrls.length - 1) {
+                    // Это был последний вариант
                     throw new Error(lastError);
                 }
+                // Продолжаем пробовать следующий вариант
                 continue;
             }
         }
         
         // Если ни один вариант не сработал
         if (!mdResponse || !mdResponse.ok) {
-            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile}. Попробованы URL: ${possibleUrls.join(', ')}. Последняя ошибка: ${lastError || 'Unknown error'}`);
+            const triedUrlsStr = Array.isArray(possibleUrls) ? possibleUrls.join(', ') : 'unknown';
+            throw new Error(`Не удалось загрузить файл статьи: ${article.mdFile}. Попробованы URL: ${triedUrlsStr}. Последняя ошибка: ${lastError || 'Unknown error'}`);
         }
+        
+        // Успешно загрузили файл
+        console.log('[ArticleView] ✓ Article file loaded successfully from:', successUrl || triedUrl);
         
         let mdText;
         try {
