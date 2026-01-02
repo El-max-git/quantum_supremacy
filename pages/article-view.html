@@ -969,8 +969,19 @@
      * Генерирует ID для заголовка (та же логика, что в TableOfContents)
      */
     function generateHeadingId(text, index) {
-        // Удаляем номера разделов в начале (например, "1.2. ")
-        let cleanText = text.replace(/^\d+\.?\s*/, '');
+        // Извлекаем номер раздела, если он есть (например, "1.2. " или "1. ")
+        const numberMatch = text.match(/^(\d+(?:\.\d+)*)\.\s*(.*)/);
+        let numberPrefix = '';
+        let cleanText = text;
+        
+        if (numberMatch) {
+            // Сохраняем номер и преобразуем точки в конкатенацию (1.2. -> 12, 1. -> 1)
+            numberPrefix = numberMatch[1].replace(/\./g, '') + '-';
+            cleanText = numberMatch[2];
+        } else {
+            // Если номера нет, просто убираем возможные начальные цифры и точку
+            cleanText = text.replace(/^\d+\.?\s*/, '');
+        }
         
         let id = cleanText
             .toLowerCase()
@@ -983,15 +994,18 @@
             // Убираем дефисы в начале и конце
             .replace(/^-|-$/g, '');
         
+        // Добавляем префикс с номером, если он был
+        if (numberPrefix && id) {
+            id = numberPrefix + id;
+        }
+        
         // Если ID пустой, используем индекс
         if (!id) {
             id = `section-${index}`;
         }
         
-        // Если ID начинается с цифры, добавляем префикс (CSS селекторы не могут начинаться с цифры)
-        if (/^\d/.test(id)) {
-            id = `section-${id}`;
-        }
+        // Если ID начинается с цифры без префикса, это нормально для якорей HTML
+        // (HTML5 позволяет ID начинаться с цифры, но для совместимости можно оставить как есть)
         
         return id;
     }
@@ -1118,88 +1132,106 @@
         
         console.log('scrollToHeading: searching for id:', targetId);
         
-        // Ищем элемент по ID во всем документе (getElementById работает даже со скрытыми элементами)
+        // Ищем элемент по ID во всем документе
         let targetElement = document.getElementById(targetId);
+        let targetPage = null;
         
-        // Если не нашли, возможно элемент на другой странице (при пагинации)
-        // Проверяем все страницы
+        // Если не нашли, проверяем все страницы при пагинации
         if (!targetElement) {
             const allPages = document.querySelectorAll('.article-page');
             console.log(`scrollToHeading: checking ${allPages.length} pages for id "${targetId}"`);
             
             for (const page of allPages) {
-                // Используем getElementById (работает даже в скрытых элементах)
-                // Но проверяем, находится ли найденный элемент внутри этой страницы
                 const foundElement = document.getElementById(targetId);
                 if (foundElement && page.contains(foundElement)) {
                     targetElement = foundElement;
+                    targetPage = page;
                     console.log(`scrollToHeading: found element on page ${page.getAttribute('data-page')}`);
-                    
-                    // Если элемент на другой странице, нужно перейти на эту страницу
-                    const pageNum = page.getAttribute('data-page');
-                    if (pageNum) {
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const articleId = urlParams.get('id');
-                        const currentPage = parseInt(urlParams.get('page')) || 1;
-                        
-                        if (parseInt(pageNum) !== currentPage) {
-                            console.log(`scrollToHeading: navigating to page ${pageNum}`);
-                            // Переходим на нужную страницу
-                            const url = `/article?id=${encodeURIComponent(articleId)}&page=${pageNum}#${targetId}`;
-                            if (window.router) {
-                                window.router.navigate(url);
-                            } else {
-                                window.location.href = url;
-                            }
-                            return;
-                        }
-                    }
+                    break;
+                }
+            }
+        } else {
+            // Находим страницу, содержащую элемент
+            const allPages = document.querySelectorAll('.article-page');
+            for (const page of allPages) {
+                if (page.contains(targetElement)) {
+                    targetPage = page;
                     break;
                 }
             }
         }
         
-        if (targetElement) {
-            console.log('scrollToHeading: element found, scrolling to:', targetElement);
-            
-            // Небольшая задержка для гарантии, что элемент виден
-            setTimeout(() => {
-                // Плавная прокрутка к элементу
-                const headerOffset = 100; // Отступ от верха
-                const elementPosition = targetElement.getBoundingClientRect().top;
-                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                
-                window.scrollTo({
-                    top: Math.max(0, offsetPosition),
-                    behavior: 'smooth'
-                });
-                
-                // Обновляем URL без перезагрузки страницы
-                if (history.pushState) {
-                    const currentUrl = window.location.href.split('#')[0];
-                    history.pushState(null, null, `${currentUrl}#${targetId}`);
-                }
-            }, 100);
-        } else {
+        if (!targetElement) {
             console.warn(`scrollToHeading: Element with id "${targetId}" not found`);
+            return;
+        }
+        
+        // Если элемент на другой странице, переключаемся на неё
+        if (targetPage) {
+            const pageNum = parseInt(targetPage.getAttribute('data-page'));
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+            const currentPage = parseInt(urlParams.get('page')) || 1;
             
-            // Показываем все доступные ID заголовков для отладки
-            const allHeadings = document.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]');
-            const headingIds = Array.from(allHeadings).map(el => ({
-                id: el.id,
-                text: el.textContent.trim().substring(0, 50),
-                tag: el.tagName
-            }));
-            console.log('Available heading IDs:', headingIds.slice(0, 20)); // Показываем первые 20
+            if (pageNum !== currentPage) {
+                console.log(`scrollToHeading: navigating to page ${pageNum}`);
+                const url = `/article?id=${encodeURIComponent(articleId)}&page=${pageNum}#${targetId}`;
+                if (window.router) {
+                    window.router.navigate(url);
+                } else {
+                    window.location.href = url;
+                }
+                return;
+            }
             
-            // Показываем все ID в содержании для сравнения
-            const tocLinks = document.querySelectorAll('.article-toc-embedded a[href^="#"], .article-toc-embedded a[data-toc-target]');
-            const tocIds = Array.from(tocLinks).map(link => {
-                const href = link.getAttribute('href');
-                const dataTarget = link.getAttribute('data-toc-target');
-                return href ? href.substring(1) : dataTarget;
+            // Если элемент на текущей странице, но страница скрыта, показываем её
+            if (targetPage.style.display === 'none') {
+                targetPage.style.display = '';
+                console.log(`scrollToHeading: showing page ${pageNum}`);
+            }
+        }
+        
+        console.log('scrollToHeading: element found, scrolling to:', targetElement);
+        
+        // Ждём, пока элемент станет видимым
+        const performScroll = () => {
+            const headerOffset = 120; // Отступ от верха
+            
+            // Используем getBoundingClientRect для точного вычисления позиции
+            const rect = targetElement.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const elementTop = rect.top + scrollTop;
+            
+            // Вычисляем финальную позицию с учетом отступа
+            const offsetPosition = elementTop - headerOffset;
+            
+            // Прокручиваем к элементу
+            window.scrollTo({
+                top: Math.max(0, offsetPosition),
+                behavior: 'smooth'
             });
-            console.log('TOC link IDs:', tocIds.slice(0, 20));
+            
+            // Обновляем URL
+            if (history.pushState) {
+                const currentUrl = window.location.href.split('#')[0];
+                history.pushState(null, null, `${currentUrl}#${targetId}`);
+            }
+        };
+        
+        // Проверяем, виден ли элемент, и прокручиваем
+        if (targetElement.offsetParent !== null) {
+            // Элемент виден, прокручиваем сразу
+            setTimeout(performScroll, 100);
+        } else {
+            // Элемент скрыт, ждём, пока станет видимым
+            setTimeout(() => {
+                if (targetElement.offsetParent !== null) {
+                    performScroll();
+                } else {
+                    // Если всё ещё скрыт, пытаемся ещё раз
+                    setTimeout(performScroll, 200);
+                }
+            }, 150);
         }
     }
     

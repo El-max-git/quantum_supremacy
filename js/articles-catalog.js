@@ -21,8 +21,13 @@ class ArticlesCatalog {
      */
     async init() {
         try {
-            // Загружаем данные каталога
-            const response = await fetch(`${this.config.basePath}${this.config.configPath}`);
+            // Загружаем данные каталога (без кэша для актуальных данных)
+            const response = await fetch(`${this.config.basePath}${this.config.configPath}`, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
             if (!response.ok) {
                 throw new Error(`Failed to load catalog: ${response.status}`);
             }

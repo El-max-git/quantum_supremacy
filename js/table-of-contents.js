@@ -78,8 +78,19 @@ class TableOfContents {
      * Генерация ID из текста
      */
     generateId(text, index) {
-        // Удаляем номера разделов в начале (например, "1.2. ")
-        let cleanText = text.replace(/^\d+\.?\s*/, '');
+        // Извлекаем номер раздела, если он есть (например, "1.2. " или "1. ")
+        const numberMatch = text.match(/^(\d+(?:\.\d+)*)\.\s*(.*)/);
+        let numberPrefix = '';
+        let cleanText = text;
+        
+        if (numberMatch) {
+            // Сохраняем номер и преобразуем точки в дефисы (1.2. -> 12, 1. -> 1)
+            numberPrefix = numberMatch[1].replace(/\./g, '') + '-';
+            cleanText = numberMatch[2];
+        } else {
+            // Если номера нет, просто убираем возможные начальные цифры и точку
+            cleanText = text.replace(/^\d+\.?\s*/, '');
+        }
         
         let id = cleanText
             .toLowerCase()
@@ -91,6 +102,11 @@ class TableOfContents {
             .replace(/-+/g, '-')
             // Убираем дефисы в начале и конце
             .replace(/^-|-$/g, '');
+        
+        // Добавляем префикс с номером, если он был
+        if (numberPrefix && id) {
+            id = numberPrefix + id;
+        }
         
         // Если ID пустой, используем индекс
         if (!id) {
