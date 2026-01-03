@@ -1896,6 +1896,15 @@
             // Кнопки всегда видимы через CSS !important, но оставляем класс visible для совместимости
             scrollButtons.classList.add('visible');
         }
+        
+        // Функция для добавления эффекта вспышки огненным цветом
+        function addFireFlashEffect(button) {
+            if (!button) return;
+            button.classList.add('scroll-btn-fire-flash');
+            setTimeout(() => {
+                button.classList.remove('scroll-btn-fire-flash');
+            }, 500);
+        }
 
         // Кнопка переключения видимости (работает для всех устройств)
         const toggleBtn = document.getElementById('scroll-buttons-toggle');
@@ -1906,6 +1915,7 @@
             toggleBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                addFireFlashEffect(toggleBtn);
                 scrollButtons.classList.toggle('hidden');
                 // CSS анимация автоматически переключит иконки
             });
@@ -1958,6 +1968,7 @@
         
         // Прокрутка наверх
         scrollToTopBtn.addEventListener('click', () => {
+            addFireFlashEffect(scrollToTopBtn);
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
@@ -1966,6 +1977,7 @@
         
         // Прокрутка вниз
         scrollToBottomBtn.addEventListener('click', () => {
+            addFireFlashEffect(scrollToBottomBtn);
             window.scrollTo({
                 top: document.documentElement.scrollHeight,
                 behavior: 'smooth'
@@ -1975,12 +1987,14 @@
         // Навигация по страницам (влево/вправо)
         if (scrollToPrevBtn) {
             scrollToPrevBtn.addEventListener('click', () => {
+                addFireFlashEffect(scrollToPrevBtn);
                 navigateToPrevPage();
             });
         }
         
         if (scrollToNextBtn) {
             scrollToNextBtn.addEventListener('click', () => {
+                addFireFlashEffect(scrollToNextBtn);
                 navigateToNextPage();
             });
         }
@@ -1989,6 +2003,7 @@
         const scrollToHomeBtn = document.getElementById('scroll-to-home');
         if (scrollToHomeBtn) {
             scrollToHomeBtn.addEventListener('click', () => {
+                addFireFlashEffect(scrollToHomeBtn);
                 const urlParams = new URLSearchParams(window.location.search);
                 const articleId = urlParams.get('id');
                 const url = `/article?id=${encodeURIComponent(articleId)}&page=1`;

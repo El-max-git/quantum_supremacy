@@ -2441,7 +2441,7 @@ ul.features-list li::before {
     cursor: pointer;
     display: flex !important;
     visibility: visible !important;
-    opacity: 1 !important;
+    opacity: 0.5 !important;
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-lg);
@@ -2453,6 +2453,7 @@ ul.features-list li::before {
     background: var(--link-hover);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    opacity: 1 !important;
 }
 
 .scroll-btn:active {
@@ -2479,6 +2480,26 @@ ul.features-list li::before {
 
 .scroll-btn.scroll-btn-home:hover {
     background: var(--link-hover);
+}
+
+/* Эффект вспышки огненным цветом при нажатии */
+@keyframes fireFlash {
+    0% {
+        background: #ff6b35;
+        box-shadow: 0 0 10px #ff6b35, 0 0 20px #ff6b35, 0 0 30px #ff4500, 0 0 40px #ff4500;
+    }
+    50% {
+        background: #ff8c42;
+        box-shadow: 0 0 15px #ff8c42, 0 0 30px #ff6b35, 0 0 45px #ff4500, 0 0 60px #ff4500;
+    }
+    100% {
+        background: var(--primary-color);
+        box-shadow: var(--shadow-lg);
+    }
+}
+
+.scroll-btn-fire-flash {
+    animation: fireFlash 0.5s ease-out;
 }
 
 .scroll-btn svg {
