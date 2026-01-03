@@ -799,14 +799,7 @@ ul.features-list li::before {
         display: flex !important;
     }
     
-    /* Прозрачность кнопок на десктопе */
-    .scroll-btn {
-        opacity: 0.5 !important;
-    }
-    
-    .scroll-btn:hover {
-        opacity: 1 !important;
-    }
+    /* Прозрачность кнопок на десктопе управляется базовыми стилями */
 }
 
 /* Анимация переключения иконок в кнопке toggle */
@@ -2391,131 +2384,34 @@ ul.features-list li::before {
     transform: translateX(0);
 }
 
-/* Скрытое состояние для мобильных - кнопки уходят вправо, показывается ярлычок */
-/* Вертикальная ориентация (portrait) - кнопки полупрозрачные */
-@media (max-width: 767px) and (orientation: portrait) {
-    .article-scroll-buttons {
-        position: relative;
-    }
-
-    .scroll-btn {
-        opacity: 0.5 !important;
-    }
-
-    .scroll-btn:hover,
-    .scroll-btn:focus,
-    .scroll-btn:focus-visible {
-        opacity: 1 !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash {
-        animation: fireFlash 0.5s ease-out !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash:focus,
-    .scroll-btn.scroll-btn-fire-flash:focus-visible,
-    .scroll-btn.scroll-btn-fire-flash:hover,
-    .scroll-btn.scroll-btn-fire-flash:active {
-        animation: fireFlash 0.5s ease-out !important;
-    }
-
-    .article-scroll-buttons.hidden {
-        transform: translateX(calc(100% - 16px));
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.5 !important;
-        background: #64748b !important;
-        color: #ffffff !important;
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
-        pointer-events: none !important;
-        cursor: default !important;
-    }
+/* Общие стили для скрытого состояния кнопок (применяются везде) */
+.article-scroll-buttons.hidden {
+    transform: translateX(calc(100% - 16px));
 }
 
-/* Мобильные устройства без указания ориентации (fallback) */
+.article-scroll-buttons.hidden .scroll-btn {
+    opacity: 0.5 !important;
+    background: #64748b !important;
+    color: #ffffff !important;
+}
+
+.article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+/* Скрытое состояние для мобильных - кнопки уходят вправо, показывается ярлычок */
+/* Мобильные устройства */
 @media (max-width: 767px) {
     .article-scroll-buttons {
         position: relative;
     }
-
-    .scroll-btn {
-        opacity: 0.5 !important;
-    }
-
-    .scroll-btn:hover,
-    .scroll-btn:focus,
-    .scroll-btn:focus-visible {
-        opacity: 1 !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash {
-        animation: fireFlash 0.5s ease-out !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash:focus,
-    .scroll-btn.scroll-btn-fire-flash:focus-visible,
-    .scroll-btn.scroll-btn-fire-flash:hover,
-    .scroll-btn.scroll-btn-fire-flash:active {
-        animation: fireFlash 0.5s ease-out !important;
-    }
-
-    .article-scroll-buttons.hidden {
-        transform: translateX(calc(100% - 16px));
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.5 !important;
-        background: #64748b !important;
-        color: #ffffff !important;
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
-        pointer-events: none !important;
-        cursor: default !important;
-    }
 }
 
-/* Горизонтальная ориентация мобильных - тоже применяем скрытие */
+/* Горизонтальная ориентация мобильных - специфичные размеры */
 @media (max-width: 1023px) and (orientation: landscape) {
     .article-scroll-buttons {
         position: relative;
-    }
-
-    .article-scroll-buttons.hidden {
-        transform: translateX(calc(100% - 16px));
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.5 !important;
-        background: #64748b !important;
-        color: #ffffff !important;
-    }
-
-    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
-        pointer-events: none !important;
-        cursor: default !important;
-    }
-
-    .scroll-btn {
-        opacity: 0.5 !important;
-    }
-
-    .scroll-btn:hover {
-        opacity: 1 !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash {
-        animation: fireFlash 0.5s ease-out !important;
-    }
-
-    .scroll-btn.scroll-btn-fire-flash:focus,
-    .scroll-btn.scroll-btn-fire-flash:focus-visible,
-    .scroll-btn.scroll-btn-fire-flash:hover,
-    .scroll-btn.scroll-btn-fire-flash:active {
-        animation: fireFlash 0.5s ease-out !important;
     }
 
     /* Уменьшаем размер кнопок на мобильных в горизонтальной ориентации на 20% */
@@ -2551,14 +2447,18 @@ ul.features-list li::before {
     box-shadow: var(--shadow-lg);
     transition: var(--transition);
     padding: 0;
-    opacity: 0.5; /* Базовое значение - полупрозрачные кнопки */
+    /* Общий стиль прозрачности для всех режимов */
+    opacity: 0.5 !important;
 }
 
-.scroll-btn:hover {
+.scroll-btn:hover,
+.scroll-btn:focus,
+.scroll-btn:focus-visible {
     background: var(--link-hover);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    /* opacity управляется медиа-запросами с !important */
+    /* При наведении/фокусе - полностью непрозрачные */
+    opacity: 1 !important;
 }
 
 .scroll-btn:focus,
@@ -2733,7 +2633,7 @@ ul.features-list li::before {
         height: 28px;
         display: flex !important;
         visibility: visible !important;
-        opacity: 1 !important;
+        /* opacity управляется другими медиа-запросами (portrait, landscape) */
     }
     
     .scroll-btn svg {
