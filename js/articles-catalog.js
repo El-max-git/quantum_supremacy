@@ -234,61 +234,95 @@ class ArticlesCatalog {
      * Добавление обработчиков событий
      */
     attachEventListeners() {
-        console.log('[ArticlesCatalog] attachEventListeners() called');
-        
         // Клики по директориям
         const directoryCards = document.querySelectorAll('.directory-card[data-type="directory"]');
-        console.log(`[ArticlesCatalog] Found ${directoryCards.length} directory cards`);
         directoryCards.forEach(card => {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchMoved = false;
+            
             // Универсальная функция обработки клика/тапа
             const handleInteraction = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const dirId = card.dataset.id;
-                console.log('[ArticlesCatalog] Directory card clicked:', dirId);
                 this.navigateToDirectory(dirId);
             };
             
-            // Добавляем обработчики для клика и тапа
-            card.addEventListener('click', handleInteraction);
+            // Отслеживаем начало касания
+            card.addEventListener('touchstart', (e) => {
+                touchMoved = false;
+                if (e.touches.length > 0) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+            
+            // Отслеживаем движение (свайп/скролл)
+            card.addEventListener('touchmove', () => {
+                touchMoved = true;
+            }, { passive: true });
+            
+            // Обрабатываем окончание касания только если не было движения
             card.addEventListener('touchend', (e) => {
-                // Предотвращаем двойной срабатывание (touch + click)
-                e.preventDefault();
-                handleInteraction(e);
+                if (!touchMoved) {
+                    e.preventDefault();
+                    handleInteraction(e);
+                }
             }, { passive: false });
+            
+            // Обработчик клика для десктопа
+            card.addEventListener('click', handleInteraction);
         });
         
         // Клики по статьям
         const articleCards = document.querySelectorAll('.article-card[data-type="article"]');
-        console.log(`[ArticlesCatalog] Found ${articleCards.length} article cards`);
         articleCards.forEach(card => {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchMoved = false;
+            
             // Универсальная функция обработки клика/тапа
             const handleInteraction = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const articleId = card.dataset.id;
-                console.log('[ArticlesCatalog] Article card clicked:', articleId);
                 this.openArticle(articleId);
             };
             
-            // Добавляем обработчики для клика и тапа
-            card.addEventListener('click', handleInteraction);
+            // Отслеживаем начало касания
+            card.addEventListener('touchstart', (e) => {
+                touchMoved = false;
+                if (e.touches.length > 0) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+            
+            // Отслеживаем движение (свайп/скролл)
+            card.addEventListener('touchmove', () => {
+                touchMoved = true;
+            }, { passive: true });
+            
+            // Обрабатываем окончание касания только если не было движения
             card.addEventListener('touchend', (e) => {
-                // Предотвращаем двойной срабатывание (touch + click)
-                e.preventDefault();
-                handleInteraction(e);
+                if (!touchMoved) {
+                    e.preventDefault();
+                    handleInteraction(e);
+                }
             }, { passive: false });
+            
+            // Обработчик клика для десктопа
+            card.addEventListener('click', handleInteraction);
         });
         
         // Клики по хлебным крошкам
         const breadcrumbLinks = document.querySelectorAll('.breadcrumb-link');
-        console.log(`[ArticlesCatalog] Found ${breadcrumbLinks.length} breadcrumb links`);
         breadcrumbLinks.forEach(link => {
             const handleClick = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const path = link.dataset.path;
-                console.log('[ArticlesCatalog] Breadcrumb clicked:', path);
                 if (path === '') {
                     this.currentPath = [];
                 } else {
@@ -317,30 +351,22 @@ class ArticlesCatalog {
      * Открытие статьи
      */
     openArticle(articleId) {
-        console.log('[ArticlesCatalog] openArticle() called with articleId:', articleId);
-        console.log('[ArticlesCatalog] window.router exists:', !!window.router);
-        console.log('[ArticlesCatalog] Current URL:', window.location.href);
-        
         if (!articleId) {
             console.error('[ArticlesCatalog] No articleId provided to openArticle()');
             return;
         }
         
         const articleUrl = `/article?id=${encodeURIComponent(articleId)}`;
-        console.log('[ArticlesCatalog] Navigating to:', articleUrl);
         
         // Навигация на страницу просмотра статьи через роутер
         if (window.router) {
-            console.log('[ArticlesCatalog] Using router.navigate()');
             try {
                 window.router.navigate(articleUrl);
             } catch (error) {
                 console.error('[ArticlesCatalog] Error in router.navigate():', error);
-                console.log('[ArticlesCatalog] Fallback to window.location.href');
                 window.location.href = articleUrl;
             }
         } else {
-            console.log('[ArticlesCatalog] Router not available, using window.location.href');
             window.location.href = articleUrl;
         }
     }
