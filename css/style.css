@@ -1165,12 +1165,19 @@ ul.features-list li::before {
 
 /* Мобильная версия: единый список без визуального разделения на боксы */
 @media (max-width: 767px) {
-    .article-toc-embedded .toc-item {
+    .article-toc-embedded .toc-list,
+    .article-toc-embedded .toc-list-nested {
+        padding: 0 !important;
         margin: 0 !important;
     }
 
+    .article-toc-embedded .toc-item {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     .article-toc-embedded .toc-link {
-        padding: 0.25rem 0 !important;
+        padding: 0 !important;
         margin: 0 !important;
         border-left: none !important;
         border-radius: 0 !important;
@@ -1178,9 +1185,11 @@ ul.features-list li::before {
     }
 
     .article-toc-embedded .toc-link:hover,
-    .article-toc-embedded .toc-link.active {
+    .article-toc-embedded .toc-link.active,
+    .article-toc-embedded a[href^="#"].active {
         background: transparent !important;
         border-left: none !important;
+        padding: 0 !important;
     }
 }
 
