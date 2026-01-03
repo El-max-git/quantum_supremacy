@@ -1172,11 +1172,14 @@ ul.features-list li::before {
     .article-toc-embedded .toc-link {
         border-radius: 0 !important;
         margin: 0 !important;
+        padding: 0.25rem 0 !important;
+        border-left: none !important;
     }
 
     .article-toc-embedded .toc-link:hover,
     .article-toc-embedded .toc-link.active {
         background: transparent !important;
+        border-left: none !important;
     }
 }
 
