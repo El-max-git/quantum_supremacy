@@ -2406,6 +2406,21 @@ ul.features-list li::before {
     .article-scroll-buttons {
         position: relative;
     }
+    
+    /* На мобильных отключаем стили фокуса - кнопки должны оставаться полупрозрачными */
+    .scroll-btn:focus,
+    .scroll-btn:focus-visible {
+        /* Сбрасываем все стили фокуса, кроме outline (который уже убран) */
+        opacity: 0.5 !important;
+        background: var(--primary-color);
+        transform: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    /* Только :active должен делать кнопку непрозрачной на мобильных */
+    .scroll-btn:active {
+        opacity: 1 !important;
+    }
 }
 
 /* Горизонтальная ориентация мобильных - специфичные размеры */
@@ -2430,6 +2445,20 @@ ul.features-list li::before {
         width: 16px !important;
         height: 16px !important;
     }
+    
+    /* На мобильных в landscape также отключаем стили фокуса */
+    .scroll-btn:focus,
+    .scroll-btn:focus-visible {
+        opacity: 0.5 !important;
+        background: var(--primary-color);
+        transform: none;
+        box-shadow: var(--shadow-lg);
+    }
+    
+    /* Только :active должен делать кнопку непрозрачной */
+    .scroll-btn:active {
+        opacity: 1 !important;
+    }
 }
 
 .scroll-btn {
@@ -2451,14 +2480,32 @@ ul.features-list li::before {
     opacity: 0.5 !important;
 }
 
-.scroll-btn:hover,
-.scroll-btn:focus,
-.scroll-btn:focus-visible {
+.scroll-btn:hover {
     background: var(--link-hover);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    /* При наведении/фокусе - полностью непрозрачные */
+    /* При наведении - полностью непрозрачные */
     opacity: 1 !important;
+}
+
+.scroll-btn:active {
+    background: var(--link-hover);
+    transform: translateY(0);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    /* При нажатии - полностью непрозрачные (работает на всех устройствах) */
+    opacity: 1 !important;
+}
+
+/* Фокус только для desktop (клавиатурная навигация) */
+@media (min-width: 768px) {
+    .scroll-btn:focus,
+    .scroll-btn:focus-visible {
+        background: var(--link-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+        /* При фокусе на desktop - полностью непрозрачные */
+        opacity: 1 !important;
+    }
 }
 
 .scroll-btn:focus,

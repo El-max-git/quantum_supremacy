@@ -1901,8 +1901,18 @@
         function addFireFlashEffect(button) {
             if (!button) return;
             button.classList.add('scroll-btn-fire-flash');
-            // Снимаем фокус с кнопки
+            // Снимаем фокус с кнопки (для мобильных устройств)
+            // Используем несколько попыток для надежности
             button.blur();
+            // Дополнительно снимаем фокус через небольшую задержку
+            setTimeout(() => {
+                button.blur();
+                // Если кнопка все еще в фокусе, принудительно переключаем фокус на body
+                if (document.activeElement === button) {
+                    document.body.focus();
+                    button.blur();
+                }
+            }, 100);
             setTimeout(() => {
                 button.classList.remove('scroll-btn-fire-flash');
             }, 500);
