@@ -1163,19 +1163,21 @@ ul.features-list li::before {
     overflow: visible;
 }
 
-/* Убеждаемся, что все элементы содержания на одном слое - убираем визуальное разделение на боксы */
-.article-toc-embedded .toc-item {
-    margin: 0 !important;
-}
+/* Убеждаемся, что все элементы содержания на одном слое - убираем визуальное разделение на боксы (только для мобильных) */
+@media (max-width: 767px) {
+    .article-toc-embedded .toc-item {
+        margin: 0 !important;
+    }
 
-.article-toc-embedded .toc-link {
-    border-radius: 0 !important;
-    margin: 0 !important;
-}
+    .article-toc-embedded .toc-link {
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
 
-.article-toc-embedded .toc-link:hover,
-.article-toc-embedded .toc-link.active {
-    background: transparent !important;
+    .article-toc-embedded .toc-link:hover,
+    .article-toc-embedded .toc-link.active {
+        background: transparent !important;
+    }
 }
 
 /* Заголовок раздела на страницах после первой */
