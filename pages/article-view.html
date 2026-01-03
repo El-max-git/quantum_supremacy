@@ -676,6 +676,7 @@
     
     // Простая функция конвертации markdown в HTML
     function simpleMarkdownToHtml(md) {
+        console.log('[Parser] simpleMarkdownToHtml called, input length:', md.length);
         let html = md;
         
         // Сначала обрабатываем специальные теги формул [formula]...[/formula]
