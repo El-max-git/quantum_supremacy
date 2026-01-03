@@ -806,33 +806,42 @@ ul.features-list li::before {
 }
 
 .scroll-btn-toggle .toggle-icon {
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 20px;
     height: 20px;
+    pointer-events: none;
 }
 
 .scroll-btn-toggle .toggle-icon-close {
-    opacity: 1;
-    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate(-50%, -50%) rotate(0deg) !important;
 }
 
 .scroll-btn-toggle .toggle-icon-plus {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(-90deg);
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -50%) rotate(-90deg) !important;
 }
 
 .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(90deg);
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate(-50%, -50%) rotate(90deg) !important;
 }
 
 .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
-    opacity: 1;
-    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translate(-50%, -50%) rotate(0deg) !important;
 }
 
 /* Гарантируем работу анимации на всех устройствах */
@@ -842,30 +851,38 @@ ul.features-list li::before {
     }
     
     .scroll-btn-toggle .toggle-icon {
-        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease !important;
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
     }
     
     .scroll-btn-toggle .toggle-icon-close {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
     
     .scroll-btn-toggle .toggle-icon-plus {
-        opacity: 0;
-        transform: translate(-50%, -50%) rotate(-90deg);
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none;
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
-        opacity: 0;
-        transform: translate(-50%, -50%) rotate(90deg);
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none;
+        transform: translate(-50%, -50%) rotate(90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
 }
 
@@ -876,30 +893,38 @@ ul.features-list li::before {
     }
     
     .scroll-btn-toggle .toggle-icon {
-        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease !important;
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
     }
     
     .scroll-btn-toggle .toggle-icon-close {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
     
     .scroll-btn-toggle .toggle-icon-plus {
-        opacity: 0;
-        transform: translate(-50%, -50%) rotate(-90deg);
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none;
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
-        opacity: 0;
-        transform: translate(-50%, -50%) rotate(90deg);
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none;
+        transform: translate(-50%, -50%) rotate(90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
-        opacity: 1;
-        transform: translate(-50%, -50%) rotate(0deg);
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
 }
 
@@ -2460,6 +2485,12 @@ ul.features-list li::before {
     width: 24px;
     height: 24px;
     stroke: currentColor;
+}
+
+/* Исключение для toggle иконок - они имеют свои размеры */
+.scroll-btn-toggle .toggle-icon {
+    width: 20px !important;
+    height: 20px !important;
 }
 
 /* Responsive Design */
