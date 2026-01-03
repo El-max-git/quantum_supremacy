@@ -2211,12 +2211,53 @@ ul.features-list li::before {
     z-index: 1002 !important;
     opacity: 1 !important;
     visibility: visible !important;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
+    transform: translateX(0);
 }
 
 .article-scroll-buttons.visible {
     opacity: 1 !important;
     visibility: visible !important;
+    transform: translateX(0);
+}
+
+/* Скрытое состояние для мобильных - кнопки уходят вправо, показывается ярлычок */
+@media (max-width: 767px) {
+    .article-scroll-buttons {
+        position: relative;
+    }
+
+    .article-scroll-buttons.hidden {
+        transform: translateX(calc(100% - 16px));
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Ярлычок для показа скрытых кнопок */
+    .article-scroll-buttons::before {
+        content: '';
+        position: absolute;
+        left: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 60px;
+        background: var(--primary-color);
+        border-radius: 8px 0 0 8px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .article-scroll-buttons.hidden::before {
+        opacity: 1;
+        pointer-events: auto;
+        cursor: pointer;
+    }
 }
 
 .scroll-btn {

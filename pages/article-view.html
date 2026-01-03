@@ -1888,6 +1888,65 @@
             // Кнопки всегда видимы через CSS !important, но оставляем класс visible для совместимости
             scrollButtons.classList.add('visible');
         }
+
+        // Обработка свайпов для мобильных устройств
+        if (window.innerWidth <= 767) {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchMoved = false;
+            const swipeThreshold = 50; // Минимальное расстояние для определения свайпа
+
+            const handleTouchStart = (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                touchMoved = false;
+            };
+
+            const handleTouchMove = (e) => {
+                if (!touchMoved) {
+                    const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+                    const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+                    touchMoved = deltaX > 10 || deltaY > 10;
+                }
+            };
+
+            const handleTouchEnd = (e) => {
+                if (!touchMoved) return;
+
+                const deltaX = e.changedTouches[0].clientX - touchStartX;
+                const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+                // Проверяем, что это горизонтальный свайп (вертикальное движение меньше горизонтального)
+                if (Math.abs(deltaX) > deltaY && Math.abs(deltaX) > swipeThreshold) {
+                    if (deltaX > 0) {
+                        // Свайп вправо - скрываем кнопки
+                        scrollButtons.classList.add('hidden');
+                    } else {
+                        // Свайп влево - показываем кнопки
+                        scrollButtons.classList.remove('hidden');
+                    }
+                }
+            };
+
+            // Добавляем обработчики свайпов на контейнер кнопок
+            scrollButtons.addEventListener('touchstart', handleTouchStart, { passive: true });
+            scrollButtons.addEventListener('touchmove', handleTouchMove, { passive: true });
+            scrollButtons.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+            // Обработчик клика по ярлычку (псевдоэлемент ::before)
+            // Используем делегирование событий через родителя
+            scrollButtons.addEventListener('click', (e) => {
+                if (scrollButtons.classList.contains('hidden')) {
+                    // Если кликнули в области ярлычка (левый край контейнера), показываем кнопки
+                    const rect = scrollButtons.getBoundingClientRect();
+                    if (e.clientX < rect.left + 20) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        scrollButtons.classList.remove('hidden');
+                    }
+                }
+            });
+        }
         
         // Прокрутка наверх
         scrollToTopBtn.addEventListener('click', () => {
