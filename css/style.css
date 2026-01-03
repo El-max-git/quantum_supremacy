@@ -2405,6 +2405,17 @@ ul.features-list li::before {
         opacity: 1 !important;
     }
 
+    .scroll-btn.scroll-btn-fire-flash {
+        animation: fireFlash 0.5s ease-out !important;
+    }
+
+    .scroll-btn.scroll-btn-fire-flash:focus,
+    .scroll-btn.scroll-btn-fire-flash:focus-visible,
+    .scroll-btn.scroll-btn-fire-flash:hover,
+    .scroll-btn.scroll-btn-fire-flash:active {
+        animation: fireFlash 0.5s ease-out !important;
+    }
+
     .article-scroll-buttons.hidden {
         transform: translateX(calc(100% - 16px));
     }
@@ -2440,6 +2451,17 @@ ul.features-list li::before {
     .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
         pointer-events: none !important;
         cursor: default !important;
+    }
+
+    .scroll-btn.scroll-btn-fire-flash {
+        animation: fireFlash 0.5s ease-out !important;
+    }
+
+    .scroll-btn.scroll-btn-fire-flash:focus,
+    .scroll-btn.scroll-btn-fire-flash:focus-visible,
+    .scroll-btn.scroll-btn-fire-flash:hover,
+    .scroll-btn.scroll-btn-fire-flash:active {
+        animation: fireFlash 0.5s ease-out !important;
     }
 
     /* Уменьшаем размер кнопок на мобильных в горизонтальной ориентации на 20% */
