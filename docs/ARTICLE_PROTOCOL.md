@@ -373,29 +373,16 @@ H₀ ≈ 70 км/с/Мпк
 ```
 articles/
 └── article-name/
-    ├── article.md           # Основной текст
-    ├── metadata.json        # Метаданные
-    └── images/              # Изображения статьи
+    ├── article.md           # Основной текст (может иметь любое имя .md)
+    └── images/              # Изображения статьи (опционально)
         ├── diagram1.png
         └── formula-box.svg
 ```
 
-### metadata.json
-
-```json
-{
-  "id": "article-name",
-  "title": "Полное название статьи",
-  "author": "Автор",
-  "date": "2025-01-01",
-  "category": "theory",
-  "tags": ["gravity", "quantum", "vacuum"],
-  "description": "Краткое описание статьи для превью",
-  "readingTime": 15,
-  "difficulty": "advanced",
-  "prerequisites": ["quantum-basics", "vacuum-physics"]
-}
-```
+**Примечание:**
+- Файл статьи может иметь любое имя с расширением `.md` (например: `article.md`, `EXPANDING_UNIVERSE_HYPERSPHERE_.md`, `VECTOR_POTENTIAL_FIELD_.md`)
+- Метаданные указываются в YAML frontmatter в начале файла статьи (между `---`)
+- Отдельный файл `metadata.json` не требуется — вся информация хранится в frontmatter
 
 ## Примеры полных блоков
 
@@ -551,7 +538,7 @@ $$
 - [ ] Изображения существуют и загружаются
 - [ ] Внутренние ссылки работают
 - [ ] Специальные блоки правильно отформатированы
-- [ ] metadata.json заполнен
+- [ ] YAML frontmatter с метаданными присутствует в начале файла
 - [ ] Нет HTML-кода (только markdown)
 - [ ] ASCII-рамки используют правильные символы (┌─┐└─┘│)
 

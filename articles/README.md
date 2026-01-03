@@ -10,7 +10,7 @@
 articles/
 ├── articles-list.json     # Список всех статей (автоматически генерируется)
 ├── article-id/
-│   ├── article.md          # Main markdown content with frontmatter metadata
+│   ├── article.md          # Markdown файл с frontmatter метаданными (может иметь любое имя .md)
 │   └── images/             # Article images (optional)
 │       ├── diagram1.png
 │       └── formula.svg
@@ -18,7 +18,8 @@ articles/
 ```
 
 **Важно:** 
-- Метаданные встроены в сам файл `article.md` через YAML frontmatter (в начале файла)
+- Файл статьи может иметь любое имя с расширением `.md` (например: `article.md`, `EXPANDING_UNIVERSE_HYPERSPHERE_.md`)
+- Метаданные встроены в сам файл через YAML frontmatter (в начале файла, между `---`)
 - Список статей хранится в `articles/articles-list.json` (генерируется скриптом `scan-articles.js`)
 - Статьи **НЕ** регистрируются в `config.json`
 
@@ -32,7 +33,7 @@ mkdir -p articles/my-article/images
 
 ### Шаг 2: Написать контент
 
-Создайте `articles/my-article/article.md` следуя [протоколу разметки](../docs/ARTICLE_PROTOCOL.md).
+Создайте markdown файл в папке статьи (например, `articles/my-article/article.md`) следуя [протоколу разметки](../docs/ARTICLE_PROTOCOL.md). Файл может иметь любое имя с расширением `.md`.
 
 Пример:
 
@@ -202,7 +203,7 @@ $$
 
 Для миграции статей из `palantir_w/palantir_w/moduls/VP/`:
 
-1. Скопируйте `.md` файл в `articles/article-id/article.md`
+1. Скопируйте `.md` файл в `articles/article-id/` (может иметь любое имя с расширением `.md`)
 2. Добавьте YAML frontmatter в начало файла с метаданными
 3. Переместите изображения в `articles/article-id/images/`
 4. Обновите пути изображений с `./VP/images/` на `./images/`
