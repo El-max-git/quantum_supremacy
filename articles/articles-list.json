@@ -23,6 +23,55 @@
         {
           "id": "vector-potential-field",
           "mdFile": "articles/VECTOR_POTENTIAL_FIELD/VECTOR_POTENTIAL_FIELD_.md"
+        },
+        {
+          "id": "quantum-vacuum-unified-theory",
+          "title": "Вакуумные волны вероятности и квантовая физика",
+          "description": "Серия статей о связи между вакуумными модами, волновыми функциями и квантовыми эффектами",
+          "icon": "🌊",
+          "order": 3,
+          "items": [
+            {
+              "id": "vacuum-probability-waves-part1",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART1_INTRODUCTION.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part2",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART2_VACUUM_MODES.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part3",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART3_CORRELATIONS_CASIMIR.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part4",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART4_UNIFIED_PICTURE.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part5",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART5_PRACTICAL_APPLICATIONS.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part6",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART6_ENERGY_TRANSITION.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part7",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART7_SPACE_PLANET_COLLECTION.md"
+            },
+            {
+              "id": "vacuum-probability-waves-part8",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART8_FIELDS_NATURE.md"
+            },
+            {
+              "id": "quantum-vacuum-unified-theory",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/QUANTUM_VACUUM_UNIFIED_THEORY.md"
+            },
+            {
+              "id": "vacuum-probability-waves-quantum-physics",
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_QUANTUM_PHYSICS.md"
+            }
+          ]
         }
       ]
     },
