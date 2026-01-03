@@ -1894,9 +1894,6 @@
             scrollButtons.classList.add('visible');
         }
 
-        // Обработка свайпов для мобильных устройств (опционально, можно убрать)
-        // if (window.innerWidth <= 767) {
-        
         // Кнопка переключения видимости (работает для всех устройств)
         const toggleBtn = document.getElementById('scroll-buttons-toggle');
         if (toggleBtn) {
@@ -1907,7 +1904,8 @@
             });
         }
 
-        if (window.innerWidth <= 767) {
+        // Обработка свайпов для мобильных устройств (вертикальная и горизонтальная ориентация)
+        if (window.innerWidth <= 1023) {
             let touchStartX = 0;
             let touchStartY = 0;
             let touchMoved = false;
