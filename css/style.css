@@ -2234,11 +2234,17 @@ ul.features-list li::before {
 
     .article-scroll-buttons.hidden {
         transform: translateX(calc(100% - 16px));
+        width: 16px !important;
+        min-width: 16px !important;
+        max-width: 16px !important;
+        gap: 0 !important;
+        overflow: hidden !important;
     }
 
     .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0;
-        pointer-events: none;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        visibility: hidden !important;
     }
 
     /* Ярлычок для показа скрытых кнопок */
