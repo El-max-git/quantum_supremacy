@@ -770,6 +770,13 @@ ul.features-list li::before {
         box-shadow: none; /* Тень (нет) */
         margin-top: 0; /* Отступ сверху */
     }
+
+    /* Убираем фокус на пунктах содержания для десктопа */
+    .article-toc-embedded .toc-link:focus,
+    .article-toc-embedded .toc-link:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
 }
 
 /* Tablet - 768px to 1023px */
@@ -1165,6 +1172,14 @@ ul.features-list li::before {
 
 /* Мобильная версия: единый список без визуального разделения на боксы */
 @media (max-width: 767px) {
+    .article-toc-embedded {
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
     .article-toc-embedded .toc-list,
     .article-toc-embedded .toc-list-nested {
         padding: 0 !important;
@@ -1195,6 +1210,14 @@ ul.features-list li::before {
 
 /* Горизонтальная ориентация мобильных и планшетов: убираем боксы */
 @media (max-width: 1023px) and (orientation: landscape) {
+    .article-toc-embedded {
+        background: transparent !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
     .article-toc-embedded .toc-list,
     .article-toc-embedded .toc-list-nested {
         padding: 0 !important;
