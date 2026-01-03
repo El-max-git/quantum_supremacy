@@ -800,6 +800,109 @@ ul.features-list li::before {
     }
 }
 
+/* Анимация переключения иконок в кнопке toggle */
+.scroll-btn-toggle {
+    position: relative !important;
+}
+
+.scroll-btn-toggle .toggle-icon {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+}
+
+.scroll-btn-toggle .toggle-icon-close {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg);
+}
+
+.scroll-btn-toggle .toggle-icon-plus {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg);
+}
+
+/* Гарантируем работу анимации на всех устройствах */
+@media (max-width: 767px) {
+    .scroll-btn-toggle {
+        position: relative !important;
+    }
+    
+    .scroll-btn-toggle .toggle-icon {
+        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+    }
+    
+    .scroll-btn-toggle .toggle-icon-close {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    
+    .scroll-btn-toggle .toggle-icon-plus {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-90deg);
+    }
+    
+    .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(90deg);
+    }
+    
+    .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+}
+
+/* Горизонтальная ориентация мобильных */
+@media (max-width: 1023px) and (orientation: landscape) {
+    .scroll-btn-toggle {
+        position: relative !important;
+    }
+    
+    .scroll-btn-toggle .toggle-icon {
+        transition: opacity 0.3s ease, transform 0.3s ease !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+    }
+    
+    .scroll-btn-toggle .toggle-icon-close {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    
+    .scroll-btn-toggle .toggle-icon-plus {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-90deg);
+    }
+    
+    .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(90deg);
+    }
+    
+    .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+}
+
 /* Tablet - 768px to 1023px */
 @media (max-width: 1023px) {
     .container {
@@ -2295,6 +2398,12 @@ ul.features-list li::before {
         width: 16px !important;
         height: 16px !important;
     }
+    
+    /* Размеры иконок в toggle кнопке для горизонтальной ориентации */
+    .scroll-btn-toggle .toggle-icon {
+        width: 16px !important;
+        height: 16px !important;
+    }
 }
 
 .scroll-btn {
@@ -2457,6 +2566,12 @@ ul.features-list li::before {
     .scroll-btn svg {
         width: 16px;
         height: 16px;
+    }
+    
+    /* Размеры иконок в toggle кнопке для вертикальной ориентации */
+    .scroll-btn-toggle .toggle-icon {
+        width: 16px !important;
+        height: 16px !important;
     }
     
     /* Таблицы на мобильных - горизонтальный скролл */
