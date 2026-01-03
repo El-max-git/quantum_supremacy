@@ -787,6 +787,9 @@ ul.features-list li::before {
         opacity: 0.8 !important;
         background: #888888 !important;
         color: #ffffff !important;
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
         pointer-events: none !important;
         cursor: default !important;
     }
@@ -2253,6 +2256,9 @@ ul.features-list li::before {
         opacity: 0.8 !important;
         background: #888888 !important;
         color: #ffffff !important;
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
         pointer-events: none !important;
         cursor: default !important;
     }
@@ -2272,6 +2278,9 @@ ul.features-list li::before {
         opacity: 0.8 !important;
         background: #888888 !important;
         color: #ffffff !important;
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
         pointer-events: none !important;
         cursor: default !important;
     }
