@@ -1163,36 +1163,6 @@ ul.features-list li::before {
     overflow: visible;
 }
 
-/* Убираем визуальное разделение на боксы для встроенного содержания на мобильных */
-@media (max-width: 767px) {
-    .article-toc-embedded .toc-item {
-        margin: 0 !important;
-        display: inline !important;
-    }
-
-    .article-toc-embedded .toc-link {
-        display: inline !important;
-        width: auto !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border-left: none !important;
-        border-radius: 0 !important;
-        word-break: normal !important;
-        word-wrap: normal !important;
-        overflow-wrap: normal !important;
-    }
-
-    .article-toc-embedded .toc-link:hover,
-    .article-toc-embedded .toc-link.active {
-        background: transparent !important;
-        border-left: none !important;
-    }
-
-    .article-toc-embedded .toc-list,
-    .article-toc-embedded .toc-list-nested {
-        display: block !important;
-    }
-}
 
 /* Заголовок раздела на страницах после первой */
 .article-section-header {
