@@ -778,9 +778,20 @@ ul.features-list li::before {
         box-shadow: none !important;
     }
 
-    /* На десктопе скрываем кнопку переключения плавающих кнопок */
+    /* Скрытие плавающих кнопок на десктопе */
+    .article-scroll-buttons.hidden {
+        transform: translateX(calc(100% - 16px));
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn {
+        opacity: 0.8 !important;
+        background: #888888 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Кнопка переключения видна на десктопе */
     .scroll-btn-toggle {
-        display: none !important;
+        display: flex !important;
     }
 }
 
@@ -2241,28 +2252,22 @@ ul.features-list li::before {
         background: #888888 !important;
         color: #ffffff !important;
     }
+}
 
-    /* Ярлычок для показа скрытых кнопок */
-    .article-scroll-buttons::before {
-        content: '';
-        position: absolute;
-        left: -16px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 16px;
-        height: 60px;
-        background: var(--primary-color);
-        border-radius: 8px 0 0 8px;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+/* Горизонтальная ориентация мобильных - тоже применяем скрытие */
+@media (max-width: 1023px) and (orientation: landscape) {
+    .article-scroll-buttons {
+        position: relative;
     }
 
-    .article-scroll-buttons.hidden::before {
-        opacity: 1;
-        pointer-events: auto;
-        cursor: pointer;
+    .article-scroll-buttons.hidden {
+        transform: translateX(calc(100% - 16px));
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn {
+        opacity: 0.8 !important;
+        background: #888888 !important;
+        color: #ffffff !important;
     }
 }
 
@@ -2416,16 +2421,16 @@ ul.features-list li::before {
     }
     
     .scroll-btn {
-        width: 44px;
-        height: 44px;
+        width: 28px;
+        height: 28px;
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
     }
     
     .scroll-btn svg {
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
     }
     
     /* Таблицы на мобильных - горизонтальный скролл */

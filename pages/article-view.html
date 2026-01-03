@@ -1894,7 +1894,19 @@
             scrollButtons.classList.add('visible');
         }
 
-        // Обработка свайпов для мобильных устройств
+        // Обработка свайпов для мобильных устройств (опционально, можно убрать)
+        // if (window.innerWidth <= 767) {
+        
+        // Кнопка переключения видимости (работает для всех устройств)
+        const toggleBtn = document.getElementById('scroll-buttons-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                scrollButtons.classList.toggle('hidden');
+            });
+        }
+
         if (window.innerWidth <= 767) {
             let touchStartX = 0;
             let touchStartY = 0;
@@ -1937,30 +1949,6 @@
             scrollButtons.addEventListener('touchstart', handleTouchStart, { passive: true });
             scrollButtons.addEventListener('touchmove', handleTouchMove, { passive: true });
             scrollButtons.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-            // Обработчик клика по ярлычку (псевдоэлемент ::before)
-            // Используем делегирование событий через родителя
-            scrollButtons.addEventListener('click', (e) => {
-                if (scrollButtons.classList.contains('hidden')) {
-                    // Если кликнули в области ярлычка (левый край контейнера), показываем кнопки
-                    const rect = scrollButtons.getBoundingClientRect();
-                    if (e.clientX < rect.left + 20) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        scrollButtons.classList.remove('hidden');
-                    }
-                }
-            });
-
-            // Кнопка переключения видимости (сверху блока кнопок)
-            const toggleBtn = document.getElementById('scroll-buttons-toggle');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    scrollButtons.classList.toggle('hidden');
-                });
-            }
         }
         
         // Прокрутка наверх
