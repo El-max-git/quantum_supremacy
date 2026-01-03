@@ -125,14 +125,20 @@ node scripts/scan-articles.js
 
 ### Математические формулы
 
-**Inline:** `$E = mc^2$`
+**LaTeX формулы (MathJax):**
 
-**Block:**
+Inline: `$E = mc^2$` или `$E = h\nu$`
+
+Block:
 ```markdown
 $$
 \Psi(x,t) = A \cdot e^{i(kx - \omega t)}
 $$
 ```
+
+**Специальный формат:**
+
+Также поддерживается формат `[formula]...[/formula]` и французские кавычки `«формула»` (см. [протокол разметки](../docs/ARTICLE_PROTOCOL.md)).
 
 ### Изображения
 

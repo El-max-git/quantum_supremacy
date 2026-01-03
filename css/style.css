@@ -1609,6 +1609,17 @@ ul.features-list li::before {
     }
 }
 
+/* LaTeX формулы через MathJax */
+.article-body .math-inline {
+    display: inline;
+}
+
+.article-body .math-display {
+    display: block;
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
 .article-body ul,
 .article-body ol {
     margin: 1rem 0;

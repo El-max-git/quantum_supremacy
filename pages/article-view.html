@@ -496,6 +496,13 @@
         
         document.getElementById('article-body').innerHTML = paginatedHtml;
         
+        // Инициализируем MathJax для рендеринга LaTeX формул
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise().catch((err) => {
+                console.warn('MathJax typeset error:', err);
+            });
+        }
+        
         // Убеждаемся, что ID сохранены (добавляем ID к заголовкам, если их нет)
         // Важно: обрабатываем ВСЕ заголовки во всех страницах (даже скрытых)
         addIdsToHeadings();
@@ -666,52 +673,10 @@
         //   «формула» - альтернативный синтаксис для inline формул (французские кавычки)
         const formulaBlocks = [];
         const codeBlocks = [];
+        const latexFormulaBlocks = [];
         
-        // Обрабатываем французские кавычки «» как эквивалент [formula:inline]...[/formula]
-        html = html.replace(/«([^»]+)»/g, (match, formula) => {
-            const index = formulaBlocks.length;
-            const trimmedFormula = formula.trim();
-            
-            // Экранируем формулу
-            const escaped = trimmedFormula
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            
-            // Создаем классы для inline формулы
-            formulaBlocks.push(`<span class="formula-block formula-inline">${escaped}</span>`);
-            return `__FORMULA_BLOCK_${index}__`;
-        });
-        
-        // Обрабатываем теги [formula]...[/formula]
-        html = html.replace(/\[formula(?::([^\]]+))?\]([\s\S]*?)\[\/formula\]/g, (match, params, formula) => {
-            const index = formulaBlocks.length;
-            const trimmedFormula = formula.trim();
-            
-            // Парсим параметры
-            const paramList = params ? params.split(':').map(p => p.trim()) : [];
-            const isInline = paramList.includes('inline');
-            const hasBorder = paramList.includes('border');
-            
-            // Экранируем формулу
-            const escaped = trimmedFormula
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-            
-            // Создаем классы для формулы
-            let classes = 'formula-block';
-            if (isInline) classes += ' formula-inline';
-            if (hasBorder) classes += ' formula-border';
-            
-            // Для inline формул используем span, для блочных - div
-            const tag = isInline ? 'span' : 'div';
-            formulaBlocks.push(`<${tag} class="${classes}">${escaped}</${tag}>`);
-            return `__FORMULA_BLOCK_${index}__`;
-        });
-        
-        // Обрабатываем блоки кода с тремя обратными кавычками
-        // Используем нежадный квантификатор для правильной обработки нескольких блоков
+        // Обрабатываем блоки кода с тремя обратными кавычками ПЕРВЫМИ
+        // Это защищает код от обработки как markdown/формулы
         html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
             const index = codeBlocks.length;
             const trimmedCode = code.trim();
@@ -778,6 +743,70 @@
             
             // Используем уникальный плейсхолдер с индексом
             return `\n__CODE_BLOCK_${index}__\n`;
+        });
+        
+        // Обрабатываем LaTeX формулы $$...$$ (block формулы) ПЕРЕД обработкой $...$ (inline)
+        // Используем нежадный квантификатор и многострочный режим
+        html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, formula) => {
+            const index = latexFormulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            // НЕ экранируем - MathJax нужен исходный LaTeX синтаксис
+            latexFormulaBlocks.push(`<div class="math-display">$$${trimmedFormula}$$</div>`);
+            return `__LATEX_FORMULA_BLOCK_${index}__`;
+        });
+        
+        // Обрабатываем LaTeX формулы $...$ (inline формулы)
+        // Важно: обрабатываем после $$...$$ чтобы не конфликтовать
+        // Используем негативный lookbehind/lookahead чтобы не захватывать части $$...$$
+        html = html.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (match, formula) => {
+            const index = latexFormulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            // НЕ экранируем - MathJax нужен исходный LaTeX синтаксис
+            latexFormulaBlocks.push(`<span class="math-inline">$${trimmedFormula}$</span>`);
+            return `__LATEX_FORMULA_BLOCK_${index}__`;
+        });
+        
+        // Обрабатываем французские кавычки «» как эквивалент [formula:inline]...[/formula]
+        html = html.replace(/«([^»]+)»/g, (match, formula) => {
+            const index = formulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            
+            // Экранируем формулу
+            const escaped = trimmedFormula
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Создаем классы для inline формулы
+            formulaBlocks.push(`<span class="formula-block formula-inline">${escaped}</span>`);
+            return `__FORMULA_BLOCK_${index}__`;
+        });
+        
+        // Обрабатываем теги [formula]...[/formula]
+        html = html.replace(/\[formula(?::([^\]]+))?\]([\s\S]*?)\[\/formula\]/g, (match, params, formula) => {
+            const index = formulaBlocks.length;
+            const trimmedFormula = formula.trim();
+            
+            // Парсим параметры
+            const paramList = params ? params.split(':').map(p => p.trim()) : [];
+            const isInline = paramList.includes('inline');
+            const hasBorder = paramList.includes('border');
+            
+            // Экранируем формулу
+            const escaped = trimmedFormula
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+            
+            // Создаем классы для формулы
+            let classes = 'formula-block';
+            if (isInline) classes += ' formula-inline';
+            if (hasBorder) classes += ' formula-border';
+            
+            // Для inline формул используем span, для блочных - div
+            const tag = isInline ? 'span' : 'div';
+            formulaBlocks.push(`<${tag} class="${classes}">${escaped}</${tag}>`);
+            return `__FORMULA_BLOCK_${index}__`;
         });
         
         // Обрабатываем незакрытые блоки кода (``` без закрывающих ```)
@@ -1123,6 +1152,12 @@
         // Восстанавливаем формулы (после всех блоков кода)
         formulaBlocks.forEach((block, index) => {
             const placeholder = new RegExp(`__FORMULA_BLOCK_${index}__`, 'g');
+            html = html.replace(placeholder, block);
+        });
+        
+        // Восстанавливаем LaTeX формулы (после существующих формул)
+        latexFormulaBlocks.forEach((block, index) => {
+            const placeholder = new RegExp(`__LATEX_FORMULA_BLOCK_${index}__`, 'g');
             html = html.replace(placeholder, block);
         });
         

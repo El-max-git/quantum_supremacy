@@ -71,7 +71,16 @@
     <!-- Navigation Utilities (load before router) -->
     <script src="js/navigation.js"></script>
     
-    <!-- MathJax рендеринг формул отключен -->
+    <!-- MathJax для рендеринга LaTeX формул -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']]
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
     
     <!-- Table of Contents (используется в article-template.html) -->
     <script src="js/table-of-contents.js"></script>
