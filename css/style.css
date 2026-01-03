@@ -798,6 +798,15 @@ ul.features-list li::before {
     .scroll-btn-toggle {
         display: flex !important;
     }
+    
+    /* Прозрачность кнопок на десктопе */
+    .scroll-btn {
+        opacity: 0.5 !important;
+    }
+    
+    .scroll-btn:hover {
+        opacity: 1 !important;
+    }
 }
 
 /* Анимация переключения иконок в кнопке toggle */
@@ -2461,7 +2470,6 @@ ul.features-list li::before {
     cursor: pointer;
     display: flex !important;
     visibility: visible !important;
-    opacity: 0.5 !important;
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-lg);
@@ -2479,6 +2487,10 @@ ul.features-list li::before {
 .scroll-btn:focus,
 .scroll-btn:focus-visible {
     outline: none !important;
+}
+
+.scroll-btn:focus:not(.scroll-btn-fire-flash),
+.scroll-btn:focus-visible:not(.scroll-btn-fire-flash) {
     box-shadow: var(--shadow-lg) !important;
 }
 
@@ -2524,8 +2536,15 @@ ul.features-list li::before {
     }
 }
 
-.scroll-btn-fire-flash {
-    animation: fireFlash 0.5s ease-out;
+.scroll-btn.scroll-btn-fire-flash {
+    animation: fireFlash 0.5s ease-out !important;
+}
+
+.scroll-btn.scroll-btn-fire-flash:focus,
+.scroll-btn.scroll-btn-fire-flash:focus-visible,
+.scroll-btn.scroll-btn-fire-flash:hover,
+.scroll-btn.scroll-btn-fire-flash:active {
+    animation: fireFlash 0.5s ease-out !important;
 }
 
 .scroll-btn svg {
