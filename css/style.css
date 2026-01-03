@@ -784,8 +784,8 @@ ul.features-list li::before {
     }
 
     .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.8 !important;
-        background: #888888 !important;
+        opacity: 0.5 !important;
+        background: #64748b !important;
         color: #ffffff !important;
     }
 
@@ -2253,8 +2253,8 @@ ul.features-list li::before {
     }
 
     .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.8 !important;
-        background: #888888 !important;
+        opacity: 0.5 !important;
+        background: #64748b !important;
         color: #ffffff !important;
     }
 
@@ -2275,8 +2275,8 @@ ul.features-list li::before {
     }
 
     .article-scroll-buttons.hidden .scroll-btn {
-        opacity: 0.8 !important;
-        background: #888888 !important;
+        opacity: 0.5 !important;
+        background: #64748b !important;
         color: #ffffff !important;
     }
 
