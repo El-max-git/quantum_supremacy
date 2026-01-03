@@ -2551,23 +2551,14 @@ ul.features-list li::before {
     box-shadow: var(--shadow-lg);
     transition: var(--transition);
     padding: 0;
+    opacity: 0.5; /* Базовое значение - полупрозрачные кнопки */
 }
 
 .scroll-btn:hover {
     background: var(--link-hover);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-}
-
-/* Базовый opacity для desktop - переопределяется в медиа-запросах для мобильных */
-@media (min-width: 768px) {
-    .scroll-btn {
-        opacity: 1 !important;
-    }
-    
-    .scroll-btn:hover {
-        opacity: 1 !important;
-    }
+    /* opacity управляется медиа-запросами с !important */
 }
 
 .scroll-btn:focus,
