@@ -65,28 +65,64 @@ class ArticlesCatalog {
         }
         
         try {
-            // Формируем путь: basePath может уже содержать слеш или нет
-            const path = mdFile.startsWith('/') 
-                ? `${this.config.basePath}${mdFile}`
-                : `${this.config.basePath}/${mdFile}`;
+            // Нормализуем путь к файлу (убираем ведущий слеш если есть)
+            const normalizedMdFile = mdFile.startsWith('/') ? mdFile.substring(1) : mdFile;
             
-            const response = await fetch(path, {
-                cache: 'no-cache',
-                headers: {
-                    'Cache-Control': 'no-cache'
+            // Формируем список возможных URL для загрузки
+            const possibleUrls = [];
+            
+            // Определяем репозиторий из hostname
+            const hostname = window.location.hostname;
+            
+            // ПРИОРИТЕТ 1: Через raw.githubusercontent.com (самый надежный для GitHub Pages)
+            if (hostname.includes('github.io')) {
+                // Извлекаем username из hostname (например, el-max-git.github.io -> el-max-git)
+                const match = hostname.match(/^([^.]+)\.github\.io/);
+                if (match) {
+                    const username = match[1];
+                    possibleUrls.push(`https://raw.githubusercontent.com/${username}/quantum_supremacy/main/${normalizedMdFile}`);
+                    possibleUrls.push(`https://raw.githubusercontent.com/${username}/quantum_supremacy/master/${normalizedMdFile}`);
                 }
-            });
-            if (!response.ok) {
-                console.warn(`[ArticlesCatalog] Failed to load ${path}: ${response.status}`);
-                return null;
             }
             
-            const text = await response.text();
-            const metadata = this.parseYAMLFrontmatter(text);
+            // ПРИОРИТЕТ 2: Через GitHub Pages (резервный)
+            if (this.config.basePath) {
+                possibleUrls.push(`${this.config.basePath}/${normalizedMdFile}`);
+            } else {
+                possibleUrls.push(`/${normalizedMdFile}`);
+            }
             
-            // Кэшируем результат
-            this.metadataCache[mdFile] = metadata;
-            return metadata;
+            // Пробуем загрузить по каждому URL
+            let lastError = null;
+            for (const url of possibleUrls) {
+                try {
+                    const response = await fetch(url, {
+                        cache: 'no-cache',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const text = await response.text();
+                        const metadata = this.parseYAMLFrontmatter(text);
+                        
+                        // Кэшируем результат
+                        this.metadataCache[mdFile] = metadata;
+                        return metadata;
+                    } else {
+                        lastError = `HTTP ${response.status}`;
+                    }
+                } catch (fetchError) {
+                    lastError = fetchError.message;
+                    // Продолжаем пробовать следующий URL
+                }
+            }
+            
+            // Если все варианты не сработали
+            console.warn(`[ArticlesCatalog] Failed to load metadata for ${mdFile}. Tried URLs: ${possibleUrls.join(', ')}. Last error: ${lastError}`);
+            return null;
+            
         } catch (error) {
             console.warn(`[ArticlesCatalog] Failed to load metadata for ${mdFile}:`, error);
             return null;
