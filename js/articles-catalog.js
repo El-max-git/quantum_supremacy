@@ -133,8 +133,6 @@ class ArticlesCatalog {
      * Загрузка метаданных для всех статей в текущей директории
      */
     async enrichArticlesWithMetadata(articles) {
-        console.log(`[ArticlesCatalog] Enriching ${articles.length} articles with metadata`);
-        
         const enrichedArticles = await Promise.all(articles.map(async (article) => {
             // Если уже есть description, не загружаем
             if (article.description && article.title) {
@@ -145,15 +143,11 @@ class ArticlesCatalog {
             if (article.mdFile) {
                 const metadata = await this.loadArticleMetadata(article.mdFile);
                 if (metadata) {
-                    const enriched = {
+                    return {
                         ...article,
                         title: article.title || metadata.title || article.id,
                         description: article.description || metadata.description || ''
                     };
-                    console.log(`[ArticlesCatalog] Enriched ${article.id}: description="${enriched.description.substring(0, 50)}..."`);
-                    return enriched;
-                } else {
-                    console.log(`[ArticlesCatalog] No metadata found for ${article.id}`);
                 }
             }
             
@@ -288,8 +282,6 @@ class ArticlesCatalog {
      * Обновление карточек статей с загруженными метаданными
      */
     updateArticleCards(enrichedArticles) {
-        console.log(`[ArticlesCatalog] Updating ${enrichedArticles.length} article cards`);
-        
         enrichedArticles.forEach(article => {
             const card = document.querySelector(`.article-card[data-id="${article.id}"]`);
             if (!card) {
@@ -313,7 +305,6 @@ class ArticlesCatalog {
                     const descElement = bodyElement.querySelector('.article-card-description');
                     if (descElement) {
                         descElement.textContent = description;
-                        console.log(`[ArticlesCatalog] Updated description for ${article.id}`);
                     }
                 } else {
                     // Добавляем новое описание
@@ -323,13 +314,10 @@ class ArticlesCatalog {
                         newBody.className = 'article-card-body';
                         newBody.innerHTML = `<p class="article-card-description">${this.escapeHtml(description)}</p>`;
                         header.after(newBody);
-                        console.log(`[ArticlesCatalog] Added description for ${article.id}`);
                     } else {
                         console.warn(`[ArticlesCatalog] Header not found for article ${article.id}`);
                     }
                 }
-            } else {
-                console.log(`[ArticlesCatalog] No description for ${article.id}`);
             }
         });
     }

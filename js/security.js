@@ -408,8 +408,6 @@ class Security {
 
         // Generate initial CSRF token
         this.generateCsrfToken();
-
-        console.log('Security module initialized');
     }
 
     /**

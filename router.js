@@ -36,12 +36,6 @@ class Router {
             this.basePath = ''; // По умолчанию пустой
         }
         
-        console.log('[Router] hostname:', hostname);
-        console.log('[Router] pathname:', pathname);
-        console.log('[Router] isLocalhost:', isLocalhost);
-        console.log('[Router] isPathGitHubPages:', isPathGitHubPages);
-        console.log('[Router] basePath determined:', this.basePath);
-        
         // Handle initial redirect from 404.html
         this.handleInitialRedirect();
         
@@ -105,23 +99,14 @@ class Router {
      * @param {string} path - Route path
      */
     navigate(path) {
-        console.log('[Router] navigate() called with path:', path);
-        console.log('[Router] basePath:', this.basePath);
-        console.log('[Router] User Agent:', navigator.userAgent);
-        console.log('[Router] Is Mobile:', /Mobile|Android|iPhone|iPad/.test(navigator.userAgent));
-        
         // Сохраняем path с query параметрами для передачи в loadRoute
         const pathWithQuery = path;
         
         // Add base path if needed
         const fullPath = this.basePath + path;
-        console.log('[Router] Full path (with basePath):', fullPath);
-        console.log('[Router] Path with query for loadRoute:', pathWithQuery);
         
         // Update browser history - важно: используем fullPath с query параметрами
         window.history.pushState({}, '', fullPath);
-        console.log('[Router] History updated, current URL:', window.location.href);
-        console.log('[Router] window.location.search after pushState:', window.location.search);
         
         // Load the route (передаем path С query параметрами)
         this.loadRoute(pathWithQuery);
@@ -135,23 +120,18 @@ class Router {
      * @param {string} path - Route path (may include query parameters)
      */
     async loadRoute(path) {
-        console.log(`Router.loadRoute() called with path: "${path}"`);
-        
         // Сохраняем ПОЛНЫЙ путь с query параметрами в currentRoute ДО обработки
         this.currentRoute = path;
-        console.log(`Router: currentRoute set to: "${this.currentRoute}"`);
         
         // Извлекаем путь без query параметров для поиска маршрута
         const pathWithoutQuery = path.split('?')[0];
         
         // Find matching route
         let handler = this.routes[pathWithoutQuery];
-        console.log(`Router: Handler found: ${handler ? 'YES' : 'NO'} (searched for: "${pathWithoutQuery}")`);
         
         // If no exact match, try 404
         if (!handler) {
             handler = this.routes['/404'] || (() => '<h1>404 - Page Not Found</h1>');
-            console.log('Router: Using 404 handler');
         }
 
         try {
@@ -160,16 +140,12 @@ class Router {
             this.rootElement.style.transition = 'opacity 0.2s ease';
 
             // Get content from handler
-            console.log('Router: Calling handler...');
             const content = await handler();
-            console.log(`Router.loadRoute(${path}): Content loaded, length: ${content.length}, type: ${typeof content}`);
 
             // Update content while hidden
             this.rootElement.innerHTML = content;
-            console.log('Router: Content inserted into DOM');
 
             // Execute scripts in the loaded content
-            console.log('Router: Executing scripts...');
             this.executeScripts();
 
             // Initialize page scripts
@@ -196,16 +172,13 @@ class Router {
     executeScripts() {
         try {
             const scripts = this.rootElement.querySelectorAll('script');
-            console.log(`Router.executeScripts(): Found ${scripts.length} script(s) to execute`);
             
             if (scripts.length === 0) {
-                console.log('Router: No scripts found in loaded content');
                 return;
             }
             
             scripts.forEach((oldScript, index) => {
                 try {
-                    console.log(`Router: Executing script ${index + 1}/${scripts.length}...`);
                     const newScript = document.createElement('script');
                     
                     // Copy attributes
@@ -216,13 +189,11 @@ class Router {
                     // Copy content
                     if (oldScript.textContent) {
                         newScript.textContent = oldScript.textContent;
-                        console.log(`Router: Script ${index + 1} content length: ${oldScript.textContent.length} chars`);
                     }
                     
                     // Replace old script with new one (this executes it)
                     if (oldScript.parentNode) {
                         oldScript.parentNode.replaceChild(newScript, oldScript);
-                        console.log(`Router: ✓ Script ${index + 1} executed successfully`);
                     } else {
                         console.warn(`Router: Script ${index + 1} has no parent node`);
                     }
@@ -240,9 +211,7 @@ class Router {
      */
     initializePageScripts() {
         // Reinitialize form handlers, animations, etc.
-        console.log('Router: initializePageScripts() called');
         if (typeof initializePageComponents === 'function') {
-            console.log('Router: Calling initializePageComponents()');
             initializePageComponents();
         } else {
             console.warn('Router: initializePageComponents is not available');
@@ -250,7 +219,6 @@ class Router {
         
         // Также явно вызываем initMobileMenu если доступна
         if (typeof initMobileMenu === 'function') {
-            console.log('Router: Also calling initMobileMenu() directly');
             initMobileMenu();
         }
     }

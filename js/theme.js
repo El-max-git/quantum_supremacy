@@ -17,9 +17,6 @@ class ThemeManager {
         
         // Listen for system theme changes
         this.watchSystemTheme();
-        
-        // Log current theme
-        console.log('Theme initialized:', this.getCurrentTheme());
     }
 
     /**

@@ -23,20 +23,9 @@ let mobileMenuOutsideClickHandler = null;
  * CSS только определяет стили для этих классов
  */
 function initMobileMenu() {
-    console.log('=== initMobileMenu() called ===');
-    
     const navToggle = document.querySelector('.mobile-menu-toggle');
     const navMenu = document.querySelector('nav ul');
     const nav = document.querySelector('nav');
-
-    console.log('navToggle found:', !!navToggle, navToggle);
-    console.log('navMenu found:', !!navMenu, navMenu);
-    console.log('nav found:', !!nav, nav);
-    console.log('navMenu children:', navMenu ? navMenu.children.length : 0);
-    
-    if (navMenu) {
-        console.log('navMenu HTML:', navMenu.outerHTML.substring(0, 200));
-    }
 
     if (!navToggle) {
         console.warn('Mobile menu toggle button not found!');
@@ -98,7 +87,6 @@ function initMobileMenu() {
         e.preventDefault(); // Предотвращаем стандартное поведение
         // ЛОГИКА: Проверяем текущее состояние через inline стили
         const isVisible = navMenu.style.display === 'flex' && navMenu.style.visibility === 'visible';
-        console.log('Menu toggle clicked, current state:', isVisible);
         
         // ЛОГИКА: Переключаем состояние меню через inline стили
         // CSS только определяет декоративные стили (цвета, размеры, отступы)
@@ -108,18 +96,13 @@ function initMobileMenu() {
             navMenu.style.visibility = 'hidden';
             navMenu.style.opacity = '0';
             newToggle.classList.remove('active');
-            console.log('Menu closed (inline styles set)');
         } else {
             // ЛОГИКА: Открываем меню - устанавливаем inline стили
             navMenu.style.display = 'flex';
             navMenu.style.visibility = 'visible';
             navMenu.style.opacity = '1';
             newToggle.classList.add('active');
-            console.log('Menu opened (inline styles set)');
         }
-        
-        console.log('Menu state after toggle:', navMenu.classList.contains('active'));
-        console.log('Menu items count:', navMenu.children.length);
         
         // Сбрасываем флаг после небольшой задержки
         setTimeout(() => {
@@ -134,7 +117,6 @@ function initMobileMenu() {
     const handleNavLinkClick = (e) => {
         const link = e.target.closest('nav a[data-link]');
         if (link) {
-            console.log('Nav link clicked, closing menu');
             // ЛОГИКА: Закрываем меню - устанавливаем inline стили
             navMenu.style.display = 'none';
             navMenu.style.visibility = 'hidden';
@@ -187,11 +169,6 @@ function initMobileMenu() {
     document.addEventListener('click', (e) => {
         setTimeout(() => mobileMenuOutsideClickHandler(e), 10);
     }, false);
-
-    console.log('=== Mobile menu initialized successfully ===');
-    console.log('Button element:', newToggle);
-    console.log('Menu element:', navMenu);
-    console.log('Menu is now ready for clicks');
 }
 
 // ========================================
@@ -213,7 +190,6 @@ function initContactForm() {
             if (typeof Security !== 'undefined') {
                 await Security.secureFormSubmit(newForm, (data) => {
                     // Log sanitized data
-                    console.log('Secure form submitted:', data);
                     
                     // Show success message
                     alert('Спасибо за ваше сообщение! Мы свяжемся с вами в ближайшее время.');

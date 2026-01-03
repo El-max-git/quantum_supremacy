@@ -28,17 +28,13 @@
         try {
             if (typeof ArticlesCatalog === 'undefined') {
                 if (retries > 0) {
-                    console.log('ArticlesCatalog not ready, retrying in 200ms...');
                     setTimeout(() => initArticlesCatalog(retries - 1), 200);
                     return;
                 }
                 throw new Error('ArticlesCatalog class not loaded. Check script order in index.html');
             }
             
-            console.log('✓ ArticlesCatalog class found');
-            
             const basePath = window.router?.basePath || '';
-            console.log('ArticlesCatalog: basePath =', basePath);
             
             const catalog = new ArticlesCatalog({
                 basePath: basePath,
@@ -46,11 +42,7 @@
                 configPath: '/articles/articles-list.json'
             });
             
-            console.log('✓ ArticlesCatalog instance created');
-            
             await catalog.init();
-            
-            console.log('✓ ArticlesCatalog initialized successfully');
             
             // Делаем доступным глобально
             window.articlesCatalog = catalog;
