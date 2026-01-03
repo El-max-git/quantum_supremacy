@@ -441,53 +441,23 @@
                 // Преобразуем содержание в HTML
                 let tocHtml = simpleMarkdownToHtml(tocContent);
                 
-                // Обертываем в структуру toc-nav и toc-list для единообразия
+                // Просто добавляем классы к ссылкам для единообразия со стилями
                 // Создаем временный контейнер для обработки
                 const tempTocDiv = document.createElement('div');
                 tempTocDiv.innerHTML = tocHtml;
                 
-                // Находим списки в содержании
-                const lists = tempTocDiv.querySelectorAll('ul, ol');
-                if (lists.length > 0) {
-                    // Если есть списки, оборачиваем первый список в структуру toc
-                    const firstList = lists[0];
-                    const navWrapper = document.createElement('nav');
-                    navWrapper.className = 'toc-nav';
-                    
-                    // Клонируем список и добавляем классы
-                    const listClone = firstList.cloneNode(true);
-                    listClone.className = 'toc-list';
-                    
-                    // Добавляем класс toc-link ко всем ссылкам
-                    const links = listClone.querySelectorAll('a');
-                    links.forEach(link => {
-                        link.className = 'toc-link';
-                        // Добавляем data-toc-target из href для совместимости
-                        const href = link.getAttribute('href');
-                        if (href && href.startsWith('#')) {
-                            link.setAttribute('data-toc-target', href.substring(1));
-                        }
-                    });
-                    
-                    // Добавляем классы toc-item и toc-list-nested для вложенных элементов
-                    const listItems = listClone.querySelectorAll('li');
-                    listItems.forEach((li, index) => {
-                        li.className = 'toc-item';
-                        const nestedLists = li.querySelectorAll(':scope > ul, :scope > ol');
-                        nestedLists.forEach(nestedList => {
-                            nestedList.className = 'toc-list-nested';
-                        });
-                    });
-                    
-                    navWrapper.appendChild(listClone);
-                    manualToc = navWrapper.outerHTML;
-                } else {
-                    // Если списков нет, оборачиваем в структуру toc-nav
-                    const navWrapper = document.createElement('nav');
-                    navWrapper.className = 'toc-nav';
-                    navWrapper.innerHTML = '<ul class="toc-list">' + tempTocDiv.innerHTML + '</ul>';
-                    manualToc = navWrapper.outerHTML;
-                }
+                // Добавляем класс toc-link ко всем ссылкам
+                const links = tempTocDiv.querySelectorAll('a');
+                links.forEach(link => {
+                    link.classList.add('toc-link');
+                    // Добавляем data-toc-target из href для совместимости
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        link.setAttribute('data-toc-target', href.substring(1));
+                    }
+                });
+                
+                manualToc = tempTocDiv.innerHTML;
                 
                 // Удаляем раздел содержания из основного контента (включая заголовок и разделитель)
                 const tocSectionEnd = tocEndMatch ? tocEnd + tocEndMatch[0].length : content.length;
