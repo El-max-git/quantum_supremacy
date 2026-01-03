@@ -26,6 +26,10 @@
         },
         {
           "id": "quantum-vacuum-unified-theory",
+          "mdFile": "articles/quantum-vacuum-unified-theory/QUANTUM_VACUUM_UNIFIED_THEORY.md"
+        },
+        {
+          "id": "vacuum-probability-waves",
           "title": "Вакуумные волны вероятности и квантовая физика",
           "description": "Серия статей о связи между вакуумными модами, волновыми функциями и квантовыми эффектами",
           "icon": "🌊",
@@ -62,10 +66,6 @@
             {
               "id": "vacuum-probability-waves-part8",
               "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART8_FIELDS_NATURE.md"
-            },
-            {
-              "id": "quantum-vacuum-unified-theory",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/QUANTUM_VACUUM_UNIFIED_THEORY.md"
             },
             {
               "id": "vacuum-probability-waves-quantum-physics",

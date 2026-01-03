@@ -14,6 +14,103 @@ class ArticlesCatalog {
         
         this.currentPath = [];
         this.catalogData = null;
+        this.metadataCache = {}; // Кэш метаданных статей
+    }
+
+    /**
+     * Парсинг YAML frontmatter из markdown текста
+     */
+    parseYAMLFrontmatter(text) {
+        const metadata = {};
+        const frontmatterMatch = text.match(/^---\r?\n([\s\S]*?)\r?\n---(\r?\n|$)/);
+        if (!frontmatterMatch) return metadata;
+        
+        const yamlText = frontmatterMatch[1];
+        yamlText.split('\n').forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) return;
+            
+            const colonIndex = trimmed.indexOf(':');
+            if (colonIndex === -1) return;
+            
+            const key = trimmed.substring(0, colonIndex).trim();
+            let value = trimmed.substring(colonIndex + 1).trim();
+            
+            // Удаляем кавычки
+            if ((value.startsWith('"') && value.endsWith('"')) ||
+                (value.startsWith("'") && value.endsWith("'"))) {
+                value = value.substring(1, value.length - 1);
+            }
+            
+            // Парсим массивы
+            if (value.startsWith('[') && value.endsWith(']')) {
+                value = value.substring(1, value.length - 1)
+                    .split(',')
+                    .map(item => item.trim().replace(/^["']|["']$/g, ''));
+            }
+            
+            metadata[key] = value;
+        });
+        
+        return metadata;
+    }
+
+    /**
+     * Загрузка метаданных статьи из markdown файла
+     */
+    async loadArticleMetadata(mdFile) {
+        // Проверяем кэш
+        if (this.metadataCache[mdFile]) {
+            return this.metadataCache[mdFile];
+        }
+        
+        try {
+            const response = await fetch(`${this.config.basePath}/${mdFile}`, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            if (!response.ok) return null;
+            
+            const text = await response.text();
+            const metadata = this.parseYAMLFrontmatter(text);
+            
+            // Кэшируем результат
+            this.metadataCache[mdFile] = metadata;
+            return metadata;
+        } catch (error) {
+            console.warn(`[ArticlesCatalog] Failed to load metadata for ${mdFile}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Загрузка метаданных для всех статей в текущей директории
+     */
+    async enrichArticlesWithMetadata(articles) {
+        const enrichedArticles = await Promise.all(articles.map(async (article) => {
+            // Если уже есть description, не загружаем
+            if (article.description && article.title) {
+                return article;
+            }
+            
+            // Загружаем метаданные из файла
+            if (article.mdFile) {
+                const metadata = await this.loadArticleMetadata(article.mdFile);
+                if (metadata) {
+                    return {
+                        ...article,
+                        title: article.title || metadata.title || article.id,
+                        description: article.description || metadata.description || ''
+                    };
+                }
+            }
+            
+            return article;
+        }));
+        
+        return enrichedArticles;
     }
 
     /**
@@ -35,7 +132,7 @@ class ArticlesCatalog {
             this.catalogData = await response.json();
             
             // Отображаем корневой каталог
-            this.renderCatalog();
+            await this.renderCatalog();
             
         } catch (error) {
             console.error('ArticlesCatalog initialization error:', error);
@@ -71,7 +168,7 @@ class ArticlesCatalog {
     /**
      * Рендер каталога
      */
-    renderCatalog() {
+    async renderCatalog() {
         const container = document.getElementById(this.config.listContainerId);
         if (!container) {
             console.error(`Container #${this.config.listContainerId} not found`);
@@ -97,7 +194,7 @@ class ArticlesCatalog {
         } else {
             // Группируем: сначала директории (есть items), потом статьи (есть mdFile)
             const directories = currentDir.filter(item => item.items !== undefined);
-            const articles = currentDir.filter(item => item.mdFile !== undefined);
+            let articles = currentDir.filter(item => item.mdFile !== undefined);
             
             // Отображаем директории
             if (directories.length > 0) {
@@ -112,7 +209,7 @@ class ArticlesCatalog {
                 html += '</div></div>';
             }
             
-            // Отображаем статьи
+            // Отображаем статьи (сначала без метаданных для быстрой отрисовки)
             if (articles.length > 0) {
                 html += '<div class="catalog-articles">';
                 html += '<h2 class="catalog-section-title">📄 Статьи</h2>';
@@ -131,6 +228,63 @@ class ArticlesCatalog {
         
         // Добавляем обработчики кликов
         this.attachEventListeners();
+        
+        // Загружаем метаданные асинхронно и обновляем карточки
+        if (currentDir.length > 0) {
+            const articles = currentDir.filter(item => item.mdFile !== undefined);
+            if (articles.length > 0) {
+                const enrichedArticles = await this.enrichArticlesWithMetadata(articles);
+                this.updateArticleCards(enrichedArticles);
+            }
+        }
+    }
+
+    /**
+     * Обновление карточек статей с загруженными метаданными
+     */
+    updateArticleCards(enrichedArticles) {
+        enrichedArticles.forEach(article => {
+            const card = document.querySelector(`.article-card[data-id="${article.id}"]`);
+            if (!card) return;
+            
+            // Обновляем заголовок, если изменился
+            const titleElement = card.querySelector('.article-card-title');
+            if (titleElement && article.title && titleElement.textContent !== article.title) {
+                titleElement.textContent = article.title;
+            }
+            
+            // Обновляем описание
+            const bodyElement = card.querySelector('.article-card-body');
+            const description = article.description || '';
+            
+            if (description) {
+                if (bodyElement) {
+                    // Обновляем существующее описание
+                    const descElement = bodyElement.querySelector('.article-card-description');
+                    if (descElement) {
+                        descElement.textContent = description;
+                    }
+                } else {
+                    // Добавляем новое описание
+                    const header = card.querySelector('.article-card-header');
+                    if (header) {
+                        const newBody = document.createElement('div');
+                        newBody.className = 'article-card-body';
+                        newBody.innerHTML = `<p class="article-card-description">${this.escapeHtml(description)}</p>`;
+                        header.after(newBody);
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Экранирование HTML для безопасности
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -319,7 +473,7 @@ class ArticlesCatalog {
         // Клики по хлебным крошкам
         const breadcrumbLinks = document.querySelectorAll('.breadcrumb-link');
         breadcrumbLinks.forEach(link => {
-            const handleClick = (e) => {
+            const handleClick = async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const path = link.dataset.path;
@@ -328,7 +482,7 @@ class ArticlesCatalog {
                 } else {
                     this.currentPath = path.split('/');
                 }
-                this.renderCatalog();
+                await this.renderCatalog();
             };
             
             link.addEventListener('click', handleClick);
@@ -342,9 +496,9 @@ class ArticlesCatalog {
     /**
      * Навигация в директорию
      */
-    navigateToDirectory(dirId) {
+    async navigateToDirectory(dirId) {
         this.currentPath.push(dirId);
-        this.renderCatalog();
+        await this.renderCatalog();
     }
 
     /**
