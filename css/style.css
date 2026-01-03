@@ -2392,6 +2392,50 @@ ul.features-list li::before {
 }
 
 /* Скрытое состояние для мобильных - кнопки уходят вправо, показывается ярлычок */
+/* Вертикальная ориентация (portrait) - кнопки полупрозрачные */
+@media (max-width: 767px) and (orientation: portrait) {
+    .article-scroll-buttons {
+        position: relative;
+    }
+
+    .scroll-btn {
+        opacity: 0.5 !important;
+    }
+
+    .scroll-btn:hover,
+    .scroll-btn:focus,
+    .scroll-btn:focus-visible {
+        opacity: 1 !important;
+    }
+
+    .scroll-btn.scroll-btn-fire-flash {
+        animation: fireFlash 0.5s ease-out !important;
+    }
+
+    .scroll-btn.scroll-btn-fire-flash:focus,
+    .scroll-btn.scroll-btn-fire-flash:focus-visible,
+    .scroll-btn.scroll-btn-fire-flash:hover,
+    .scroll-btn.scroll-btn-fire-flash:active {
+        animation: fireFlash 0.5s ease-out !important;
+    }
+
+    .article-scroll-buttons.hidden {
+        transform: translateX(calc(100% - 16px));
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn {
+        opacity: 0.5 !important;
+        background: #64748b !important;
+        color: #ffffff !important;
+    }
+
+    .article-scroll-buttons.hidden .scroll-btn:not(.scroll-btn-toggle) {
+        pointer-events: none !important;
+        cursor: default !important;
+    }
+}
+
+/* Мобильные устройства без указания ориентации (fallback) */
 @media (max-width: 767px) {
     .article-scroll-buttons {
         position: relative;
@@ -2401,7 +2445,9 @@ ul.features-list li::before {
         opacity: 0.5 !important;
     }
 
-    .scroll-btn:hover {
+    .scroll-btn:hover,
+    .scroll-btn:focus,
+    .scroll-btn:focus-visible {
         opacity: 1 !important;
     }
 
@@ -2511,7 +2557,17 @@ ul.features-list li::before {
     background: var(--link-hover);
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
-    opacity: 1 !important;
+}
+
+/* Базовый opacity для desktop - переопределяется в медиа-запросах для мобильных */
+@media (min-width: 768px) {
+    .scroll-btn {
+        opacity: 1 !important;
+    }
+    
+    .scroll-btn:hover {
+        opacity: 1 !important;
+    }
 }
 
 .scroll-btn:focus,
