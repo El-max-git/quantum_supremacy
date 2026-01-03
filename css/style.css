@@ -827,21 +827,21 @@ ul.features-list li::before {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: translate(-50%, -50%) rotate(45deg) !important;
+    transform: translate(-50%, -50%) rotate(-90deg) !important;
 }
 
 .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
-    transform: translate(-50%, -50%) rotate(45deg) !important;
+    transform: translate(-50%, -50%) rotate(90deg) !important;
 }
 
 .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
-    transform: translate(-50%, -50%) rotate(45deg) !important;
+    transform: translate(-50%, -50%) rotate(0deg) !important;
 }
 
 /* Гарантируем работу анимации на всех устройствах */
@@ -868,21 +868,21 @@ ul.features-list li::before {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
 }
 
@@ -910,21 +910,21 @@ ul.features-list li::before {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(-90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-close {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(90deg) !important;
     }
     
     .article-scroll-buttons.hidden .scroll-btn-toggle .toggle-icon-plus {
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto;
-        transform: translate(-50%, -50%) rotate(45deg) !important;
+        transform: translate(-50%, -50%) rotate(0deg) !important;
     }
 }
 
