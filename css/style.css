@@ -170,6 +170,7 @@ hr {
     padding-bottom: 80px;
     position: relative;
     transition: background-color 0.3s ease;
+    z-index: 999; /* Создаем stacking context для header, чтобы меню не перекрывало контент страницы */
 }
 
 .header {
@@ -834,7 +835,7 @@ ul.features-list li::before {
         padding: 1rem; /* Отступы */
         border-radius: var(--border-radius); /* Скругление углов */
         box-shadow: var(--shadow-lg); /* Тень */
-        z-index: 1000; /* Слой отображения */
+        z-index: 1; /* Слой отображения (относительно stacking context header) */
         margin-top: 0.5rem; /* Отступ сверху */
         width: 100%; /* Ширина */
     }
@@ -883,7 +884,7 @@ ul.features-list li::before {
         top: calc(100% + 0.5rem); /* Позиция относительно header */
         left: 0;
         right: 0;
-        z-index: 1000; /* Слой отображения */
+        z-index: 1; /* Слой отображения (относительно stacking context header) */
         margin: 0; /* Внешние отступы */
         list-style: none; /* Убираем маркеры списка */
         max-height: calc(100vh - 120px); /* Максимальная высота */
