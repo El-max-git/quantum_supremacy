@@ -279,14 +279,9 @@ class ArticlesCatalog {
         // Добавляем обработчики кликов
         this.attachEventListeners();
         
-        // Загружаем метаданные асинхронно и обновляем карточки
-        if (currentDir.length > 0) {
-            const articles = currentDir.filter(item => item.mdFile !== undefined);
-            if (articles.length > 0) {
-                const enrichedArticles = await this.enrichArticlesWithMetadata(articles);
-                this.updateArticleCards(enrichedArticles);
-            }
-        }
+        // Примечание: Загрузка метаданных через fetch отключена из-за CORS проблем с GitHub
+        // Description должен быть указан в articles-list.json
+        // Если нужно загружать метаданные из файлов, используйте server-side решение или proxy
     }
 
     /**

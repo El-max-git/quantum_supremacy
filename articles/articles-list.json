@@ -9,7 +9,8 @@
       "items": [
         {
           "id": "expanding-universe-hypersphere",
-          "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md"
+          "mdFile": "articles/EXPANDING_UNIVERSE_HYPERSPHERE_/EXPANDING_UNIVERSE_HYPERSPHERE_.md",
+          "description": "Научная монография по космологической модели замкнутой Вселенной. Исследование геометрии 3-сферы (S³), динамики расширения и связи с наблюдательными данными."
         }
       ]
     },
@@ -22,11 +23,13 @@
       "items": [
         {
           "id": "vector-potential-field",
-          "mdFile": "articles/VECTOR_POTENTIAL_FIELD/VECTOR_POTENTIAL_FIELD_.md"
+          "mdFile": "articles/VECTOR_POTENTIAL_FIELD/VECTOR_POTENTIAL_FIELD_.md",
+          "description": "Теория векторного потенциала в магнитостатике. Вывод формул для прямолинейного проводника с током. Бесконечный и конечный проводники. Практические приложения."
         },
         {
           "id": "quantum-vacuum-unified-theory",
-          "mdFile": "articles/quantum-vacuum-unified-theory/QUANTUM_VACUUM_UNIFIED_THEORY.md"
+          "mdFile": "articles/quantum-vacuum-unified-theory/QUANTUM_VACUUM_UNIFIED_THEORY.md",
+          "description": "Полная унификация квантовой механики, вакуумных модов, полей и квантовой связи. Фундаментальные принципы, создание и управление полями, практические применения."
         },
         {
           "id": "vacuum-probability-waves",
@@ -37,39 +40,48 @@
           "items": [
             {
               "id": "vacuum-probability-waves-part1",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART1_INTRODUCTION.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART1_INTRODUCTION.md",
+              "description": "Введение в концепцию вакуумных волн вероятности как основы квантовой механики. Исследование связи между вакуумными модами, волновыми функциями и квантовыми эффектами."
             },
             {
               "id": "vacuum-probability-waves-part2",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART2_VACUUM_MODES.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART2_VACUUM_MODES.md",
+              "description": "Вакуумные моды как волны вероятности. Структура нулевых колебаний квантовых полей, их спектр и флуктуации. Сравнение с волновыми функциями квантовой механики."
             },
             {
               "id": "vacuum-probability-waves-part3",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART3_CORRELATIONS_CASIMIR.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART3_CORRELATIONS_CASIMIR.md",
+              "description": "Корреляции между квантовой механикой и вакуумом. Эффект Казимира как проявление вакуумных флуктуаций. Взаимодействие частиц с вакуумными модами. Принцип неопределённости и квантовая интерференция."
             },
             {
               "id": "vacuum-probability-waves-part4",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART4_UNIFIED_PICTURE.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART4_UNIFIED_PICTURE.md",
+              "description": "Единая картина связи вакуума, квантовой механики и эффекта Казимира. Философские выводы о природе квантовой реальности и вакуумных флуктуаций."
             },
             {
               "id": "vacuum-probability-waves-part5",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART5_PRACTICAL_APPLICATIONS.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART5_PRACTICAL_APPLICATIONS.md",
+              "description": "Управление потоками энергии в вакууме, создание полей через вакуумные моды и практические устройства. Технологии будущего на основе вакуумной энергетики."
             },
             {
               "id": "vacuum-probability-waves-part6",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART6_ENERGY_TRANSITION.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART6_ENERGY_TRANSITION.md",
+              "description": "Перспективы перехода от электрической энергии к вакуумной. Способы хранения и сбора вакуумной энергии. Энергетические системы будущего."
             },
             {
               "id": "vacuum-probability-waves-part7",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART7_SPACE_PLANET_COLLECTION.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART7_SPACE_PLANET_COLLECTION.md",
+              "description": "Сбор вакуумной энергии в космическом пространстве и на планетах, энергетическая воронка с вращающимся диском."
             },
             {
               "id": "vacuum-probability-waves-part8",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART8_FIELDS_NATURE.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_PART8_FIELDS_NATURE.md",
+              "description": "Электрические, магнитные и гравитационные поля как модификации вакуумной энергии. Единая картина полей как возмущений вакуума."
             },
             {
               "id": "vacuum-probability-waves-quantum-physics",
-              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_QUANTUM_PHYSICS.md"
+              "mdFile": "articles/QUANTUM_VACUUM_UNIFIED_THEORY/VACUUM_PROBABILITY_WAVES_QUANTUM_PHYSICS.md",
+              "description": "Полная версия исследования связи между вакуумными волнами вероятности и квантовой физикой. Единая картина вакуума, квантовой механики и эффекта Казимира."
             }
           ]
         }
@@ -84,11 +96,13 @@
       "items": [
         {
           "id": "test-simple",
-          "mdFile": "articles/test-simple/article.md"
+          "mdFile": "articles/test-simple/article.md",
+          "description": "Простая тестовая статья с базовыми элементами разметки"
         },
         {
           "id": "test-formula",
-          "mdFile": "articles/test-formula/article.md"
+          "mdFile": "articles/test-formula/article.md",
+          "description": "Тестовая статья для проверки отображения проблемной формулы"
         }
       ]
     }
