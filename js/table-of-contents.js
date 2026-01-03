@@ -128,16 +128,16 @@ class TableOfContents {
         headings.forEach((heading, index) => {
             const { level, text, id } = heading;
             
-            // Открываем вложенные списки
-            while (level > currentLevel) {
-                html += '<ul class="toc-list-nested">';
-                currentLevel++;
-            }
-            
-            // Закрываем вложенные списки
+            // Закрываем вложенные списки (если текущий уровень меньше предыдущего)
             while (level < currentLevel) {
                 html += '</ul></li>';
                 currentLevel--;
+            }
+            
+            // Открываем вложенные списки (если текущий уровень больше предыдущего)
+            while (level > currentLevel) {
+                html += '<ul class="toc-list-nested">';
+                currentLevel++;
             }
             
             // Добавляем элемент списка
@@ -146,14 +146,17 @@ class TableOfContents {
                     ${this.escapeHtml(text)}
                 </a>`;
             
-            // Закрываем элемент, если следующий на том же или меньшем уровне
+            // Проверяем следующий элемент
             const nextLevel = headings[index + 1]?.level;
+            
+            // Если следующего элемента нет, или он на меньшем или том же уровне - закрываем li
             if (!nextLevel || nextLevel <= level) {
                 html += '</li>';
             }
+            // Если следующий элемент вложенный (больший уровень) - li остается открытым для вложенного списка
         });
         
-        // Закрываем оставшиеся списки
+        // Закрываем оставшиеся списки и элементы
         while (currentLevel > headings[0].level) {
             html += '</ul></li>';
             currentLevel--;

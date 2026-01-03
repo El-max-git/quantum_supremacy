@@ -1163,6 +1163,16 @@ ul.features-list li::before {
     overflow: visible;
 }
 
+/* Убеждаемся, что все элементы содержания на одном слое */
+.article-toc-embedded .toc-item,
+.article-toc-embedded .toc-list-nested,
+.article-toc-embedded .toc-link {
+    position: static !important;
+    z-index: auto !important;
+    transform: none !important;
+    isolation: auto !important;
+}
+
 /* Заголовок раздела на страницах после первой */
 .article-section-header {
     padding: 1.5rem 0;
