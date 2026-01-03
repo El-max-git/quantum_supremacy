@@ -141,7 +141,7 @@ class TableOfContents {
             }
             
             // Добавляем элемент списка
-            html += `<li class="toc-item toc-level-${level}">
+            html += `<li class="toc-item">
                 <a href="#${id}" class="toc-link" data-toc-target="${id}">
                     ${this.escapeHtml(text)}
                 </a>`;
