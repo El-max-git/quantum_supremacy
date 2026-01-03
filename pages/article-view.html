@@ -497,11 +497,27 @@
         document.getElementById('article-body').innerHTML = paginatedHtml;
         
         // Инициализируем MathJax для рендеринга LaTeX формул
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            MathJax.typesetPromise().catch((err) => {
-                console.warn('MathJax typeset error:', err);
-            });
-        }
+        console.log('[MathJax] Checking availability:', {
+            mathJaxExists: !!window.MathJax,
+            typesetPromiseExists: !!(window.MathJax && window.MathJax.typesetPromise)
+        });
+        
+        // Ждем полной загрузки MathJax перед рендерингом
+        const renderMathJax = () => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                console.log('[MathJax] Calling typesetPromise');
+                MathJax.typesetPromise().then(() => {
+                    console.log('[MathJax] typesetPromise resolved successfully');
+                }).catch((err) => {
+                    console.warn('[MathJax] typesetPromise error:', err);
+                });
+            } else {
+                console.log('[MathJax] Not ready yet, retrying...');
+                // MathJax еще не загружен, пробуем через небольшую задержку
+                setTimeout(renderMathJax, 100);
+            }
+        };
+        renderMathJax();
         
         // Убеждаемся, что ID сохранены (добавляем ID к заголовкам, если их нет)
         // Важно: обрабатываем ВСЕ заголовки во всех страницах (даже скрытых)
@@ -752,17 +768,24 @@
             const trimmedFormula = formula.trim();
             // НЕ экранируем - MathJax нужен исходный LaTeX синтаксис
             latexFormulaBlocks.push(`<div class="math-display">$$${trimmedFormula}$$</div>`);
+            console.log('[LaTeX] Block formula found:', trimmedFormula.substring(0, 50));
             return `__LATEX_FORMULA_BLOCK_${index}__`;
         });
         
         // Обрабатываем LaTeX формулы $...$ (inline формулы)
-        // Важно: обрабатываем после $$...$$ чтобы не конфликтовать
-        // Используем негативный lookbehind/lookahead чтобы не захватывать части $$...$$
-        html = html.replace(/(?<!\$)\$([^$\n]+?)\$(?!\$)/g, (match, formula) => {
+        // Важно: обрабатываем после $$...$$, которые уже заменены на плейсхолдеры
+        // Используем более простой подход: ищем все $...$, но пропускаем те, которые являются частью плейсхолдера
+        // Поскольку $$...$$ уже обработаны, оставшиеся $ должны быть inline формулами
+        html = html.replace(/\$([^$\n]+?)\$/g, (match, formula) => {
+            // Пропускаем, если это часть плейсхолдера (не должно быть, но на всякий случай)
+            if (match.includes('__LATEX_FORMULA_BLOCK_')) {
+                return match;
+            }
             const index = latexFormulaBlocks.length;
             const trimmedFormula = formula.trim();
             // НЕ экранируем - MathJax нужен исходный LaTeX синтаксис
             latexFormulaBlocks.push(`<span class="math-inline">$${trimmedFormula}$</span>`);
+            console.log('[LaTeX] Inline formula found:', trimmedFormula.substring(0, 50));
             return `__LATEX_FORMULA_BLOCK_${index}__`;
         });
         
@@ -1156,6 +1179,7 @@
         });
         
         // Восстанавливаем LaTeX формулы (после существующих формул)
+        console.log('[LaTeX] Restoring', latexFormulaBlocks.length, 'formulas');
         latexFormulaBlocks.forEach((block, index) => {
             const placeholder = new RegExp(`__LATEX_FORMULA_BLOCK_${index}__`, 'g');
             html = html.replace(placeholder, block);
