@@ -2216,6 +2216,12 @@ ul.features-list li::before {
     box-shadow: var(--shadow-md);
 }
 
+.pagination-btn:focus,
+.pagination-btn:focus-visible {
+    outline: none !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
 .pagination-btn.pagination-disabled {
     background: var(--bg-tertiary);
     color: var(--text-tertiary);
@@ -2262,6 +2268,12 @@ ul.features-list li::before {
     color: white;
     border-color: var(--primary-color);
     font-weight: 600;
+}
+
+.pagination-number:focus,
+.pagination-number:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .article-page {
@@ -2376,6 +2388,14 @@ ul.features-list li::before {
         position: relative;
     }
 
+    .scroll-btn {
+        opacity: 0.5 !important;
+    }
+
+    .scroll-btn:hover {
+        opacity: 1 !important;
+    }
+
     .article-scroll-buttons.hidden {
         transform: translateX(calc(100% - 16px));
     }
@@ -2454,6 +2474,12 @@ ul.features-list li::before {
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
     opacity: 1 !important;
+}
+
+.scroll-btn:focus,
+.scroll-btn:focus-visible {
+    outline: none !important;
+    box-shadow: var(--shadow-lg) !important;
 }
 
 .scroll-btn:active {
