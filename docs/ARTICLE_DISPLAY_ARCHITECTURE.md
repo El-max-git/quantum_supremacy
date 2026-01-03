@@ -21,43 +21,47 @@
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              js/article-viewer.js (ArticleViewer)            │
+│              js/articles-catalog.js (ArticlesCatalog)       │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  init()                                                │   │
-│  │    ├─ loadArticles()                                   │   │
-│  │    │   ├─ fetch articles-list.json                     │   │
-│  │    │   ├─ fetchArticleFile() для каждой статьи        │   │
-│  │    │   └─ extractFrontmatter() для метаданных          │   │
-│  │    └─ renderArticlesList()                            │   │
+│  │    ├─ fetch articles-list.json                         │   │
+│  │    └─ renderCatalog()                                  │   │
 │  │                                                         │   │
-│  │  viewArticle(articleId)                                │   │
-│  │    ├─ fetchArticleFile() - загрузка .md файла         │   │
-│  │    ├─ parser.parse() - парсинг Markdown               │   │
-│  │    └─ renderArticleView() - рендеринг HTML           │   │
+│  │  renderCatalog()                                        │   │
+│  │    ├─ getCurrentDirectory()                            │   │
+│  │    ├─ renderBreadcrumbs()                              │   │
+│  │    ├─ renderDirectoryItem() (для директорий)          │   │
+│  │    ├─ renderArticleItem() (для статей)                │   │
+│  │    └─ attachEventListeners()                           │   │
 │  │                                                         │   │
-│  │  renderArticleView()                                    │   │
-│  │    ├─ Генерация HTML структуры                        │   │
-│  │    ├─ generateTOC() - генерация содержания            │   │
-│  │    └─ MathJax.typesetPromise() - рендеринг формул     │   │
+│  │  openArticle(articleId)                                 │   │
+│  │    └─ router.navigate('/article?id=' + articleId)      │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              js/article-parser.js (ArticleParser)           │
+│              pages/article-view.html (встроенный скрипт)     │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │  parse(markdownText, articlePath)                    │   │
-│  │    ├─ extractFrontmatter() - извлечение YAML         │   │
-│  │    ├─ preprocessSpecialBlocks() - специальные блоки │   │
-│  │    ├─ preprocessFormulaBoxes() - рамки формул        │   │
-│  │    ├─ convertMarkdownToHtml() - Markdown → HTML       │   │
-│  │    ├─ processImages() - обработка изображений         │   │
-│  │    ├─ processInternalLinks() - внутренние ссылки      │   │
-│  │    ├─ generateAnchors() - якоря для заголовков         │   │
-│  │    ├─ wrapFormulaBoxes() - обертка формул             │   │
-│  │    └─ loadMathJax() - загрузка MathJax                │   │
+│  │  loadArticle(articleId)                                │   │
+│  │    ├─ fetch articles-list.json                         │   │
+│  │    ├─ findArticle() (рекурсивный поиск)                │   │
+│  │    ├─ fetchArticleFile() - загрузка .md файла         │   │
+│  │    ├─ extractFrontmatter() - извлечение YAML           │   │
+│  │    ├─ simpleMarkdownToHtml() - парсинг Markdown        │   │
+│  │    ├─ generateTOC() - генерация содержания              │   │
+│  │    ├─ paginateArticle() - разбивка на страницы         │   │
+│  │    └─ MathJax.typesetPromise() - рендеринг формул      │   │
 │  │                                                         │   │
-│  │  Возвращает: { html, metadata }                        │   │
+│  │  simpleMarkdownToHtml(md)                              │   │
+│  │    ├─ Обработка блоков кода (```)                      │   │
+│  │    ├─ Обработка LaTeX формул ($$, $)                   │   │
+│  │    ├─ Обработка формул ([formula])                      │   │
+│  │    ├─ Обработка заголовков (#)                         │   │
+│  │    ├─ Обработка таблиц (|)                             │   │
+│  │    ├─ Обработка списков (-, *)                         │   │
+│  │    ├─ Обработка ссылок ([])                            │   │
+│  │    └─ Обработка изображений (![])                      │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -72,94 +76,86 @@
 
 ## Поток данных
 
-### 1. Инициализация страницы статей
+### 1. Инициализация каталога статей
 
 ```javascript
 // pages/articles.html
 <script>
-  // После загрузки DOM
-  const viewer = new ArticleViewer({
-    basePath: '/quantum_supremacy',
+  const catalog = new ArticlesCatalog({
+    basePath: window.router?.basePath || '',
     listContainerId: 'articles-list',
-    viewerContainerId: 'article-viewer'
+    configPath: '/articles/articles-list.json'
   });
   
-  await viewer.init();
+  await catalog.init();
 </script>
 ```
 
-### 2. Загрузка списка статей
+### 2. Загрузка каталога
 
 ```javascript
-// ArticleViewer.init()
+// ArticlesCatalog.init()
 async init() {
-  // 1. Загружаем список статей из JSON
-  const articlesList = await fetch('articles/articles-list.json');
-  const articles = await articlesList.json();
+  // 1. Загружаем каталог статей из JSON
+  const response = await fetch('articles/articles-list.json');
+  this.catalogData = await response.json();
   
-  // 2. Для каждой статьи загружаем метаданные из frontmatter
-  for (const article of articles) {
-    const mdText = await this.fetchArticleFile(article.mdFile);
-    const { metadata } = this.parser.extractFrontmatter(mdText);
-    article.metadata = metadata;
-  }
-  
-  // 3. Рендерим список карточек
-  this.renderArticlesList();
+  // 2. Рендерим каталог
+  this.renderCatalog();
 }
 ```
 
 ### 3. Отображение статьи
 
 ```javascript
-// ArticleViewer.viewArticle(articleId)
-async viewArticle(articleId) {
-  // 1. Находим статью в списке
-  const article = this.articles.find(a => a.id === articleId);
+// pages/article-view.html (встроенный скрипт)
+async function loadArticle(articleId) {
+  // 1. Загружаем каталог для поиска статьи
+  const catalog = await fetch('articles/articles-list.json');
+  const catalogData = await catalog.json();
   
-  // 2. Загружаем Markdown файл
-  const mdText = await this.fetchArticleFile(article.mdFile);
+  // 2. Находим статью рекурсивно
+  const article = findArticle(catalogData.categories, articleId);
   
-  // 3. Парсим Markdown в HTML
-  const { html, metadata } = await this.parser.parse(mdText, article.path);
+  // 3. Загружаем Markdown файл (с fallback на GitHub Raw)
+  const mdText = await fetchArticleFile(article.mdFile);
   
-  // 4. Рендерим HTML структуру
-  this.renderArticleView(article, metadata, html);
+  // 4. Извлекаем frontmatter
+  const { content, metadata } = extractFrontmatter(mdText);
+  
+  // 5. Парсим Markdown в HTML
+  const html = simpleMarkdownToHtml(content);
+  
+  // 6. Генерируем TOC
+  const tocHtml = generateTOC(html);
+  
+  // 7. Разбиваем на страницы
+  const paginatedHtml = paginateArticle(html, tocHtml, articleId);
+  
+  // 8. Отображаем в DOM
+  document.getElementById('article-body').innerHTML = paginatedHtml;
+  
+  // 9. Рендерим формулы
+  MathJax.typesetPromise();
 }
 ```
 
 ### 4. Парсинг Markdown
 
 ```javascript
-// ArticleParser.parse()
-async parse(markdownText, articlePath) {
-  // 1. Извлекаем YAML frontmatter
-  const { content, metadata } = this.extractFrontmatter(markdownText);
+// simpleMarkdownToHtml(md) - встроенная функция
+function simpleMarkdownToHtml(md) {
+  // 1. Обработка блоков кода (```)
+  // 2. Обработка LaTeX формул ($$, $)
+  // 3. Обработка формул ([formula])
+  // 4. Обработка заголовков (#)
+  // 5. Обработка таблиц (|)
+  // 6. Обработка списков (-, *)
+  // 7. Обработка ссылок ([])
+  // 8. Обработка изображений (![])
+  // 9. Обработка параграфов
   
-  // 2. Предобработка специальных блоков (⚠️, 🔑, 💡, 📝)
-  let processed = this.preprocessSpecialBlocks(content);
-  
-  // 3. Предобработка ASCII-рамок для формул
-  processed = this.preprocessFormulaBoxes(processed);
-  
-  // 4. Конвертация Markdown в HTML (через marked.js)
-  let html = await this.convertMarkdownToHtml(processed);
-  
-  // 5. Обработка изображений (относительные пути)
-  html = this.processImages(html, articlePath);
-  
-  // 6. Обработка внутренних ссылок
-  html = this.processInternalLinks(html, articlePath);
-  
-  // 7. Генерация якорей для заголовков
-  html = this.generateAnchors(html);
-  
-  // 8. Загрузка MathJax для формул
-  if (html.includes('$')) {
-    await this.loadMathJax();
-  }
-  
-  return { html, metadata };
+  return html;
 }
 ```
 
@@ -238,46 +234,57 @@ async parse(markdownText, articlePath) {
 
 ## Ключевые методы
 
-### ArticleViewer
+### ArticlesCatalog
 
 | Метод | Описание |
 |-------|----------|
-| `init()` | Инициализация: загрузка списка статей и рендеринг карточек |
-| `loadArticles()` | Загрузка `articles-list.json` и метаданных статей |
-| `fetchArticleFile(mdPath)` | Загрузка `.md` файла с fallback на GitHub Raw API |
-| `renderArticlesList()` | Рендеринг списка карточек статей |
-| `viewArticle(articleId)` | Отображение выбранной статьи |
-| `renderArticleView()` | Генерация HTML структуры для просмотра статьи |
-| `generateTOC()` | Генерация содержания из заголовков |
-| `backToList()` | Возврат к списку статей |
+| `init()` | Инициализация: загрузка каталога из JSON и рендеринг |
+| `renderCatalog()` | Рендеринг каталога (директории и статьи) |
+| `getCurrentDirectory()` | Получение текущей директории на основе пути |
+| `renderBreadcrumbs()` | Генерация хлебных крошек |
+| `renderDirectoryItem()` | Рендеринг карточки директории |
+| `renderArticleItem()` | Рендеринг карточки статьи |
+| `navigateToDirectory(dirId)` | Навигация в директорию |
+| `openArticle(articleId)` | Открытие статьи через роутер |
 
-### ArticleParser
+### Article Viewer Script (встроен в article-view.html)
 
-| Метод | Описание |
-|-------|----------|
-| `parse(markdownText, articlePath)` | Главный метод парсинга |
+| Функция | Описание |
+|---------|----------|
+| `loadArticle(articleId)` | Главная функция загрузки статьи |
+| `getArticleId()` | Получение ID статьи из URL |
+| `simpleMarkdownToHtml(md)` | Парсинг Markdown в HTML |
 | `extractFrontmatter(text)` | Извлечение YAML frontmatter |
-| `preprocessSpecialBlocks(text)` | Обработка специальных блоков (⚠️, 🔑, 💡, 📝) |
-| `preprocessFormulaBoxes(text)` | Обработка ASCII-рамок для формул |
-| `convertMarkdownToHtml(text)` | Конвертация Markdown в HTML через marked.js |
-| `processImages(html, articlePath)` | Обработка относительных путей изображений |
-| `processInternalLinks(html, articlePath)` | Обработка внутренних ссылок |
-| `generateAnchors(html)` | Генерация якорей для заголовков |
-| `loadMathJax()` | Асинхронная загрузка MathJax |
+| `paginateArticle(html, tocHtml, articleId)` | Разбивка статьи на страницы |
+| `generateTOC()` | Генерация содержания |
+| `generateHeadingId(text, index)` | Генерация ID для заголовков |
+| `initTocInteractivity()` | Инициализация интерактивности TOC |
+| `initScrollButtons()` | Инициализация плавающих кнопок |
 
 ## Файлы и их роли
 
 ### `articles/articles-list.json`
 ```json
-[
-  {
-    "id": "article-id",
-    "mdFile": "articles/article-id/article.md"
-  }
-]
+{
+  "categories": [
+    {
+      "id": "category-id",
+      "title": "Название категории",
+      "description": "Описание",
+      "icon": "📁",
+      "order": 1,
+      "items": [
+        {
+          "id": "article-id",
+          "mdFile": "articles/article-id/article.md"
+        }
+      ]
+    }
+  ]
+}
 ```
-- Генерируется автоматически скриптом `scripts/scan-articles.js`
-- Содержит список всех статей в папке `articles/`
+- Структурированный каталог с категориями и вложенностью
+- Содержит иерархию директорий и статей
 
 ### `articles/{article-id}/article.md`
 ```markdown
@@ -348,37 +355,39 @@ async fetchArticleFile(mdPath) {
 
 ## Зависимости
 
-- **marked.js** - парсинг Markdown в HTML
-- **MathJax** - рендеринг математических формул
-- **TableOfContents** - генерация содержания
+- **MathJax** - рендеринг математических формул (LaTeX)
+- **TableOfContents** (`js/table-of-contents.js`) - генерация содержания
+- **Router** (`router.js`) - SPA навигация
+
+**Примечание:** Парсинг Markdown выполняется встроенной функцией `simpleMarkdownToHtml()` без внешних библиотек.
 
 ## Пример использования
 
 ```javascript
-// Создание экземпляра
-const viewer = new ArticleViewer({
+// Создание экземпляра каталога
+const catalog = new ArticlesCatalog({
   basePath: '/quantum_supremacy',
   listContainerId: 'articles-list',
-  viewerContainerId: 'article-viewer'
+  configPath: '/articles/articles-list.json'
 });
 
 // Инициализация
-await viewer.init();
+await catalog.init();
 
-// Отображение статьи
-await viewer.viewArticle('article-id');
+// Открытие статьи (через роутер)
+catalog.openArticle('article-id');
 ```
 
 ## Расширение функциональности
 
 ### Добавление новых специальных блоков
 
-1. Добавить паттерн в `ArticleParser.preprocessSpecialBlocks()`
-2. Добавить CSS стили для нового блока
+1. Добавить паттерн в функцию `simpleMarkdownToHtml()` в `pages/article-view.html`
+2. Добавить CSS стили для нового блока в `css/style.css`
 3. Обновить документацию
 
 ### Добавление новых метаданных
 
 1. Добавить поле в YAML frontmatter статьи
-2. Обновить `ArticleParser.extractFrontmatter()`
-3. Использовать в `ArticleViewer.renderArticleView()`
+2. Обновить функцию `extractFrontmatter()` в `pages/article-view.html`
+3. Использовать в рендеринге метаданных статьи
