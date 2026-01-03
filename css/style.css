@@ -1612,12 +1612,24 @@ ul.features-list li::before {
 /* LaTeX формулы через MathJax */
 .article-body .math-inline {
     display: inline;
+    font-size: 200%; /* В два раза крупнее */
+    color: #d4a574; /* Желтоватый оттенок (как у formula-block) */
 }
 
 .article-body .math-display {
     display: block;
     margin: 1.5rem 0;
     text-align: center;
+    font-size: 200%; /* В два раза крупнее */
+    color: #d4a574; /* Желтоватый оттенок (как у formula-block) */
+}
+
+/* Темная тема для LaTeX формул */
+@media (prefers-color-scheme: dark) {
+    .article-body .math-inline,
+    .article-body .math-display {
+        color: #e6c896; /* Более светлый желтоватый для темной темы */
+    }
 }
 
 .article-body ul,
