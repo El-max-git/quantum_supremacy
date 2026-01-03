@@ -777,6 +777,11 @@ ul.features-list li::before {
         outline: none !important;
         box-shadow: none !important;
     }
+
+    /* На десктопе скрываем кнопку переключения плавающих кнопок */
+    .scroll-btn-toggle {
+        display: none !important;
+    }
 }
 
 /* Tablet - 768px to 1023px */
