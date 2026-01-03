@@ -1901,6 +1901,8 @@
         function addFireFlashEffect(button) {
             if (!button) return;
             button.classList.add('scroll-btn-fire-flash');
+            // Снимаем фокус с кнопки
+            button.blur();
             setTimeout(() => {
                 button.classList.remove('scroll-btn-fire-flash');
             }, 500);

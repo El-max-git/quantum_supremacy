@@ -2530,7 +2530,6 @@ ul.features-list li::before {
 
 .scroll-btn.disabled,
 .scroll-btn:disabled {
-    opacity: 0.5 !important;
     cursor: not-allowed;
     pointer-events: none;
 }
@@ -2540,7 +2539,6 @@ ul.features-list li::before {
     background: var(--primary-color);
     transform: none;
     box-shadow: var(--shadow-lg);
-    opacity: 0.5 !important;
 }
 
 .scroll-btn.scroll-btn-home {
