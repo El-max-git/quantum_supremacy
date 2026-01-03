@@ -65,13 +65,21 @@ class ArticlesCatalog {
         }
         
         try {
-            const response = await fetch(`${this.config.basePath}/${mdFile}`, {
+            // Формируем путь: basePath может уже содержать слеш или нет
+            const path = mdFile.startsWith('/') 
+                ? `${this.config.basePath}${mdFile}`
+                : `${this.config.basePath}/${mdFile}`;
+            
+            const response = await fetch(path, {
                 cache: 'no-cache',
                 headers: {
                     'Cache-Control': 'no-cache'
                 }
             });
-            if (!response.ok) return null;
+            if (!response.ok) {
+                console.warn(`[ArticlesCatalog] Failed to load ${path}: ${response.status}`);
+                return null;
+            }
             
             const text = await response.text();
             const metadata = this.parseYAMLFrontmatter(text);
@@ -89,6 +97,8 @@ class ArticlesCatalog {
      * Загрузка метаданных для всех статей в текущей директории
      */
     async enrichArticlesWithMetadata(articles) {
+        console.log(`[ArticlesCatalog] Enriching ${articles.length} articles with metadata`);
+        
         const enrichedArticles = await Promise.all(articles.map(async (article) => {
             // Если уже есть description, не загружаем
             if (article.description && article.title) {
@@ -99,11 +109,15 @@ class ArticlesCatalog {
             if (article.mdFile) {
                 const metadata = await this.loadArticleMetadata(article.mdFile);
                 if (metadata) {
-                    return {
+                    const enriched = {
                         ...article,
                         title: article.title || metadata.title || article.id,
                         description: article.description || metadata.description || ''
                     };
+                    console.log(`[ArticlesCatalog] Enriched ${article.id}: description="${enriched.description.substring(0, 50)}..."`);
+                    return enriched;
+                } else {
+                    console.log(`[ArticlesCatalog] No metadata found for ${article.id}`);
                 }
             }
             
@@ -243,9 +257,14 @@ class ArticlesCatalog {
      * Обновление карточек статей с загруженными метаданными
      */
     updateArticleCards(enrichedArticles) {
+        console.log(`[ArticlesCatalog] Updating ${enrichedArticles.length} article cards`);
+        
         enrichedArticles.forEach(article => {
             const card = document.querySelector(`.article-card[data-id="${article.id}"]`);
-            if (!card) return;
+            if (!card) {
+                console.warn(`[ArticlesCatalog] Card not found for article ${article.id}`);
+                return;
+            }
             
             // Обновляем заголовок, если изменился
             const titleElement = card.querySelector('.article-card-title');
@@ -263,6 +282,7 @@ class ArticlesCatalog {
                     const descElement = bodyElement.querySelector('.article-card-description');
                     if (descElement) {
                         descElement.textContent = description;
+                        console.log(`[ArticlesCatalog] Updated description for ${article.id}`);
                     }
                 } else {
                     // Добавляем новое описание
@@ -272,8 +292,13 @@ class ArticlesCatalog {
                         newBody.className = 'article-card-body';
                         newBody.innerHTML = `<p class="article-card-description">${this.escapeHtml(description)}</p>`;
                         header.after(newBody);
+                        console.log(`[ArticlesCatalog] Added description for ${article.id}`);
+                    } else {
+                        console.warn(`[ArticlesCatalog] Header not found for article ${article.id}`);
                     }
                 }
+            } else {
+                console.log(`[ArticlesCatalog] No description for ${article.id}`);
             }
         });
     }
@@ -348,10 +373,6 @@ class ArticlesCatalog {
     renderArticleItem(article) {
         const title = article.title || article.id;
         const description = article.description || '';
-        // Вычисляем путь автоматически на основе текущей навигации
-        const computedPath = this.currentPath.length > 0 
-            ? this.currentPath.join('/') + '/' + article.id
-            : article.id;
         
         return `
             <div class="article-card" data-type="article" data-id="${article.id}">
@@ -359,9 +380,6 @@ class ArticlesCatalog {
                     <h4 class="article-card-title">${title}</h4>
                 </div>
                 ${description ? `<div class="article-card-body"><p class="article-card-description">${description}</p></div>` : ''}
-                <div class="article-card-footer">
-                    <span class="article-path" title="${computedPath}">📁 ${computedPath}</span>
-                </div>
             </div>
         `;
     }
