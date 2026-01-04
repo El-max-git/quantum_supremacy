@@ -1897,22 +1897,43 @@
             scrollButtons.classList.add('visible');
         }
         
+        // Функция для принудительного снятия фокуса на мобильных устройствах
+        function forceBlurOnMobile(button) {
+            if (!button) return;
+            // Проверяем, что это мобильное устройство
+            if (window.innerWidth <= 1023) {
+                // Используем requestAnimationFrame для гарантированного снятия фокуса
+                requestAnimationFrame(() => {
+                    button.blur();
+                    // Дополнительно снимаем фокус через небольшую задержку
+                    setTimeout(() => {
+                        button.blur();
+                        // Если кнопка все еще в фокусе, принудительно переключаем фокус
+                        if (document.activeElement === button) {
+                            // Создаем временный элемент для переключения фокуса
+                            const temp = document.createElement('input');
+                            temp.style.position = 'fixed';
+                            temp.style.opacity = '0';
+                            temp.style.pointerEvents = 'none';
+                            temp.style.left = '-9999px';
+                            document.body.appendChild(temp);
+                            temp.focus();
+                            setTimeout(() => {
+                                document.body.removeChild(temp);
+                                button.blur();
+                            }, 0);
+                        }
+                    }, 50);
+                });
+            }
+        }
+        
         // Функция для добавления эффекта вспышки огненным цветом
         function addFireFlashEffect(button) {
             if (!button) return;
             button.classList.add('scroll-btn-fire-flash');
             // Снимаем фокус с кнопки (для мобильных устройств)
-            // Используем несколько попыток для надежности
-            button.blur();
-            // Дополнительно снимаем фокус через небольшую задержку
-            setTimeout(() => {
-                button.blur();
-                // Если кнопка все еще в фокусе, принудительно переключаем фокус на body
-                if (document.activeElement === button) {
-                    document.body.focus();
-                    button.blur();
-                }
-            }, 100);
+            forceBlurOnMobile(button);
             setTimeout(() => {
                 button.classList.remove('scroll-btn-fire-flash');
             }, 500);
@@ -1928,6 +1949,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 addFireFlashEffect(toggleBtn);
+                forceBlurOnMobile(toggleBtn);
                 scrollButtons.classList.toggle('hidden');
                 // CSS анимация автоматически переключит иконки
             });
@@ -1978,9 +2000,48 @@
             scrollButtons.addEventListener('touchend', handleTouchEnd, { passive: true });
         }
         
+        // Функция для принудительного снятия фокуса на мобильных устройствах
+        function forceBlurOnMobile(button) {
+            // Проверяем, что это мобильное устройство
+            if (window.innerWidth <= 1023) {
+                // Используем requestAnimationFrame для гарантированного снятия фокуса
+                requestAnimationFrame(() => {
+                    button.blur();
+                    // Дополнительно снимаем фокус через небольшую задержку
+                    setTimeout(() => {
+                        button.blur();
+                        // Если кнопка все еще в фокусе, принудительно переключаем фокус
+                        if (document.activeElement === button) {
+                            // Создаем временный элемент для переключения фокуса
+                            const temp = document.createElement('input');
+                            temp.style.position = 'fixed';
+                            temp.style.opacity = '0';
+                            temp.style.pointerEvents = 'none';
+                            document.body.appendChild(temp);
+                            temp.focus();
+                            setTimeout(() => {
+                                document.body.removeChild(temp);
+                                button.blur();
+                            }, 0);
+                        }
+                    }, 50);
+                });
+            }
+        }
+        
+        // Добавляем обработчик touchend для всех кнопок (для мобильных устройств)
+        const allScrollButtons = scrollButtons.querySelectorAll('.scroll-btn');
+        allScrollButtons.forEach(button => {
+            button.addEventListener('touchend', (e) => {
+                // Принудительно снимаем фокус после касания
+                forceBlurOnMobile(button);
+            }, { passive: true });
+        });
+        
         // Прокрутка наверх
         scrollToTopBtn.addEventListener('click', () => {
             addFireFlashEffect(scrollToTopBtn);
+            forceBlurOnMobile(scrollToTopBtn);
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
@@ -1990,6 +2051,7 @@
         // Прокрутка вниз
         scrollToBottomBtn.addEventListener('click', () => {
             addFireFlashEffect(scrollToBottomBtn);
+            forceBlurOnMobile(scrollToBottomBtn);
             window.scrollTo({
                 top: document.documentElement.scrollHeight,
                 behavior: 'smooth'
@@ -2000,6 +2062,7 @@
         if (scrollToPrevBtn) {
             scrollToPrevBtn.addEventListener('click', () => {
                 addFireFlashEffect(scrollToPrevBtn);
+                forceBlurOnMobile(scrollToPrevBtn);
                 navigateToPrevPage();
             });
         }
@@ -2007,6 +2070,7 @@
         if (scrollToNextBtn) {
             scrollToNextBtn.addEventListener('click', () => {
                 addFireFlashEffect(scrollToNextBtn);
+                forceBlurOnMobile(scrollToNextBtn);
                 navigateToNextPage();
             });
         }
@@ -2016,6 +2080,7 @@
         if (scrollToHomeBtn) {
             scrollToHomeBtn.addEventListener('click', () => {
                 addFireFlashEffect(scrollToHomeBtn);
+                forceBlurOnMobile(scrollToHomeBtn);
                 const urlParams = new URLSearchParams(window.location.search);
                 const articleId = urlParams.get('id');
                 const url = `/article?id=${encodeURIComponent(articleId)}&page=1`;

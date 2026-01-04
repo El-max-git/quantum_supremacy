@@ -2407,19 +2407,27 @@ ul.features-list li::before {
         position: relative;
     }
     
-    /* На мобильных отключаем стили фокуса - кнопки должны оставаться полупрозрачными */
+    /* На мобильных принудительно отключаем все стили фокуса - кнопки должны оставаться полупрозрачными */
     .scroll-btn:focus,
-    .scroll-btn:focus-visible {
-        /* Сбрасываем все стили фокуса, кроме outline (который уже убран) */
+    .scroll-btn:focus-visible,
+    .scroll-btn:focus:not(:active),
+    .scroll-btn:focus-visible:not(:active) {
+        /* Принудительно сбрасываем все стили фокуса */
         opacity: 0.5 !important;
-        background: var(--primary-color);
-        transform: none;
-        box-shadow: var(--shadow-lg);
+        background: var(--primary-color) !important;
+        transform: none !important;
+        box-shadow: var(--shadow-lg) !important;
     }
     
     /* Только :active должен делать кнопку непрозрачной на мобильных */
     .scroll-btn:active {
         opacity: 1 !important;
+    }
+    
+    /* После :active кнопка должна вернуться к полупрозрачности */
+    .scroll-btn:not(:active):focus,
+    .scroll-btn:not(:active):focus-visible {
+        opacity: 0.5 !important;
     }
 }
 
@@ -2446,18 +2454,26 @@ ul.features-list li::before {
         height: 16px !important;
     }
     
-    /* На мобильных в landscape также отключаем стили фокуса */
+    /* На мобильных в landscape также принудительно отключаем стили фокуса */
     .scroll-btn:focus,
-    .scroll-btn:focus-visible {
+    .scroll-btn:focus-visible,
+    .scroll-btn:focus:not(:active),
+    .scroll-btn:focus-visible:not(:active) {
         opacity: 0.5 !important;
-        background: var(--primary-color);
-        transform: none;
-        box-shadow: var(--shadow-lg);
+        background: var(--primary-color) !important;
+        transform: none !important;
+        box-shadow: var(--shadow-lg) !important;
     }
     
     /* Только :active должен делать кнопку непрозрачной */
     .scroll-btn:active {
         opacity: 1 !important;
+    }
+    
+    /* После :active кнопка должна вернуться к полупрозрачности */
+    .scroll-btn:not(:active):focus,
+    .scroll-btn:not(:active):focus-visible {
+        opacity: 0.5 !important;
     }
 }
 
